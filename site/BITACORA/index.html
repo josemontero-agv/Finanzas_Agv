@@ -1,0 +1,3865 @@
+
+<!doctype html>
+<html lang="es" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentación técnica y funcional del proyecto Finanzas AGV">
+      
+      
+      
+      
+        <link rel="prev" href="../ESTRUCTURA_PROYECTO/">
+      
+      
+        <link rel="next" href="../automatizacion-cicd/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="https://agrovetmarket.com/wp-content/uploads/2021/04/cropped-favicon-32x32.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Bitácora - Documentación Finanzas AGV</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#bitacora-de-cambios-sistema-financiero-agv" class="md-skip">
+          Saltar a contenido
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabecera">
+    <a href=".." title="Documentación Finanzas AGV" class="md-header__button md-logo" aria-label="Documentación Finanzas AGV" data-md-component="logo">
+      
+  <img src="https://agrovetmarket.com/wp-content/uploads/2021/04/cropped-favicon-32x32.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Documentación Finanzas AGV
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Bitácora
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="indigo"  aria-label="Cambiar a modo oscuro"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Cambiar a modo oscuro" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="indigo"  aria-label="Cambiar a modo claro"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Cambiar a modo claro" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Búsqueda" placeholder="Búsqueda" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Buscar">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Compartir" aria-label="Compartir" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Limpiar" aria-label="Limpiar" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Inicializando búsqueda
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Pestañas" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  🏠 Inicio
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../resumen-ejecutivo/" class="md-tabs__link">
+          
+  
+  
+  📊 Para Gerencia
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../PROYECTO_COMPLETO/" class="md-tabs__link">
+          
+  
+  
+  📂 Proyecto
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../automatizacion-cicd/" class="md-tabs__link">
+          
+  
+  
+  🤖 Automatización
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../adrs/index_adrs/" class="md-tabs__link">
+          
+  
+  
+  📋 Decisiones (ADRs)
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../runbooks/index_runbooks/" class="md-tabs__link">
+          
+  
+  
+  🔧 Operaciones (Runbooks)
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../INICIO_RAPIDO_COMPLETO/" class="md-tabs__link">
+          
+  
+  
+  🚀 Guías
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../CAMBIOS_LOGIN/" class="md-tabs__link">
+          
+  
+  
+  🛠️ Técnico
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navegación" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Documentación Finanzas AGV" class="md-nav__button md-logo" aria-label="Documentación Finanzas AGV" data-md-component="logo">
+      
+  <img src="https://agrovetmarket.com/wp-content/uploads/2021/04/cropped-favicon-32x32.png" alt="logo">
+
+    </a>
+    Documentación Finanzas AGV
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    🏠 Inicio
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    📊 Para Gerencia
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    📊 Para Gerencia
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resumen-ejecutivo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resumen Ejecutivo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../c4model/index_c4model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitectura (Vista C1)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    📂 Proyecto
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    📂 Proyecto
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PROYECTO_COMPLETO/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visión General
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ESTRUCTURA_PROYECTO/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Estructura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bitácora
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bitácora
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Tabla de contenidos">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Tabla de contenidos
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#noviembre-14-2025-mejoras-en-reportes-de-cuentas-por-cobrar-y-pagar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📅 Noviembre 14, 2025 - Mejoras en Reportes de Cuentas por Cobrar y Pagar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📅 Noviembre 14, 2025 - Mejoras en Reportes de Cuentas por Cobrar y Pagar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cambios-implementados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Cambios Implementados
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="✅ Cambios Implementados">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-reporte-cuenta-12-interfaz-simplificada" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Reporte Cuenta 12 - Interfaz Simplificada 🔄
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-resaltado-de-usuario-en-header" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Resaltado de Usuario en Header ⭐
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-filtros-dinamicos-en-cuenta-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Filtros Dinámicos en Cuenta 12 🔍
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-exportacion-a-excel-mejorada" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Exportación a Excel Mejorada 📊
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#estadisticas-de-cambios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📊 Estadísticas de Cambios
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pruebas-realizadas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Pruebas Realizadas
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🧪 Pruebas Realizadas">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pruebas-de-funcionalidad" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Pruebas de Funcionalidad
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pruebas-de-interfaz" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Pruebas de Interfaz
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentacion-tecnica" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📚 Documentación Técnica
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📚 Documentación Técnica">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#estructura-de-datos-reporte-cxc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Estructura de Datos - Reporte CxC
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calculo-de-antiguedad" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cálculo de Antigüedad
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuracion-tecnica" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔧 Configuración Técnica
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🔧 Configuración Técnica">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dependencias-javascript" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependencias JavaScript
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuracion-datatables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuración DataTables
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#noviembre-14-2025-tarde-expansion-de-cuenta-42-y-mejoras-excel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📅 Noviembre 14, 2025 (Tarde) - Expansión de Cuenta 42 y Mejoras Excel
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📅 Noviembre 14, 2025 (Tarde) - Expansión de Cuenta 42 y Mejoras Excel">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cambios-implementados_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Cambios Implementados
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="✅ Cambios Implementados">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#5-reporte-cuenta-42-campos-expandidos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Reporte Cuenta 42 - Campos Expandidos 📈
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-exportacion-excel-con-formatos-condicionales" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Exportación Excel con Formatos Condicionales 🎨
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proximas-mejoras-sugeridas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 Próximas Mejoras Sugeridas
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🚀 Próximas Mejoras Sugeridas">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cuenta-12-cxc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cuenta 12 (CxC)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cuenta-42-cxp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cuenta 42 (CxP)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#general" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        General
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contacto-y-soporte" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📞 Contacto y Soporte
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notas-de-desarrollo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📝 Notas de Desarrollo
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📝 Notas de Desarrollo">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lecciones-aprendidas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lecciones Aprendidas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decisiones-tecnicas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decisiones Técnicas
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#historial-de-versiones" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📜 Historial de Versiones
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📜 Historial de Versiones">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#v120-noviembre-14-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.2.0 - Noviembre 14, 2025
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v110-noviembre-13-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.1.0 - Noviembre 13, 2025
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v100-octubre-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.0.0 - Octubre 2025
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#noviembre-14-2025-noche-correcciones-ux-y-errores-criticos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📅 Noviembre 14, 2025 (Noche) - Correcciones UX y Errores Críticos
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📅 Noviembre 14, 2025 (Noche) - Correcciones UX y Errores Críticos">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#problemas-identificados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🐛 Problemas Identificados
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#soluciones-implementadas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Soluciones Implementadas
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="✅ Soluciones Implementadas">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#7-sidebar-responsivo-corregido" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Sidebar Responsivo Corregido 📱
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8-pagina-optimizada-sin-scroll-excesivo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Página Optimizada - Sin Scroll Excesivo 📏
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-error-excel-corregido" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Error Excel Corregido ✅
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-datatables-mejorado" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. DataTables Mejorado 📊
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#estadisticas-de-correcciones" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📊 Estadísticas de Correcciones
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pruebas-realizadas_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Pruebas Realizadas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mejoras-ux-implementadas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎨 Mejoras UX Implementadas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lecciones-aprendidas_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        💡 Lecciones Aprendidas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#codigo-clave" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔧 Código Clave
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#noviembre-14-2025-final-mejora-visual-del-usuario" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📅 Noviembre 14, 2025 (Final) - Mejora Visual del Usuario
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📅 Noviembre 14, 2025 (Final) - Mejora Visual del Usuario">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#problema-identificado" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🐛 Problema Identificado
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solucion-implementada" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Solución Implementada
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="✅ Solución Implementada">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-usuario-elegante-y-discreto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Usuario Elegante y Discreto 🎨
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-dropdown-de-usuario-premium" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Dropdown de Usuario Premium 💎
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-email-del-usuario-implementado" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. Email del Usuario Implementado 📧
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparacion-visual" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎨 Comparación Visual
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🎨 Comparación Visual">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#antes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Antes:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#despues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Después:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mejoras-en-paleta-de-colores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📊 Mejoras en Paleta de Colores
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pruebas-ux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Pruebas UX
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decisiones-de-diseno" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        💡 Decisiones de Diseño
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#codigo-destacado" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔧 Código Destacado
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#impacto-en-ux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📈 Impacto en UX
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resultado-final" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 Resultado Final
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    🤖 Automatización
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    🤖 Automatización
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../automatizacion-cicd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Flujo CI/CD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../github-pages-setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Activar GitHub Pages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    📋 Decisiones (ADRs)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    📋 Decisiones (ADRs)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/index_adrs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Índice
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plantilla
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/0001-uso-mkdocs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-001 MkDocs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    🔧 Operaciones (Runbooks)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    🔧 Operaciones (Runbooks)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runbooks/index_runbooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Índice
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runbooks/rb-001-deploy-prod/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RB-001 Despliegue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runbooks/rb-002-db-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RB-002 Base de Datos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runbooks/rb-101-odoo-connection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RB-101 Conexión Odoo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runbooks/rb-102-email-failure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RB-102 Envío Correos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    🚀 Guías
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    🚀 Guías
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../INICIO_RAPIDO_COMPLETO/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inicio Rápido
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../INSTRUCCIONES_INICIO_RAPIDO/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Instrucciones
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CONTRIBUTING/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contribuir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    🛠️ Técnico
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    🛠️ Técnico
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CAMBIOS_LOGIN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cambios Login
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MEJORAS_UI_UX/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mejoras UI/UX
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Tabla de contenidos">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Tabla de contenidos
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#noviembre-14-2025-mejoras-en-reportes-de-cuentas-por-cobrar-y-pagar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📅 Noviembre 14, 2025 - Mejoras en Reportes de Cuentas por Cobrar y Pagar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📅 Noviembre 14, 2025 - Mejoras en Reportes de Cuentas por Cobrar y Pagar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cambios-implementados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Cambios Implementados
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="✅ Cambios Implementados">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-reporte-cuenta-12-interfaz-simplificada" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Reporte Cuenta 12 - Interfaz Simplificada 🔄
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-resaltado-de-usuario-en-header" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Resaltado de Usuario en Header ⭐
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-filtros-dinamicos-en-cuenta-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Filtros Dinámicos en Cuenta 12 🔍
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-exportacion-a-excel-mejorada" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Exportación a Excel Mejorada 📊
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#estadisticas-de-cambios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📊 Estadísticas de Cambios
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pruebas-realizadas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Pruebas Realizadas
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🧪 Pruebas Realizadas">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pruebas-de-funcionalidad" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Pruebas de Funcionalidad
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pruebas-de-interfaz" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Pruebas de Interfaz
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentacion-tecnica" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📚 Documentación Técnica
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📚 Documentación Técnica">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#estructura-de-datos-reporte-cxc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Estructura de Datos - Reporte CxC
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calculo-de-antiguedad" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cálculo de Antigüedad
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuracion-tecnica" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔧 Configuración Técnica
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🔧 Configuración Técnica">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dependencias-javascript" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependencias JavaScript
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuracion-datatables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuración DataTables
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#noviembre-14-2025-tarde-expansion-de-cuenta-42-y-mejoras-excel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📅 Noviembre 14, 2025 (Tarde) - Expansión de Cuenta 42 y Mejoras Excel
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📅 Noviembre 14, 2025 (Tarde) - Expansión de Cuenta 42 y Mejoras Excel">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cambios-implementados_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Cambios Implementados
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="✅ Cambios Implementados">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#5-reporte-cuenta-42-campos-expandidos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Reporte Cuenta 42 - Campos Expandidos 📈
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-exportacion-excel-con-formatos-condicionales" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Exportación Excel con Formatos Condicionales 🎨
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proximas-mejoras-sugeridas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 Próximas Mejoras Sugeridas
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🚀 Próximas Mejoras Sugeridas">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cuenta-12-cxc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cuenta 12 (CxC)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cuenta-42-cxp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cuenta 42 (CxP)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#general" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        General
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contacto-y-soporte" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📞 Contacto y Soporte
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notas-de-desarrollo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📝 Notas de Desarrollo
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📝 Notas de Desarrollo">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lecciones-aprendidas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lecciones Aprendidas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decisiones-tecnicas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decisiones Técnicas
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#historial-de-versiones" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📜 Historial de Versiones
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📜 Historial de Versiones">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#v120-noviembre-14-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.2.0 - Noviembre 14, 2025
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v110-noviembre-13-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.1.0 - Noviembre 13, 2025
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v100-octubre-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v1.0.0 - Octubre 2025
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#noviembre-14-2025-noche-correcciones-ux-y-errores-criticos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📅 Noviembre 14, 2025 (Noche) - Correcciones UX y Errores Críticos
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📅 Noviembre 14, 2025 (Noche) - Correcciones UX y Errores Críticos">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#problemas-identificados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🐛 Problemas Identificados
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#soluciones-implementadas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Soluciones Implementadas
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="✅ Soluciones Implementadas">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#7-sidebar-responsivo-corregido" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Sidebar Responsivo Corregido 📱
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8-pagina-optimizada-sin-scroll-excesivo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Página Optimizada - Sin Scroll Excesivo 📏
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-error-excel-corregido" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Error Excel Corregido ✅
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-datatables-mejorado" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. DataTables Mejorado 📊
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#estadisticas-de-correcciones" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📊 Estadísticas de Correcciones
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pruebas-realizadas_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Pruebas Realizadas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mejoras-ux-implementadas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎨 Mejoras UX Implementadas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lecciones-aprendidas_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        💡 Lecciones Aprendidas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#codigo-clave" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔧 Código Clave
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#noviembre-14-2025-final-mejora-visual-del-usuario" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📅 Noviembre 14, 2025 (Final) - Mejora Visual del Usuario
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📅 Noviembre 14, 2025 (Final) - Mejora Visual del Usuario">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#objetivo_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 Objetivo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#problema-identificado" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🐛 Problema Identificado
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solucion-implementada" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Solución Implementada
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="✅ Solución Implementada">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-usuario-elegante-y-discreto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Usuario Elegante y Discreto 🎨
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-dropdown-de-usuario-premium" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Dropdown de Usuario Premium 💎
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-email-del-usuario-implementado" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. Email del Usuario Implementado 📧
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparacion-visual" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎨 Comparación Visual
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🎨 Comparación Visual">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#antes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Antes:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#despues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Después:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mejoras-en-paleta-de-colores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📊 Mejoras en Paleta de Colores
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pruebas-ux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧪 Pruebas UX
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decisiones-de-diseno" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        💡 Decisiones de Diseño
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#codigo-destacado" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔧 Código Destacado
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#impacto-en-ux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📈 Impacto en UX
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resultado-final" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 Resultado Final
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="bitacora-de-cambios-sistema-financiero-agv">📋 BITÁCORA DE CAMBIOS - SISTEMA FINANCIERO AGV<a class="headerlink" href="#bitacora-de-cambios-sistema-financiero-agv" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>Última Actualización:</strong> ${new Date().toLocaleDateString('es-PE')}<br />
+<strong>Proyecto:</strong> Finanzas_Agv - Sistema de Gestión Financiera</p>
+</blockquote>
+<hr />
+<h2 id="noviembre-14-2025-mejoras-en-reportes-de-cuentas-por-cobrar-y-pagar">📅 Noviembre 14, 2025 - Mejoras en Reportes de Cuentas por Cobrar y Pagar<a class="headerlink" href="#noviembre-14-2025-mejoras-en-reportes-de-cuentas-por-cobrar-y-pagar" title="Permanent link">&para;</a></h2>
+<h3 id="objetivo">🎯 Objetivo<a class="headerlink" href="#objetivo" title="Permanent link">&para;</a></h3>
+<p>Estandarizar la interfaz de usuario y funcionalidad entre los reportes de Cuenta 12 (CxC) y Cuenta 42 (CxP), mejorando la experiencia del usuario y agregando campos calculados.</p>
+<h3 id="cambios-implementados">✅ Cambios Implementados<a class="headerlink" href="#cambios-implementados" title="Permanent link">&para;</a></h3>
+<h4 id="1-reporte-cuenta-12-interfaz-simplificada">1. <strong>Reporte Cuenta 12 - Interfaz Simplificada</strong> 🔄<a class="headerlink" href="#1-reporte-cuenta-12-interfaz-simplificada" title="Permanent link">&para;</a></h4>
+<p><strong>Archivos Modificados:</strong>
+- <code>app/templates/collections/report_account12.html</code>
+- <code>app/collections/services.py</code></p>
+<p><strong>Cambios Realizados:</strong>
+- ✅ <strong>Tabla simplificada</strong>: Reducida a 11 columnas principales (anteriormente 25)
+  - Factura
+  - Cliente
+  - RUC/DNI
+  - F. Emisión
+  - F. Vencimiento
+  - Moneda
+  - Monto Total
+  - Saldo
+  - Días Vencido
+  - Estado
+  - Antigüedad</p>
+<ul>
+<li>✅ <strong>Integración de DataTables</strong>: Tabla interactiva con:</li>
+<li>Paginación automática (25 registros por página)</li>
+<li>Ordenamiento por columnas</li>
+<li>Búsqueda integrada</li>
+<li>
+<p>Idioma en español</p>
+</li>
+<li>
+<p>✅ <strong>Estadísticas mejoradas</strong>:</p>
+</li>
+<li>Total Registros</li>
+<li>Monto Total</li>
+<li>Saldo Pendiente</li>
+<li>
+<p><strong>Deuda Vencida</strong> (nuevo)</p>
+</li>
+<li>
+<p>✅ <strong>Campos calculados agregados al backend</strong>:</p>
+</li>
+<li><code>dias_vencido</code>: Días transcurridos desde vencimiento</li>
+<li><code>estado_deuda</code>: VIGENTE o VENCIDO</li>
+<li>
+<p><code>antiguedad</code>: Clasificación por rangos (Vigente, Atraso Corto, Medio, Prolongado, Cobranza Judicial)</p>
+</li>
+<li>
+<p>✅ <strong>Estilos visuales mejorados</strong>:</p>
+</li>
+<li>Días vencidos en rojo y negrita cuando &gt; 0</li>
+<li>Badges de colores para estados (verde: VIGENTE, rojo: VENCIDO)</li>
+<li>Formato de moneda consistente</li>
+</ul>
+<p><strong>Código Clave - Cálculo de Campos:</strong>
+<div class="highlight"><pre><span></span><code><span class="c1"># En collections/services.py</span>
+<span class="n">dias_vencido</span> <span class="o">=</span> <span class="n">calcular_dias_vencido</span><span class="p">(</span><span class="n">date_maturity</span><span class="p">,</span> <span class="n">today</span><span class="p">)</span>
+<span class="n">antiguedad</span> <span class="o">=</span> <span class="n">clasificar_antiguedad</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dias_vencido</span><span class="p">))</span>
+<span class="n">estado_deuda</span> <span class="o">=</span> <span class="s1">&#39;VENCIDO&#39;</span> <span class="k">if</span> <span class="n">dias_vencido</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s1">&#39;VIGENTE&#39;</span>
+</code></pre></div></p>
+<hr />
+<h4 id="2-resaltado-de-usuario-en-header">2. <strong>Resaltado de Usuario en Header</strong> ⭐<a class="headerlink" href="#2-resaltado-de-usuario-en-header" title="Permanent link">&para;</a></h4>
+<p><strong>Archivo Modificado:</strong>
+- <code>app/templates/base.html</code></p>
+<p><strong>Cambios Realizados:</strong>
+- ✅ Clase CSS <code>.user-highlight</code> creada con:
+  - Degradado dorado (<code>#ffd700</code> → <code>#ffed4e</code>)
+  - Bordes redondeados (20px)
+  - Sombra sutil con efecto hover
+  - Transición suave al pasar el mouse
+  - Efecto de elevación en hover</p>
+<p><strong>Código Clave - CSS:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">.</span><span class="nc">user-highlight</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">background</span><span class="p">:</span><span class="w"> </span><span class="nb">linear-gradient</span><span class="p">(</span><span class="mi">135</span><span class="kt">deg</span><span class="p">,</span><span class="w"> </span><span class="mh">#ffd700</span><span class="w"> </span><span class="mi">0</span><span class="kt">%</span><span class="p">,</span><span class="w"> </span><span class="mh">#ffed4e</span><span class="w"> </span><span class="mi">100</span><span class="kt">%</span><span class="p">);</span>
+<span class="w">    </span><span class="k">padding</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="kt">px</span><span class="w"> </span><span class="mi">12</span><span class="kt">px</span><span class="p">;</span>
+<span class="w">    </span><span class="k">border-radius</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="kt">px</span><span class="p">;</span>
+<span class="w">    </span><span class="k">color</span><span class="p">:</span><span class="w"> </span><span class="mh">#2c3e50</span><span class="p">;</span>
+<span class="w">    </span><span class="k">font-weight</span><span class="p">:</span><span class="w"> </span><span class="mi">600</span><span class="p">;</span>
+<span class="w">    </span><span class="k">box-shadow</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">2</span><span class="kt">px</span><span class="w"> </span><span class="mi">8</span><span class="kt">px</span><span class="w"> </span><span class="nb">rgba</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">215</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">);</span>
+<span class="w">    </span><span class="k">transition</span><span class="p">:</span><span class="w"> </span><span class="kc">all</span><span class="w"> </span><span class="mf">0.3</span><span class="kt">s</span><span class="w"> </span><span class="kc">ease</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p><strong>Impacto:</strong>
+- El nombre de usuario ahora es claramente visible y destacado
+- Mejora la experiencia de usuario al identificar quién está logueado
+- Diseño elegante y profesional</p>
+<hr />
+<h4 id="3-filtros-dinamicos-en-cuenta-12">3. <strong>Filtros Dinámicos en Cuenta 12</strong> 🔍<a class="headerlink" href="#3-filtros-dinamicos-en-cuenta-12" title="Permanent link">&para;</a></h4>
+<p><strong>Archivos Involucrados:</strong>
+- <code>app/templates/collections/report_account12.html</code>
+- <code>app/collections/routes.py</code>
+- <code>app/collections/services.py</code></p>
+<p><strong>Nuevos Filtros Agregados:</strong>
+- ✅ <strong>Canal de Venta</strong> (dropdown dinámico desde Odoo)
+- ✅ <strong>Tipo de Documento</strong> (dropdown dinámico desde Odoo)</p>
+<p><strong>Endpoint Nuevo:</strong>
+<div class="highlight"><pre><span></span><code>GET /api/v1/collections/filter-options
+</code></pre></div></p>
+<p><strong>Funcionalidad:</strong>
+- Carga automática de opciones desde Odoo al iniciar la página
+- Filtros aplicados en tiempo real
+- Integración con exportación a Excel</p>
+<hr />
+<h4 id="4-exportacion-a-excel-mejorada">4. <strong>Exportación a Excel Mejorada</strong> 📊<a class="headerlink" href="#4-exportacion-a-excel-mejorada" title="Permanent link">&para;</a></h4>
+<p><strong>Archivos Modificados:</strong>
+- <code>app/exports/routes.py</code>
+- <code>app/exports/excel_service.py</code></p>
+<p><strong>Mejoras:</strong>
+- ✅ Incluye TODOS los 25 campos del reporte
+- ✅ Formato profesional con:
+  - Colores de encabezado (azul oscuro)
+  - Bordes en todas las celdas
+  - Anchos de columna optimizados
+  - Formato de moneda automático
+  - Formato de fecha consistente
+  - Filtros automáticos habilitados
+  - Congelación de encabezados</p>
+<p><strong>Nombre de Archivo:</strong>
+<div class="highlight"><pre><span></span><code>reporte_cxc_general_[fecha_desde]_[fecha_hasta]_[timestamp].xlsx
+</code></pre></div></p>
+<hr />
+<h3 id="estadisticas-de-cambios">📊 Estadísticas de Cambios<a class="headerlink" href="#estadisticas-de-cambios" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Métrica</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Archivos modificados</td>
+<td>6</td>
+</tr>
+<tr>
+<td>Líneas de código agregadas</td>
+<td>~250</td>
+</tr>
+<tr>
+<td>Nuevos endpoints API</td>
+<td>1</td>
+</tr>
+<tr>
+<td>Nuevos campos calculados</td>
+<td>3</td>
+</tr>
+<tr>
+<td>Mejoras visuales</td>
+<td>5</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="pruebas-realizadas">🧪 Pruebas Realizadas<a class="headerlink" href="#pruebas-realizadas" title="Permanent link">&para;</a></h3>
+<h4 id="pruebas-de-funcionalidad">✅ Pruebas de Funcionalidad<a class="headerlink" href="#pruebas-de-funcionalidad" title="Permanent link">&para;</a></h4>
+<ul>
+<li>[x] Carga de reporte Cuenta 12</li>
+<li>[x] Aplicación de filtros (fecha, cliente, canal, tipo doc)</li>
+<li>[x] Cálculo correcto de días vencidos</li>
+<li>[x] Clasificación de antigüedad</li>
+<li>[x] Exportación a Excel con todos los filtros</li>
+<li>[x] Visualización de estadísticas</li>
+<li>[x] Ordenamiento de tabla</li>
+<li>[x] Paginación de DataTables</li>
+</ul>
+<h4 id="pruebas-de-interfaz">✅ Pruebas de Interfaz<a class="headerlink" href="#pruebas-de-interfaz" title="Permanent link">&para;</a></h4>
+<ul>
+<li>[x] Resaltado de usuario visible</li>
+<li>[x] Badges de estado con colores correctos</li>
+<li>[x] Días vencidos en rojo cuando &gt; 0</li>
+<li>[x] Tabla responsive</li>
+<li>[x] Dropdowns de filtros poblados</li>
+</ul>
+<hr />
+<h3 id="documentacion-tecnica">📚 Documentación Técnica<a class="headerlink" href="#documentacion-tecnica" title="Permanent link">&para;</a></h3>
+<h4 id="estructura-de-datos-reporte-cxc">Estructura de Datos - Reporte CxC<a class="headerlink" href="#estructura-de-datos-reporte-cxc" title="Permanent link">&para;</a></h4>
+<p><strong>Campos Principales (11 visibles en tabla):</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+    <span class="s1">&#39;move_name&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>           <span class="c1"># Número de factura</span>
+    <span class="s1">&#39;patner_id&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>           <span class="c1"># Nombre del cliente</span>
+    <span class="s1">&#39;patner_id/vat&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>       <span class="c1"># RUC/DNI</span>
+    <span class="s1">&#39;invoice_date&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>        <span class="c1"># Fecha de emisión</span>
+    <span class="s1">&#39;date_maturity&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>       <span class="c1"># Fecha de vencimiento</span>
+    <span class="s1">&#39;currency_id&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>         <span class="c1"># Moneda</span>
+    <span class="s1">&#39;amount_currency&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>   <span class="c1"># Monto total</span>
+    <span class="s1">&#39;amount_residual_with_retention&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>  <span class="c1"># Saldo</span>
+    <span class="s1">&#39;dias_vencido&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>        <span class="c1"># Días vencido (calculado)</span>
+    <span class="s1">&#39;estado_deuda&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>        <span class="c1"># VIGENTE/VENCIDO (calculado)</span>
+    <span class="s1">&#39;antiguedad&#39;</span><span class="p">:</span> <span class="nb">str</span>           <span class="c1"># Rango de antigüedad (calculado)</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p><strong>Campos Completos (25 para exportación):</strong>
+- Incluye además: Tipo documento, Origen, Cuenta, Nombre cuenta, Referencia, Condición pago, Descripción, Vendedor, Provincia, Distrito, País, Grupos, Sub Canal, Canal de Venta, Tipo de Venta</p>
+<h4 id="calculo-de-antiguedad">Cálculo de Antigüedad<a class="headerlink" href="#calculo-de-antiguedad" title="Permanent link">&para;</a></h4>
+<p><strong>Rangos Definidos:</strong>
+<div class="highlight"><pre><span></span><code><span class="o">-</span> <span class="n">Vigente</span><span class="p">:</span> <span class="n">días_vencido</span> <span class="o">&lt;=</span> <span class="mi">0</span>
+<span class="o">-</span> <span class="n">Atraso</span> <span class="n">Corto</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="mi">30</span><span class="p">):</span> <span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">días_vencido</span> <span class="o">&lt;=</span> <span class="mi">30</span>
+<span class="o">-</span> <span class="n">Atraso</span> <span class="n">Medio</span> <span class="p">(</span><span class="mi">31</span><span class="o">-</span><span class="mi">60</span><span class="p">):</span> <span class="mi">31</span> <span class="o">&lt;=</span> <span class="n">días_vencido</span> <span class="o">&lt;=</span> <span class="mi">60</span>
+<span class="o">-</span> <span class="n">Atraso</span> <span class="n">Prolongado</span> <span class="p">(</span><span class="mi">61</span><span class="o">-</span><span class="mi">90</span><span class="p">):</span> <span class="mi">61</span> <span class="o">&lt;=</span> <span class="n">días_vencido</span> <span class="o">&lt;=</span> <span class="mi">90</span>
+<span class="o">-</span> <span class="n">Cobranza</span> <span class="n">Judicial</span> <span class="p">(</span><span class="o">+</span><span class="mi">90</span><span class="p">):</span> <span class="n">días_vencido</span> <span class="o">&gt;</span> <span class="mi">90</span>
+</code></pre></div></p>
+<hr />
+<h3 id="configuracion-tecnica">🔧 Configuración Técnica<a class="headerlink" href="#configuracion-tecnica" title="Permanent link">&para;</a></h3>
+<h4 id="dependencias-javascript">Dependencias JavaScript<a class="headerlink" href="#dependencias-javascript" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="cm">&lt;!-- DataTables --&gt;</span>
+<span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="nt">link</span> <span class="na">rel</span><span class="o">=</span><span class="s">&quot;stylesheet&quot;</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css&quot;</span><span class="p">&gt;</span>
+</code></pre></div>
+<h4 id="configuracion-datatables">Configuración DataTables<a class="headerlink" href="#configuracion-datatables" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#reportTable&#39;</span><span class="p">).</span><span class="nx">DataTable</span><span class="p">({</span>
+<span class="w">    </span><span class="nx">pageLength</span><span class="o">:</span><span class="w"> </span><span class="mf">25</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">order</span><span class="o">:</span><span class="w"> </span><span class="p">[[</span><span class="mf">8</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;desc&#39;</span><span class="p">]],</span><span class="w">  </span><span class="c1">// Ordenar por días vencido</span>
+<span class="w">    </span><span class="nx">dom</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Bfrtip&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">buttons</span><span class="o">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">    </span><span class="nx">language</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">url</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json&#39;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">});</span>
+</code></pre></div>
+<hr />
+<hr />
+<h2 id="noviembre-14-2025-tarde-expansion-de-cuenta-42-y-mejoras-excel">📅 Noviembre 14, 2025 (Tarde) - Expansión de Cuenta 42 y Mejoras Excel<a class="headerlink" href="#noviembre-14-2025-tarde-expansion-de-cuenta-42-y-mejoras-excel" title="Permanent link">&para;</a></h2>
+<h3 id="objetivo_1">🎯 Objetivo<a class="headerlink" href="#objetivo_1" title="Permanent link">&para;</a></h3>
+<p>Expandir el reporte de Cuenta 42 (CxP) con más campos de Odoo y mejorar el formato de exportación a Excel con formatos condicionales.</p>
+<h3 id="cambios-implementados_1">✅ Cambios Implementados<a class="headerlink" href="#cambios-implementados_1" title="Permanent link">&para;</a></h3>
+<h4 id="5-reporte-cuenta-42-campos-expandidos">5. <strong>Reporte Cuenta 42 - Campos Expandidos</strong> 📈<a class="headerlink" href="#5-reporte-cuenta-42-campos-expandidos" title="Permanent link">&para;</a></h4>
+<p><strong>Archivos Modificados:</strong>
+- <code>app/treasury/services.py</code>
+- <code>app/exports/excel_service.py</code></p>
+<p><strong>Campos Agregados (de 11 a 28):</strong>
+- <code>move_type</code>: Tipo de movimiento
+- <code>state</code>: Estado de la factura
+- <code>l10n_latam_document_type_id</code>: Tipo de documento LATAM
+- <code>narration</code>: Notas/comentarios
+- <code>fiscal_position_id</code>: Posición fiscal
+- <code>invoice_incoterm_id</code>: Términos de comercio
+- <code>company_id</code>: Empresa
+- <code>supplier_rank</code>: Ranking del proveedor
+- <code>reconciled</code>: Si está conciliado
+- <code>blocked</code>: Si está bloqueado
+- <code>full_reconcile_id</code>: ID de conciliación completa</p>
+<p><strong>Campos Expandidos en Proveedor:</strong>
+- Ciudad, teléfono, email (además de los existentes)</p>
+<p><strong>Exportación Excel Mejorada:</strong>
+- ✅ <strong>28 columnas</strong> en lugar de 11
+- ✅ Formato condicional para días vencidos (rojo si &gt; 0)
+- ✅ Color de fondo para estados (rojo: VENCIDO, verde: VIGENTE)
+- ✅ Anchos de columna optimizados
+- ✅ Alineación según tipo de dato</p>
+<h4 id="6-exportacion-excel-con-formatos-condicionales">6. <strong>Exportación Excel con Formatos Condicionales</strong> 🎨<a class="headerlink" href="#6-exportacion-excel-con-formatos-condicionales" title="Permanent link">&para;</a></h4>
+<p><strong>Formatos Implementados:</strong></p>
+<p><strong>Para Cuenta 12 (CxC):</strong>
+<div class="highlight"><pre><span></span><code><span class="c1"># Días vencidos &gt; 0: rojo y negrita</span>
+<span class="k">if</span> <span class="n">dias_vencido</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="n">cell</span><span class="o">.</span><span class="n">font</span> <span class="o">=</span> <span class="n">Font</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;FF0000&quot;</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Estado VENCIDO: fondo rojo claro</span>
+<span class="k">if</span> <span class="n">estado</span> <span class="o">==</span> <span class="s1">&#39;VENCIDO&#39;</span><span class="p">:</span>
+    <span class="n">cell</span><span class="o">.</span><span class="n">fill</span> <span class="o">=</span> <span class="n">PatternFill</span><span class="p">(</span><span class="n">start_color</span><span class="o">=</span><span class="s2">&quot;FFCCCC&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+<span class="c1"># Estado VIGENTE: fondo verde claro</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">cell</span><span class="o">.</span><span class="n">fill</span> <span class="o">=</span> <span class="n">PatternFill</span><span class="p">(</span><span class="n">start_color</span><span class="o">=</span><span class="s2">&quot;CCFFCC&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+</code></pre></div></p>
+<p><strong>Aplicado También a Cuenta 42 (CxP):</strong>
+- Mismos formatos condicionales
+- Resalta visualmente las deudas vencidas
+- Facilita identificación rápida de problemas</p>
+<hr />
+<h3 id="proximas-mejoras-sugeridas">🚀 Próximas Mejoras Sugeridas<a class="headerlink" href="#proximas-mejoras-sugeridas" title="Permanent link">&para;</a></h3>
+<h4 id="cuenta-12-cxc">Cuenta 12 (CxC)<a class="headerlink" href="#cuenta-12-cxc" title="Permanent link">&para;</a></h4>
+<ul>
+<li>[ ] Gráficos de pastel por antigüedad</li>
+<li>[ ] Exportación a PDF</li>
+<li>[ ] Filtro por vendedor específico</li>
+<li>[ ] Dashboard resumen con KPIs</li>
+</ul>
+<h4 id="cuenta-42-cxp">Cuenta 42 (CxP)<a class="headerlink" href="#cuenta-42-cxp" title="Permanent link">&para;</a></h4>
+<ul>
+<li>[x] Expandir campos como en Cuenta 12 (28 campos) ✅</li>
+<li>[ ] Agregar filtros dinámicos (tipo documento, etc.)</li>
+<li>[ ] Cálculo de mora e intereses</li>
+<li>[ ] Proyección de flujo de caja</li>
+</ul>
+<h4 id="general">General<a class="headerlink" href="#general" title="Permanent link">&para;</a></h4>
+<ul>
+<li>[ ] Sistema de notificaciones para facturas próximas a vencer</li>
+<li>[ ] Alertas automáticas para deudas vencidas</li>
+<li>[ ] Integración con email para envío de reportes</li>
+<li>[ ] API REST completa documentada con Swagger</li>
+<li>[ ] Tests unitarios automatizados</li>
+</ul>
+<hr />
+<h3 id="contacto-y-soporte">📞 Contacto y Soporte<a class="headerlink" href="#contacto-y-soporte" title="Permanent link">&para;</a></h3>
+<p><strong>Desarrollado por:</strong> Equipo Finanzas AGV<br />
+<strong>Repositorio:</strong> <code>GitHub Proyectos_AGV/Finanzas_Agv</code><br />
+<strong>Versión:</strong> 1.2.0  </p>
+<hr />
+<h3 id="notas-de-desarrollo">📝 Notas de Desarrollo<a class="headerlink" href="#notas-de-desarrollo" title="Permanent link">&para;</a></h3>
+<h4 id="lecciones-aprendidas">Lecciones Aprendidas<a class="headerlink" href="#lecciones-aprendidas" title="Permanent link">&para;</a></h4>
+<ol>
+<li><strong>DataTables mejora significativamente la UX</strong>: La paginación y búsqueda integrada facilitan el trabajo con grandes volúmenes de datos.</li>
+<li><strong>Campos calculados en backend son preferibles</strong>: Evita lógica duplicada en frontend y exportación.</li>
+<li><strong>Estilos consistentes crean cohesión visual</strong>: El uso del mismo diseño entre reportes mejora la adopción del usuario.</li>
+</ol>
+<h4 id="decisiones-tecnicas">Decisiones Técnicas<a class="headerlink" href="#decisiones-tecnicas" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Por qué 11 columnas en lugar de 25</strong>: Facilita la visualización sin scroll horizontal excesivo. Los 25 campos se mantienen para exportación.</li>
+<li><strong>Por qué DataTables</strong>: Librería madura, bien documentada, y con excelente soporte para español.</li>
+<li><strong>Por qué campos calculados en backend</strong>: Garantiza consistencia entre vista y exportación, reduce carga del cliente.</li>
+</ul>
+<hr />
+<h2 id="historial-de-versiones">📜 Historial de Versiones<a class="headerlink" href="#historial-de-versiones" title="Permanent link">&para;</a></h2>
+<h3 id="v120-noviembre-14-2025">v1.2.0 - Noviembre 14, 2025<a class="headerlink" href="#v120-noviembre-14-2025" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Interfaz simplificada para Cuenta 12</li>
+<li>Resaltado de usuario</li>
+<li>Campos calculados (días vencido, antigüedad, estado)</li>
+<li>DataTables integrado</li>
+<li>Filtros dinámicos</li>
+</ul>
+<h3 id="v110-noviembre-13-2025">v1.1.0 - Noviembre 13, 2025<a class="headerlink" href="#v110-noviembre-13-2025" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Implementación inicial de Cuenta 12</li>
+<li>25 campos completos</li>
+<li>Exportación a Excel</li>
+<li>Filtros básicos</li>
+</ul>
+<h3 id="v100-octubre-2025">v1.0.0 - Octubre 2025<a class="headerlink" href="#v100-octubre-2025" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Sistema base</li>
+<li>Login y autenticación</li>
+<li>Módulos de Cobranzas y Tesorería</li>
+<li>Integración con Odoo</li>
+</ul>
+<hr />
+<h2 id="noviembre-14-2025-noche-correcciones-ux-y-errores-criticos">📅 Noviembre 14, 2025 (Noche) - Correcciones UX y Errores Críticos<a class="headerlink" href="#noviembre-14-2025-noche-correcciones-ux-y-errores-criticos" title="Permanent link">&para;</a></h2>
+<h3 id="objetivo_2">🎯 Objetivo<a class="headerlink" href="#objetivo_2" title="Permanent link">&para;</a></h3>
+<p>Resolver problemas de UX en la interfaz (sidebar separado, scroll excesivo) y corregir error crítico en exportación a Excel.</p>
+<h3 id="problemas-identificados">🐛 <strong>Problemas Identificados</strong><a class="headerlink" href="#problemas-identificados" title="Permanent link">&para;</a></h3>
+<ol>
+<li>❌ <strong>Sidebar se separaba del navbar</strong> - Posicionamiento incorrecto</li>
+<li>❌ <strong>Página muy ancha</strong> - Scroll horizontal excesivo</li>
+<li>❌ <strong>Error Excel</strong>: <code>No se puede convertir [1322, 'Villa el Salvador'] a Excel</code></li>
+<li>❌ <strong>Navegación poco visible</strong> - Elementos fuera de vista en pantallas pequeñas</li>
+</ol>
+<h3 id="soluciones-implementadas">✅ <strong>Soluciones Implementadas</strong><a class="headerlink" href="#soluciones-implementadas" title="Permanent link">&para;</a></h3>
+<h4 id="7-sidebar-responsivo-corregido">7. <strong>Sidebar Responsivo Corregido</strong> 📱<a class="headerlink" href="#7-sidebar-responsivo-corregido" title="Permanent link">&para;</a></h4>
+<p><strong>Archivo Modificado:</strong> <code>app/templates/base.html</code></p>
+<p><strong>Cambios Aplicados:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">.</span><span class="nc">sidebar</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">position</span><span class="p">:</span><span class="w"> </span><span class="kc">fixed</span><span class="p">;</span>
+<span class="w">    </span><span class="k">left</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="k">top</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w">  </span><span class="c">/* Cambiado de top: 56px */</span>
+<span class="w">    </span><span class="k">padding-top</span><span class="p">:</span><span class="w"> </span><span class="mi">56</span><span class="kt">px</span><span class="p">;</span><span class="w">  </span><span class="c">/* Espacio para navbar */</span>
+<span class="w">    </span><span class="k">z-index</span><span class="p">:</span><span class="w"> </span><span class="mi">999</span><span class="p">;</span><span class="w">  </span><span class="c">/* Debajo del navbar */</span>
+<span class="w">    </span><span class="k">min-height</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="kt">vh</span><span class="p">;</span><span class="w">  </span><span class="c">/* Altura completa */</span>
+<span class="p">}</span>
+
+<span class="p">.</span><span class="nc">navbar</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">position</span><span class="p">:</span><span class="w"> </span><span class="kc">fixed</span><span class="p">;</span>
+<span class="w">    </span><span class="k">top</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="k">z-index</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">;</span><span class="w">  </span><span class="c">/* Encima del sidebar */</span>
+<span class="p">}</span>
+
+<span class="nt">body</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">padding-top</span><span class="p">:</span><span class="w"> </span><span class="mi">56</span><span class="kt">px</span><span class="p">;</span><span class="w">  </span><span class="c">/* Espacio para navbar fijo */</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p><strong>Responsive:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">@</span><span class="k">media</span><span class="w"> </span><span class="o">(</span><span class="nt">max-width</span><span class="o">:</span><span class="w"> </span><span class="nt">768px</span><span class="o">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">.</span><span class="nc">sidebar</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">width</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w">  </span><span class="c">/* Oculto por defecto */</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="p">.</span><span class="nc">main-content-with-sidebar</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">margin-left</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="cp">!important</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<hr />
+<h4 id="8-pagina-optimizada-sin-scroll-excesivo">8. <strong>Página Optimizada - Sin Scroll Excesivo</strong> 📏<a class="headerlink" href="#8-pagina-optimizada-sin-scroll-excesivo" title="Permanent link">&para;</a></h4>
+<p><strong>Cambios Aplicados:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">.</span><span class="nc">main-content-with-sidebar</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">margin-left</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="kt">px</span><span class="p">;</span>
+<span class="w">    </span><span class="k">padding</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="kt">px</span><span class="p">;</span>
+<span class="w">    </span><span class="k">max-width</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="kt">%</span><span class="p">;</span>
+<span class="w">    </span><span class="k">overflow-x</span><span class="p">:</span><span class="w"> </span><span class="kc">auto</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="p">.</span><span class="nc">container-fluid</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">max-width</span><span class="p">:</span><span class="w"> </span><span class="mi">1920</span><span class="kt">px</span><span class="p">;</span><span class="w">  </span><span class="c">/* Limitar ancho máximo */</span>
+<span class="w">    </span><span class="k">margin</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="kc">auto</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p><strong>Tabla Compacta:</strong>
+- Fuente reducida: <code>0.85rem</code> (antes 13px)
+- Padding optimizado: <code>6px 8px</code> (antes 10px 8px)
+- Scroll vertical contenido: <code>max-height: 65vh</code>
+- DataTables con <code>scrollX: true</code> para mejor manejo</p>
+<p><strong>Filtros Mejorados:</strong>
+- Display flex con <code>flex-wrap</code>
+- Gap de 10px entre elementos
+- Min-width: 150px por filtro
+- 100% width en móviles</p>
+<hr />
+<h4 id="9-error-excel-corregido">9. <strong>Error Excel Corregido</strong> ✅<a class="headerlink" href="#9-error-excel-corregido" title="Permanent link">&para;</a></h4>
+<p><strong>Archivo Modificado:</strong> <code>app/exports/excel_service.py</code></p>
+<p><strong>Problema:</strong>
+<div class="highlight"><pre><span></span><code><span class="c1"># Odoo retorna campos Many2One como: [1322, &#39;Villa el Salvador&#39;]</span>
+<span class="c1"># Excel no puede escribir listas directamente</span>
+</code></pre></div></p>
+<p><strong>Solución Implementada:</strong>
+<div class="highlight"><pre><span></span><code><span class="c1"># Convertir valores Many2One (listas) a string</span>
+<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>  <span class="c1"># Extraer el nombre</span>
+<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">if</span> <span class="n">value</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+
+<span class="c1"># Convertir None a cadena vacía</span>
+<span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+</code></pre></div></p>
+<p><strong>Aplicado a:</strong>
+- ✅ <code>export_collections_report()</code> (Cuenta 12)
+- ✅ <code>export_treasury_report()</code> (Cuenta 42)</p>
+<p><strong>Resultado:</strong>
+- Ya no falla con campos Many2One
+- Extrae automáticamente el nombre legible
+- Maneja casos edge (None, listas vacías)</p>
+<hr />
+<h4 id="10-datatables-mejorado">10. <strong>DataTables Mejorado</strong> 📊<a class="headerlink" href="#10-datatables-mejorado" title="Permanent link">&para;</a></h4>
+<p><strong>Configuración Avanzada:</strong>
+<div class="highlight"><pre><span></span><code><span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#reportTable&#39;</span><span class="p">).</span><span class="nx">DataTable</span><span class="p">({</span>
+<span class="w">    </span><span class="nx">pageLength</span><span class="o">:</span><span class="w"> </span><span class="mf">25</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">order</span><span class="o">:</span><span class="w"> </span><span class="p">[[</span><span class="mf">8</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;desc&#39;</span><span class="p">]],</span>
+<span class="w">    </span><span class="nx">responsive</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">scrollX</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">  </span><span class="c1">// Scroll horizontal suave</span>
+<span class="w">    </span><span class="nx">scrollCollapse</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">fixedHeader</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">  </span><span class="c1">// Header fijo al scroll</span>
+<span class="w">    </span><span class="nx">columnDefs</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="nx">targets</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="mf">6</span><span class="p">,</span><span class="w"> </span><span class="mf">7</span><span class="p">],</span><span class="w"> </span><span class="nx">className</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;text-end&#39;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="nx">targets</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="mf">8</span><span class="p">],</span><span class="w"> </span><span class="nx">className</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;text-center&#39;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="nx">targets</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="mf">9</span><span class="p">,</span><span class="w"> </span><span class="mf">10</span><span class="p">],</span><span class="w"> </span><span class="nx">className</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;text-center&#39;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">});</span>
+</code></pre></div></p>
+<p><strong>Mejoras:</strong>
+- Header fijo al hacer scroll
+- Scroll horizontal suave
+- Columnas colapsables en móvil
+- Alineación automática por tipo</p>
+<hr />
+<h3 id="estadisticas-de-correcciones">📊 <strong>Estadísticas de Correcciones</strong><a class="headerlink" href="#estadisticas-de-correcciones" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Problema</th>
+<th>Estado</th>
+<th>Impacto</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sidebar separado</td>
+<td>✅ Corregido</td>
+<td>Alto - Afectaba navegación</td>
+</tr>
+<tr>
+<td>Scroll excesivo</td>
+<td>✅ Corregido</td>
+<td>Alto - UX pobre</td>
+</tr>
+<tr>
+<td>Error Excel</td>
+<td>✅ Corregido</td>
+<td>Crítico - Bloqueaba exportación</td>
+</tr>
+<tr>
+<td>Navegación móvil</td>
+<td>✅ Mejorado</td>
+<td>Medio - Responsive completo</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="pruebas-realizadas_1">🧪 <strong>Pruebas Realizadas</strong><a class="headerlink" href="#pruebas-realizadas_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Sidebar no se separa del navbar</li>
+<li>[x] Navbar fijo al hacer scroll</li>
+<li>[x] Página no requiere scroll horizontal excesivo</li>
+<li>[x] Exportación Excel funciona sin errores</li>
+<li>[x] Campos Many2One se convierten correctamente</li>
+<li>[x] DataTables scrollable horizontalmente</li>
+<li>[x] Responsive en móviles (&lt; 768px)</li>
+<li>[x] Filtros se adaptan a pantallas pequeñas</li>
+</ul>
+<hr />
+<h3 id="mejoras-ux-implementadas">🎨 <strong>Mejoras UX Implementadas</strong><a class="headerlink" href="#mejoras-ux-implementadas" title="Permanent link">&para;</a></h3>
+<ol>
+<li>✅ <strong>Navegación fija</strong>: Navbar y sidebar siempre visibles</li>
+<li>✅ <strong>Contenido centrado</strong>: Max-width 1920px</li>
+<li>✅ <strong>Tabla compacta</strong>: Fuentes más pequeñas, mejor densidad</li>
+<li>✅ <strong>Scroll inteligente</strong>: Vertical en tabla, horizontal suave</li>
+<li>✅ <strong>Responsive completo</strong>: Adaptación a móviles</li>
+<li>✅ <strong>DataTables avanzado</strong>: Fixed header, scroll collapse</li>
+</ol>
+<hr />
+<h3 id="lecciones-aprendidas_1">💡 <strong>Lecciones Aprendidas</strong><a class="headerlink" href="#lecciones-aprendidas_1" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Z-index correcto es crucial</strong>: Navbar (1000) &gt; Sidebar (999)</li>
+<li><strong>Posicionamiento fixed</strong>: Requiere padding-top en body</li>
+<li><strong>Many2One de Odoo</strong>: Siempre validar formato antes de exportar</li>
+<li><strong>DataTables</strong>: <code>scrollX: true</code> + <code>responsive: true</code> = mejor UX</li>
+<li><strong>Max-width en contenedores</strong>: Evita páginas excesivamente anchas</li>
+</ol>
+<hr />
+<h3 id="codigo-clave">🔧 <strong>Código Clave</strong><a class="headerlink" href="#codigo-clave" title="Permanent link">&para;</a></h3>
+<p><strong>Conversión Many2One Segura:</strong>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">safe_convert_m2o</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convierte campos Many2One a string de forma segura.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>  <span class="c1"># Nombre</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">and</span> <span class="n">value</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>  <span class="c1"># ID</span>
+    <span class="k">return</span> <span class="s1">&#39;&#39;</span>  <span class="c1"># Vacío si None o lista vacía</span>
+</code></pre></div></p>
+<hr />
+<h2 id="noviembre-14-2025-final-mejora-visual-del-usuario">📅 Noviembre 14, 2025 (Final) - Mejora Visual del Usuario<a class="headerlink" href="#noviembre-14-2025-final-mejora-visual-del-usuario" title="Permanent link">&para;</a></h2>
+<h3 id="objetivo_3">🎯 Objetivo<a class="headerlink" href="#objetivo_3" title="Permanent link">&para;</a></h3>
+<p>Mejorar la visualización del usuario en el navbar para que sea más elegante, combine con la paleta de colores y no genere ruido visual.</p>
+<h3 id="problema-identificado">🐛 <strong>Problema Identificado</strong><a class="headerlink" href="#problema-identificado" title="Permanent link">&para;</a></h3>
+<p>El usuario destacado con degradado dorado generaba <strong>ruido visual</strong> excesivo:
+- ❌ Colores muy llamativos (dorado brillante)
+- ❌ No seguía la paleta corporativa (#714B67)
+- ❌ Distraía del contenido principal</p>
+<hr />
+<h3 id="solucion-implementada">✅ <strong>Solución Implementada</strong><a class="headerlink" href="#solucion-implementada" title="Permanent link">&para;</a></h3>
+<h4 id="11-usuario-elegante-y-discreto">11. <strong>Usuario Elegante y Discreto</strong> 🎨<a class="headerlink" href="#11-usuario-elegante-y-discreto" title="Permanent link">&para;</a></h4>
+<p><strong>Archivos Modificados:</strong>
+- <code>app/templates/base.html</code>
+- <code>app/web/routes.py</code></p>
+<p><strong>Cambios en Diseño:</strong></p>
+<p><strong>Antes (Dorado llamativo):</strong>
+<div class="highlight"><pre><span></span><code><span class="p">.</span><span class="nc">user-highlight</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">background</span><span class="p">:</span><span class="w"> </span><span class="nb">linear-gradient</span><span class="p">(</span><span class="mi">135</span><span class="kt">deg</span><span class="p">,</span><span class="w"> </span><span class="mh">#ffd700</span><span class="w"> </span><span class="mi">0</span><span class="kt">%</span><span class="p">,</span><span class="w"> </span><span class="mh">#ffed4e</span><span class="w"> </span><span class="mi">100</span><span class="kt">%</span><span class="p">);</span>
+<span class="w">    </span><span class="k">color</span><span class="p">:</span><span class="w"> </span><span class="mh">#2c3e50</span><span class="p">;</span>
+<span class="w">    </span><span class="k">box-shadow</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">2</span><span class="kt">px</span><span class="w"> </span><span class="mi">8</span><span class="kt">px</span><span class="w"> </span><span class="nb">rgba</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">215</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p><strong>Después (Sutil y elegante):</strong>
+<div class="highlight"><pre><span></span><code><span class="p">.</span><span class="nc">user-highlight</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">background</span><span class="p">:</span><span class="w"> </span><span class="nb">rgba</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mf">0.15</span><span class="p">);</span><span class="w">  </span><span class="c">/* Translúcido */</span>
+<span class="w">    </span><span class="k">color</span><span class="p">:</span><span class="w"> </span><span class="mh">#ffffff</span><span class="p">;</span><span class="w">                          </span><span class="c">/* Blanco */</span>
+<span class="w">    </span><span class="k">border</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="kt">px</span><span class="w"> </span><span class="kc">solid</span><span class="w"> </span><span class="nb">rgba</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">);</span>
+<span class="w">    </span><span class="n">backdrop-filter</span><span class="p">:</span><span class="w"> </span><span class="nb">blur</span><span class="p">(</span><span class="mi">10</span><span class="kt">px</span><span class="p">);</span><span class="w">             </span><span class="c">/* Efecto glassmorphism */</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p><strong>Características:</strong>
+- ✅ <strong>Translúcido</strong>: Se integra con el navbar
+- ✅ <strong>Glassmorphism</strong>: Efecto moderno de vidrio esmerilado
+- ✅ <strong>Hover suave</strong>: Transición elegante
+- ✅ <strong>Paleta coherente</strong>: Combina con #714B67</p>
+<hr />
+<h4 id="12-dropdown-de-usuario-premium">12. <strong>Dropdown de Usuario Premium</strong> 💎<a class="headerlink" href="#12-dropdown-de-usuario-premium" title="Permanent link">&para;</a></h4>
+<p><strong>Nuevo Diseño del Dropdown:</strong></p>
+<p><strong>Header del Dropdown:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">.</span><span class="nc">user-dropdown</span><span class="w"> </span><span class="p">.</span><span class="nc">dropdown-header</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">background</span><span class="p">:</span><span class="w"> </span><span class="nb">linear-gradient</span><span class="p">(</span><span class="mi">135</span><span class="kt">deg</span><span class="p">,</span><span class="w"> </span><span class="mh">#714B67</span><span class="w"> </span><span class="mi">0</span><span class="kt">%</span><span class="p">,</span><span class="w"> </span><span class="mh">#875A7B</span><span class="w"> </span><span class="mi">100</span><span class="kt">%</span><span class="p">);</span>
+<span class="w">    </span><span class="c">/* Usa los colores corporativos */</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p><strong>Contenido:</strong>
+- ✅ Ícono grande del usuario (2.5rem)
+- ✅ Nombre en negrita
+- ✅ <strong>Email del usuario</strong> (nuevo)
+- ✅ Separador visual
+- ✅ Botón "Cerrar Sesión" con hover effect</p>
+<p><strong>Estructura HTML:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;user-info-dropdown&quot;</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">i</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;bi bi-person-circle&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">i</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;user-details&quot;</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">strong</span><span class="p">&gt;</span>{{ session.username }}<span class="p">&lt;/</span><span class="nt">strong</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">small</span><span class="p">&gt;</span>{{ session.email }}<span class="p">&lt;/</span><span class="nt">small</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+</code></pre></div></p>
+<p><strong>Estilos Clave:</strong>
+- Min-width: 280px
+- Border-radius: 12px (esquinas redondeadas)
+- Box-shadow: Sombra suave
+- Hover en items: Padding animado</p>
+<hr />
+<h4 id="13-email-del-usuario-implementado">13. <strong>Email del Usuario Implementado</strong> 📧<a class="headerlink" href="#13-email-del-usuario-implementado" title="Permanent link">&para;</a></h4>
+<p><strong>Backend Update:</strong>
+<div class="highlight"><pre><span></span><code><span class="c1"># En app/web/routes.py</span>
+<span class="n">session</span><span class="p">[</span><span class="s1">&#39;email&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">username</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;.&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">@agrovet.com.pe&quot;</span>
+</code></pre></div></p>
+<p><strong>Formato de Email Generado:</strong>
+- Usuario: "Juan Pérez" → Email: "juan.pérez@agrovet.com.pe"
+- Usuario: "admin" → Email: "admin@agrovet.com.pe"</p>
+<p><strong>Ubicación en UI:</strong>
+- Visible solo en el dropdown (al hacer clic)
+- Color gris suave (text-muted)
+- Tamaño pequeño (0.85rem)
+- No genera ruido visual</p>
+<hr />
+<h3 id="comparacion-visual">🎨 <strong>Comparación Visual</strong><a class="headerlink" href="#comparacion-visual" title="Permanent link">&para;</a></h3>
+<h4 id="antes">Antes:<a class="headerlink" href="#antes" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>[🟡 USUARIO DORADO BRILLANTE 🟡] ← Muy llamativo
+</code></pre></div>
+<h4 id="despues">Después:<a class="headerlink" href="#despues" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>👤 [ Usuario ] ← Sutil y elegante
+    ↓ (click)
+┌─────────────────────────┐
+│ 👤 Usuario              │ ← Header con color corporativo
+│    usuario@agrovet.pe   │
+├─────────────────────────┤
+│ → Cerrar Sesión         │
+└─────────────────────────┘
+</code></pre></div>
+<hr />
+<h3 id="mejoras-en-paleta-de-colores">📊 <strong>Mejoras en Paleta de Colores</strong><a class="headerlink" href="#mejoras-en-paleta-de-colores" title="Permanent link">&para;</a></h3>
+<p><strong>Navbar:</strong>
+- Color principal: <code>#714B67</code> (Púrpura corporativo)
+- Usuario: <code>rgba(255, 255, 255, 0.15)</code> (Translúcido)
+- Texto: <code>#ffffff</code> (Blanco)</p>
+<p><strong>Dropdown:</strong>
+- Header: <code>linear-gradient(135deg, #714B67, #875A7B)</code>
+- Fondo: <code>#ffffff</code>
+- Hover: <code>#f8f9fa</code> → <code>#714B67</code></p>
+<p><strong>Coherencia Total:</strong>
+✅ Todos los elementos usan la paleta corporativa
+✅ No hay colores que desentonen
+✅ Jerarquía visual clara</p>
+<hr />
+<h3 id="pruebas-ux">🧪 <strong>Pruebas UX</strong><a class="headerlink" href="#pruebas-ux" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Usuario visible pero no distractivo ✅</li>
+<li>[x] Dropdown se abre correctamente ✅</li>
+<li>[x] Email se muestra en formato elegante ✅</li>
+<li>[x] Hover effects funcionan suavemente ✅</li>
+<li>[x] Responsive en móviles ✅</li>
+<li>[x] Paleta de colores coherente ✅</li>
+<li>[x] Glassmorphism funciona en navegadores modernos ✅</li>
+</ul>
+<hr />
+<h3 id="decisiones-de-diseno">💡 <strong>Decisiones de Diseño</strong><a class="headerlink" href="#decisiones-de-diseno" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Por qué glassmorphism:</strong></li>
+<li>Tendencia moderna de diseño</li>
+<li>Se integra naturalmente con el navbar</li>
+<li>
+<p>Efecto premium sin ser intrusivo</p>
+</li>
+<li>
+<p><strong>Por qué el email solo en dropdown:</strong></p>
+</li>
+<li>Evita cluttering en navbar</li>
+<li>Disponible cuando se necesita</li>
+<li>
+<p>No genera ruido visual constante</p>
+</li>
+<li>
+<p><strong>Por qué translúcido en lugar de dorado:</strong></p>
+</li>
+<li>Dorado es muy llamativo para uso corporativo</li>
+<li>Translúcido es elegante y profesional</li>
+<li>Mejor para uso prolongado (menos cansancio visual)</li>
+</ol>
+<hr />
+<h3 id="codigo-destacado">🔧 <strong>Código Destacado</strong><a class="headerlink" href="#codigo-destacado" title="Permanent link">&para;</a></h3>
+<p><strong>Efecto Glassmorphism:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">.</span><span class="nc">user-highlight</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">background</span><span class="p">:</span><span class="w"> </span><span class="nb">rgba</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mf">0.15</span><span class="p">);</span>
+<span class="w">    </span><span class="n">backdrop-filter</span><span class="p">:</span><span class="w"> </span><span class="nb">blur</span><span class="p">(</span><span class="mi">10</span><span class="kt">px</span><span class="p">);</span><span class="w">  </span><span class="c">/* Clave para efecto vidrio */</span>
+<span class="w">    </span><span class="k">border</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="kt">px</span><span class="w"> </span><span class="kc">solid</span><span class="w"> </span><span class="nb">rgba</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p><strong>Hover Animado en Dropdown:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">.</span><span class="nc">user-dropdown</span><span class="w"> </span><span class="p">.</span><span class="nc">dropdown-item</span><span class="p">:</span><span class="nd">hover</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">background-color</span><span class="p">:</span><span class="w"> </span><span class="mh">#f8f9fa</span><span class="p">;</span>
+<span class="w">    </span><span class="k">color</span><span class="p">:</span><span class="w"> </span><span class="mh">#714B67</span><span class="p">;</span>
+<span class="w">    </span><span class="k">padding-left</span><span class="p">:</span><span class="w"> </span><span class="mi">24</span><span class="kt">px</span><span class="p">;</span><span class="w">  </span><span class="c">/* Se desplaza suavemente */</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<hr />
+<h3 id="impacto-en-ux">📈 <strong>Impacto en UX</strong><a class="headerlink" href="#impacto-en-ux" title="Permanent link">&para;</a></h3>
+<p><strong>Antes:</strong>
+- ⚠️ Usuario muy visible (distracción)
+- ⚠️ Colores no corporativos
+- ⚠️ Sin información de contacto</p>
+<p><strong>Después:</strong>
+- ✅ Usuario discreto pero accesible
+- ✅ 100% paleta corporativa
+- ✅ Email disponible cuando se necesita
+- ✅ Efecto premium (glassmorphism)
+- ✅ Mejor experiencia prolongada</p>
+<hr />
+<h3 id="resultado-final">🎯 <strong>Resultado Final</strong><a class="headerlink" href="#resultado-final" title="Permanent link">&para;</a></h3>
+<p><strong>Interface del Usuario:</strong>
+1. ✅ <strong>Navbar</strong>: Usuario translúcido con efecto glassmorphism
+2. ✅ <strong>Dropdown</strong>: Card elegante con degradado corporativo
+3. ✅ <strong>Email</strong>: Visible en dropdown, formato profesional
+4. ✅ <strong>Hover</strong>: Transiciones suaves y naturales
+5. ✅ <strong>Paleta</strong>: 100% coherente con colores corporativos</p>
+<p><strong>Sin Ruido Visual:</strong>
+- Elementos discretos pero accesibles
+- Jerarquía visual clara
+- Colores armoniosos
+- Transiciones suaves</p>
+<hr />
+<p><strong>FIN DE BITÁCORA - Noviembre 14, 2025</strong></p>
+<p><strong>Resumen Total del Día:</strong>
+- ✅ 13 mejoras implementadas
+- ✅ 4 errores críticos corregidos
+- ✅ UX completamente optimizada
+- ✅ Paleta de colores coherente
+- ✅ Sistema responsive completo
+- ✅ Documentación exhaustiva</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Volver al principio
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.copy", "toc.follow"], "search": "../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado al portapapeles", "clipboard.copy": "Copiar al portapapeles", "search.result.more.one": "1 m\u00e1s en esta p\u00e1gina", "search.result.more.other": "# m\u00e1s en esta p\u00e1gina", "search.result.none": "No se encontraron documentos", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Teclee para comenzar b\u00fasqueda", "search.result.term.missing": "Falta", "select.version": "Seleccionar versi\u00f3n"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+    
+  </body>
+</html>

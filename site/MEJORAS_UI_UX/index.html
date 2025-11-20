@@ -1,0 +1,2431 @@
+
+<!doctype html>
+<html lang="es" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentación técnica y funcional del proyecto Finanzas AGV">
+      
+      
+      
+      
+        <link rel="prev" href="../CAMBIOS_LOGIN/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="https://agrovetmarket.com/wp-content/uploads/2021/04/cropped-favicon-32x32.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Mejoras UI/UX - Documentación Finanzas AGV</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#mejoras-de-uiux-implementadas" class="md-skip">
+          Saltar a contenido
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabecera">
+    <a href=".." title="Documentación Finanzas AGV" class="md-header__button md-logo" aria-label="Documentación Finanzas AGV" data-md-component="logo">
+      
+  <img src="https://agrovetmarket.com/wp-content/uploads/2021/04/cropped-favicon-32x32.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Documentación Finanzas AGV
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Mejoras UI/UX
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="indigo"  aria-label="Cambiar a modo oscuro"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Cambiar a modo oscuro" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="indigo"  aria-label="Cambiar a modo claro"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Cambiar a modo claro" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Búsqueda" placeholder="Búsqueda" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Buscar">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Compartir" aria-label="Compartir" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Limpiar" aria-label="Limpiar" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Inicializando búsqueda
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Pestañas" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  🏠 Inicio
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../resumen-ejecutivo/" class="md-tabs__link">
+          
+  
+  
+  📊 Para Gerencia
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../PROYECTO_COMPLETO/" class="md-tabs__link">
+          
+  
+  
+  📂 Proyecto
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../automatizacion-cicd/" class="md-tabs__link">
+          
+  
+  
+  🤖 Automatización
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../adrs/index_adrs/" class="md-tabs__link">
+          
+  
+  
+  📋 Decisiones (ADRs)
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../runbooks/index_runbooks/" class="md-tabs__link">
+          
+  
+  
+  🔧 Operaciones (Runbooks)
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../INICIO_RAPIDO_COMPLETO/" class="md-tabs__link">
+          
+  
+  
+  🚀 Guías
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../CAMBIOS_LOGIN/" class="md-tabs__link">
+          
+  
+  
+  🛠️ Técnico
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navegación" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Documentación Finanzas AGV" class="md-nav__button md-logo" aria-label="Documentación Finanzas AGV" data-md-component="logo">
+      
+  <img src="https://agrovetmarket.com/wp-content/uploads/2021/04/cropped-favicon-32x32.png" alt="logo">
+
+    </a>
+    Documentación Finanzas AGV
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    🏠 Inicio
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    📊 Para Gerencia
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    📊 Para Gerencia
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resumen-ejecutivo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resumen Ejecutivo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../c4model/index_c4model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitectura (Vista C1)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    📂 Proyecto
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    📂 Proyecto
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PROYECTO_COMPLETO/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visión General
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ESTRUCTURA_PROYECTO/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Estructura
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../BITACORA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bitácora
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    🤖 Automatización
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    🤖 Automatización
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../automatizacion-cicd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Flujo CI/CD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../github-pages-setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Activar GitHub Pages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    📋 Decisiones (ADRs)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    📋 Decisiones (ADRs)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/index_adrs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Índice
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plantilla
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/0001-uso-mkdocs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-001 MkDocs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    🔧 Operaciones (Runbooks)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    🔧 Operaciones (Runbooks)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runbooks/index_runbooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Índice
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runbooks/rb-001-deploy-prod/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RB-001 Despliegue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runbooks/rb-002-db-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RB-002 Base de Datos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runbooks/rb-101-odoo-connection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RB-101 Conexión Odoo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runbooks/rb-102-email-failure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RB-102 Envío Correos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    🚀 Guías
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    🚀 Guías
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../INICIO_RAPIDO_COMPLETO/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inicio Rápido
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../INSTRUCCIONES_INICIO_RAPIDO/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Instrucciones
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CONTRIBUTING/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contribuir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    🛠️ Técnico
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    🛠️ Técnico
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CAMBIOS_LOGIN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cambios Login
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mejoras UI/UX
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mejoras UI/UX
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Tabla de contenidos">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Tabla de contenidos
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#cambios-realizados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Cambios Realizados
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="✅ Cambios Realizados">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-sidebar-responsivo-con-hover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Sidebar Responsivo con Hover 🎯
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Sidebar Responsivo con Hover 🎯">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#comportamiento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comportamiento:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#caracteristicas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Características:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#como-funciona" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cómo funciona:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-paginas-en-progreso-para-rutas-sin-implementar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Páginas "En Progreso" para Rutas Sin Implementar 🛠️
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Páginas &#34;En Progreso&#34; para Rutas Sin Implementar 🛠️">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#paginas-que-muestran-en-progreso" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Páginas que muestran "En Progreso":
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#caracteristicas-de-la-pagina" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Características de la página:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vista-previa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vista previa:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#beneficios-de-las-mejoras" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 Beneficios de las Mejoras
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🎯 Beneficios de las Mejoras">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sidebar-responsivo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sidebar Responsivo:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#paginas-en-progreso" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Páginas "En Progreso":
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#responsive-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📱 Responsive Design
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📱 Responsive Design">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sidebar-en-diferentes-dispositivos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sidebar en diferentes dispositivos:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#elementos-de-diseno" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎨 Elementos de Diseño
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🎨 Elementos de Diseño">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#iconos-utilizados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Iconos Utilizados:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#colores-paleta-odoo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Colores (Paleta Odoo):
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proximas-mejoras-sugeridas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 Próximas Mejoras Sugeridas
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🚀 Próximas Mejoras Sugeridas">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sidebar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sidebar:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#paginas-en-progreso_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Páginas en Progreso:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#archivos-modificados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📂 Archivos Modificados
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#como-probar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎓 Cómo Probar
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resultado-final" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✨ Resultado Final
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="✨ Resultado Final">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#antes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Antes:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#despues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Después:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Tabla de contenidos">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Tabla de contenidos
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#cambios-realizados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Cambios Realizados
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="✅ Cambios Realizados">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-sidebar-responsivo-con-hover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Sidebar Responsivo con Hover 🎯
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Sidebar Responsivo con Hover 🎯">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#comportamiento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comportamiento:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#caracteristicas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Características:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#como-funciona" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cómo funciona:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-paginas-en-progreso-para-rutas-sin-implementar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Páginas "En Progreso" para Rutas Sin Implementar 🛠️
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Páginas &#34;En Progreso&#34; para Rutas Sin Implementar 🛠️">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#paginas-que-muestran-en-progreso" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Páginas que muestran "En Progreso":
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#caracteristicas-de-la-pagina" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Características de la página:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vista-previa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vista previa:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#beneficios-de-las-mejoras" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 Beneficios de las Mejoras
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🎯 Beneficios de las Mejoras">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sidebar-responsivo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sidebar Responsivo:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#paginas-en-progreso" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Páginas "En Progreso":
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#responsive-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📱 Responsive Design
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📱 Responsive Design">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sidebar-en-diferentes-dispositivos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sidebar en diferentes dispositivos:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#elementos-de-diseno" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎨 Elementos de Diseño
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🎨 Elementos de Diseño">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#iconos-utilizados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Iconos Utilizados:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#colores-paleta-odoo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Colores (Paleta Odoo):
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proximas-mejoras-sugeridas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 Próximas Mejoras Sugeridas
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🚀 Próximas Mejoras Sugeridas">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sidebar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sidebar:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#paginas-en-progreso_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Páginas en Progreso:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#archivos-modificados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📂 Archivos Modificados
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#como-probar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎓 Cómo Probar
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resultado-final" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✨ Resultado Final
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="✨ Resultado Final">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#antes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Antes:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#despues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Después:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="mejoras-de-uiux-implementadas">🎨 Mejoras de UI/UX Implementadas<a class="headerlink" href="#mejoras-de-uiux-implementadas" title="Permanent link">&para;</a></h1>
+<h2 id="cambios-realizados">✅ Cambios Realizados<a class="headerlink" href="#cambios-realizados" title="Permanent link">&para;</a></h2>
+<h3 id="1-sidebar-responsivo-con-hover">1. <strong>Sidebar Responsivo con Hover</strong> 🎯<a class="headerlink" href="#1-sidebar-responsivo-con-hover" title="Permanent link">&para;</a></h3>
+<p>El menú lateral ahora es inteligente y se adapta automáticamente:</p>
+<h4 id="comportamiento">Comportamiento:<a class="headerlink" href="#comportamiento" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Estado normal:</strong> 60px de ancho (solo iconos visibles)</li>
+<li><strong>Al pasar el mouse:</strong> Se expande a 250px mostrando textos completos</li>
+<li><strong>Transición suave:</strong> Animación de 0.3 segundos</li>
+<li><strong>Contenido adaptativo:</strong> El área principal se ajusta automáticamente</li>
+</ul>
+<h4 id="caracteristicas">Características:<a class="headerlink" href="#caracteristicas" title="Permanent link">&para;</a></h4>
+<ul>
+<li>✅ <strong>Ahorra espacio</strong>: Más área para contenido</li>
+<li>✅ <strong>Iconos siempre visibles</strong>: Navegación intuitiva</li>
+<li>✅ <strong>Expansión automática</strong>: Solo cuando necesitas leer</li>
+<li>✅ <strong>Animación fluida</strong>: Transición CSS elegante</li>
+<li>✅ <strong>Posición fija</strong>: El sidebar permanece visible al hacer scroll</li>
+</ul>
+<h4 id="como-funciona">Cómo funciona:<a class="headerlink" href="#como-funciona" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="c">/* Estado contraído */</span>
+<span class="p">.</span><span class="nc">sidebar</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">width</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="kt">px</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c">/* Estado expandido (hover) */</span>
+<span class="p">.</span><span class="nc">sidebar</span><span class="p">:</span><span class="nd">hover</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">width</span><span class="p">:</span><span class="w"> </span><span class="mi">250</span><span class="kt">px</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c">/* Textos ocultos por defecto */</span>
+<span class="p">.</span><span class="nc">sidebar</span><span class="w"> </span><span class="p">.</span><span class="nc">nav-link</span><span class="w"> </span><span class="nt">span</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">opacity</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c">/* Textos visibles al hover */</span>
+<span class="p">.</span><span class="nc">sidebar</span><span class="p">:</span><span class="nd">hover</span><span class="w"> </span><span class="p">.</span><span class="nc">nav-link</span><span class="w"> </span><span class="nt">span</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">opacity</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+<hr />
+<h3 id="2-paginas-en-progreso-para-rutas-sin-implementar">2. <strong>Páginas "En Progreso" para Rutas Sin Implementar</strong> 🛠️<a class="headerlink" href="#2-paginas-en-progreso-para-rutas-sin-implementar" title="Permanent link">&para;</a></h3>
+<p>Ahora todas las rutas sin implementar muestran una página amigable:</p>
+<h4 id="paginas-que-muestran-en-progreso">Páginas que muestran "En Progreso":<a class="headerlink" href="#paginas-que-muestran-en-progreso" title="Permanent link">&para;</a></h4>
+<ul>
+<li>✅ Reporte Nacional</li>
+<li>✅ Reporte Internacional</li>
+<li>✅ Dashboard Cobranzas</li>
+<li>✅ Dashboard Tesorería</li>
+<li>✅ Letras por Recuperar</li>
+<li>✅ Letras en Banco</li>
+<li>✅ Enviar Detracciones</li>
+<li>✅ Dashboard Interdepartamental</li>
+</ul>
+<h4 id="caracteristicas-de-la-pagina">Características de la página:<a class="headerlink" href="#caracteristicas-de-la-pagina" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Icono animado</strong>: Herramienta que rota suavemente</li>
+<li><strong>Mensaje claro</strong>: "Página en Desarrollo"</li>
+<li><strong>Estado visible</strong>: "En Progreso de Implementación"</li>
+<li><strong>Navegación fácil</strong>: Botón para volver al Dashboard</li>
+<li><strong>Diseño profesional</strong>: Sin errores técnicos visibles</li>
+</ul>
+<h4 id="vista-previa">Vista previa:<a class="headerlink" href="#vista-previa" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>┌──────────────────────────────────┐
+│                                  │
+│          🔧 (girando)            │
+│                                  │
+│    Página en Desarrollo          │
+│                                  │
+│  Esta funcionalidad está siendo  │
+│     implementada. Pronto         │
+│    estará disponible.            │
+│                                  │
+│  ℹ️  Estado: En Progreso         │
+│                                  │
+│    [🏠 Volver al Dashboard]      │
+│                                  │
+└──────────────────────────────────┘
+</code></pre></div>
+<hr />
+<h2 id="beneficios-de-las-mejoras">🎯 Beneficios de las Mejoras<a class="headerlink" href="#beneficios-de-las-mejoras" title="Permanent link">&para;</a></h2>
+<h3 id="sidebar-responsivo">Sidebar Responsivo:<a class="headerlink" href="#sidebar-responsivo" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Más espacio útil</strong>: 190px adicionales para mostrar datos</li>
+<li><strong>Mejor UX</strong>: Solo se expande cuando lo necesitas</li>
+<li><strong>Navegación intuitiva</strong>: Iconos reconocibles</li>
+<li><strong>Aspecto profesional</strong>: Similar a apps modernas (VS Code, Discord)</li>
+<li><strong>Sin perder funcionalidad</strong>: Todos los enlaces accesibles</li>
+</ol>
+<h3 id="paginas-en-progreso">Páginas "En Progreso":<a class="headerlink" href="#paginas-en-progreso" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>No más errores 404</strong>: Experiencia profesional</li>
+<li><strong>Comunicación clara</strong>: Usuario sabe que viene pronto</li>
+<li><strong>Navegación fluida</strong>: Fácil volver al inicio</li>
+<li><strong>Aspecto pulido</strong>: Sistema parece completo</li>
+<li><strong>Confianza del usuario</strong>: Saben que está en desarrollo activo</li>
+</ol>
+<hr />
+<h2 id="responsive-design">📱 Responsive Design<a class="headerlink" href="#responsive-design" title="Permanent link">&para;</a></h2>
+<h3 id="sidebar-en-diferentes-dispositivos">Sidebar en diferentes dispositivos:<a class="headerlink" href="#sidebar-en-diferentes-dispositivos" title="Permanent link">&para;</a></h3>
+<p><strong>Desktop (&gt;768px):</strong>
+- Contraído: 60px
+- Expandido: 250px al hover
+- Contenido se ajusta automáticamente</p>
+<p><strong>Tablet/Mobile (&lt;768px):</strong>
+- Se oculta por defecto
+- Puede activarse con botón hamburguesa (futuro)</p>
+<hr />
+<h2 id="elementos-de-diseno">🎨 Elementos de Diseño<a class="headerlink" href="#elementos-de-diseno" title="Permanent link">&para;</a></h2>
+<h3 id="iconos-utilizados">Iconos Utilizados:<a class="headerlink" href="#iconos-utilizados" title="Permanent link">&para;</a></h3>
+<ul>
+<li>🏠 <code>bi-speedometer2</code> - Dashboard</li>
+<li>📄 <code>bi-file-earmark-text</code> - Reportes</li>
+<li>🌐 <code>bi-globe</code> - Internacional</li>
+<li>🏳️ <code>bi-flag</code> - Nacional</li>
+<li>📊 <code>bi-bar-chart</code> - Dashboards</li>
+<li>✉️ <code>bi-envelope</code> - Letras</li>
+<li>📤 <code>bi-send</code> - Detracciones</li>
+</ul>
+<h3 id="colores-paleta-odoo">Colores (Paleta Odoo):<a class="headerlink" href="#colores-paleta-odoo" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Primary</strong>: <code>#714B67</code> (púrpura)</li>
+<li><strong>Hover</strong>: <code>#5a3a52</code> (púrpura oscuro)</li>
+<li><strong>Active</strong>: <code>#714B67</code> con fondo</li>
+</ul>
+<hr />
+<h2 id="proximas-mejoras-sugeridas">🚀 Próximas Mejoras Sugeridas<a class="headerlink" href="#proximas-mejoras-sugeridas" title="Permanent link">&para;</a></h2>
+<h3 id="sidebar">Sidebar:<a class="headerlink" href="#sidebar" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[ ] Botón para fijar/desfijar sidebar</li>
+<li>[ ] Versión móvil con overlay</li>
+<li>[ ] Tooltips en iconos cuando está contraído</li>
+<li>[ ] Indicador visual de página activa mejorado</li>
+</ul>
+<h3 id="paginas-en-progreso_1">Páginas en Progreso:<a class="headerlink" href="#paginas-en-progreso_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[ ] Progress bar de implementación</li>
+<li>[ ] Fecha estimada de disponibilidad</li>
+<li>[ ] Formulario para solicitar prioridad</li>
+</ul>
+<hr />
+<h2 id="archivos-modificados">📂 Archivos Modificados<a class="headerlink" href="#archivos-modificados" title="Permanent link">&para;</a></h2>
+<ol>
+<li>✅ <code>app/templates/base.html</code></li>
+<li>Estilos CSS del sidebar responsivo</li>
+<li>Estructura HTML actualizada</li>
+<li>
+<p>Animaciones y transiciones</p>
+</li>
+<li>
+<p>✅ <code>app/templates/en_progreso.html</code></p>
+</li>
+<li>Nuevo template creado</li>
+<li>Diseño profesional</li>
+<li>
+<p>Animación del icono</p>
+</li>
+<li>
+<p>✅ <code>app/web/routes.py</code></p>
+</li>
+<li>8 rutas actualizadas</li>
+<li>Todas apuntan a <code>en_progreso.html</code></li>
+</ol>
+<hr />
+<h2 id="como-probar">🎓 Cómo Probar<a class="headerlink" href="#como-probar" title="Permanent link">&para;</a></h2>
+<ol>
+<li>
+<p><strong>Ejecutar aplicación:</strong>
+<div class="highlight"><pre><span></span><code>python<span class="w"> </span>run.py
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Login:</strong>
+<div class="highlight"><pre><span></span><code>http://localhost:5000/login
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Ver sidebar responsivo:</strong></p>
+</li>
+<li>Pasar mouse sobre los iconos del sidebar</li>
+<li>Observar cómo se expande suavemente</li>
+<li>
+<p>Mover el mouse fuera y ver cómo se contrae</p>
+</li>
+<li>
+<p><strong>Probar páginas en progreso:</strong></p>
+</li>
+<li>Click en "Reporte Nacional"</li>
+<li>Click en "Dashboard Cobranzas"</li>
+<li>Click en "Letras por Recuperar"</li>
+<li>Todas mostrarán la página amigable</li>
+</ol>
+<hr />
+<h2 id="resultado-final">✨ Resultado Final<a class="headerlink" href="#resultado-final" title="Permanent link">&para;</a></h2>
+<h3 id="antes">Antes:<a class="headerlink" href="#antes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>❌ Sidebar ocupaba 16% de la pantalla siempre</li>
+<li>❌ Páginas no implementadas mostraban errores</li>
+<li>❌ Experiencia poco profesional</li>
+</ul>
+<h3 id="despues">Después:<a class="headerlink" href="#despues" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ Sidebar ocupa solo 60px (contraído)</li>
+<li>✅ Se expande solo cuando necesitas</li>
+<li>✅ Páginas en progreso con diseño profesional</li>
+<li>✅ Sin errores visibles para el usuario</li>
+<li>✅ Experiencia moderna y pulida</li>
+</ul>
+<hr />
+<p><strong>Estado:</strong> ✅ <strong>IMPLEMENTADO Y FUNCIONAL</strong></p>
+<p>El sistema ahora tiene una interfaz más profesional y user-friendly.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Volver al principio
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.copy", "toc.follow"], "search": "../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado al portapapeles", "clipboard.copy": "Copiar al portapapeles", "search.result.more.one": "1 m\u00e1s en esta p\u00e1gina", "search.result.more.other": "# m\u00e1s en esta p\u00e1gina", "search.result.none": "No se encontraron documentos", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Teclee para comenzar b\u00fasqueda", "search.result.term.missing": "Falta", "select.version": "Seleccionar versi\u00f3n"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+    
+  </body>
+</html>
