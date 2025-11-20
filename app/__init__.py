@@ -28,14 +28,26 @@ def create_app(config_name='development'):
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
     
-    # Registrar blueprints
+    # Registrar blueprints API
     from app.auth import auth_bp
     from app.collections import collections_bp
     from app.treasury import treasury_bp
+    from app.exports import exports_bp
+    from app.emails import emails_bp
+    from app.letters import letters_bp
+    from app.detractions import detractions_bp
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(collections_bp)
     app.register_blueprint(treasury_bp)
+    app.register_blueprint(exports_bp)
+    app.register_blueprint(emails_bp)
+    app.register_blueprint(letters_bp)
+    app.register_blueprint(detractions_bp)
+    
+    # Registrar blueprint Web (Frontend)
+    from app.web import web_bp
+    app.register_blueprint(web_bp)
     
     # Ruta raíz informativa
     @app.route('/')
@@ -48,7 +60,11 @@ def create_app(config_name='development'):
             'endpoints': {
                 'auth': '/api/v1/auth',
                 'collections': '/api/v1/collections',
-                'treasury': '/api/v1/treasury'
+                'treasury': '/api/v1/treasury',
+                'exports': '/api/v1/exports',
+                'emails': '/api/v1/emails',
+                'letters': '/api/v1/letters',
+                'detractions': '/api/v1/detractions'
             },
             'status': 'running'
         })
@@ -74,6 +90,7 @@ def create_app(config_name='development'):
         }), 500
     
     print(f"[OK] Aplicación creada con configuración: {config_name}")
-    print(f"[OK] Blueprints registrados: auth, collections, treasury")
+    print(f"[OK] Blueprints API registrados: auth, collections, treasury, exports, emails, letters, detractions")
+    print(f"[OK] Blueprint Web (Frontend) registrado")
     
     return app

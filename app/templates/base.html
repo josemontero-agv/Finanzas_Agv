@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Finanzas AGV{% endblock %}</title>
+    
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #714B67; /* Color principal Odoo/Agrovet */
+            --secondary-color: #875A7B; /* Color secundario Odoo */
+            --primary-hover: #5a3a52; /* Color hover más oscuro */
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+        }
+        
+        .navbar {
+            background-color: var(--primary-color) !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+        
+        body {
+            padding-top: 56px;
+        }
+        
+        .user-highlight {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 6px 14px;
+            border-radius: 8px;
+            color: #ffffff;
+            font-weight: 500;
+            font-size: 0.95em;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            display: inline-block;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .user-highlight:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 2px 8px rgba(255, 255, 255, 0.2);
+        }
+        
+        .user-icon {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.2em;
+            margin-right: 4px;
+            vertical-align: middle;
+        }
+        
+        /* Dropdown de usuario mejorado */
+        .user-dropdown {
+            min-width: 280px;
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            padding: 0;
+        }
+        
+        .user-dropdown .dropdown-header {
+            background: linear-gradient(135deg, #714B67 0%, #875A7B 100%);
+            color: white;
+            padding: 0;
+            border-radius: 12px 12px 0 0;
+        }
+        
+        .user-info-dropdown {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            gap: 15px;
+        }
+        
+        .user-info-dropdown i {
+            flex-shrink: 0;
+            color: white !important;
+        }
+        
+        .user-details {
+            flex: 1;
+            color: white;
+        }
+        
+        .user-details strong {
+            font-size: 1.1rem;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .user-details small {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            color: rgba(255, 255, 255, 0.95) !important;
+        }
+        
+        .user-dropdown .dropdown-item {
+            padding: 12px 20px;
+            transition: all 0.2s ease;
+        }
+        
+        .user-dropdown .dropdown-item:hover {
+            background-color: #f8f9fa;
+            color: #714B67;
+            padding-left: 24px;
+        }
+        
+        .user-dropdown .dropdown-item i {
+            margin-right: 8px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .user-dropdown .dropdown-divider {
+            margin: 0;
+        }
+        
+        .sidebar {
+            min-height: 100vh;
+            background-color: #fff;
+            box-shadow: 2px 0 5px rgba(0,0,0,.05);
+            width: 60px;
+            transition: width 0.3s ease;
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 999;
+            padding-top: 56px;
+        }
+        
+        .sidebar:hover {
+            width: 250px;
+        }
+        
+        /* Responsive para sidebar */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 0;
+                padding-top: 56px;
+            }
+            
+            .sidebar.show {
+                width: 250px;
+            }
+            
+            .main-content-with-sidebar {
+                margin-left: 0 !important;
+            }
+        }
+        
+        .sidebar .nav-link {
+            white-space: nowrap;
+        }
+        
+        .sidebar .nav-link i {
+            min-width: 28px;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .sidebar .nav-link span {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .sidebar:hover .nav-link span {
+            opacity: 1;
+        }
+        
+        .sidebar .sidebar-heading {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .sidebar:hover .sidebar-heading {
+            opacity: 1;
+        }
+        
+        .main-content-with-sidebar {
+            margin-left: 60px;
+            transition: margin-left 0.3s ease;
+            padding: 20px;
+            max-width: 100%;
+            overflow-x: auto;
+        }
+        
+        /* Contenedor para limitar ancho de contenido */
+        .container-fluid {
+            max-width: 1920px;
+            margin: 0 auto;
+        }
+        
+        .nav-link {
+            color: #6c757d;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s;
+        }
+        
+        .nav-link:hover {
+            background-color: #f8f9fa;
+            color: var(--primary-color);
+        }
+        
+        .nav-link.active {
+            background-color: var(--primary-color);
+            color: white !important;
+        }
+        
+        .card {
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,.08);
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-header {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+        
+        /* Mejorar tablas responsivas */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-bottom: 1rem;
+        }
+        
+        .table {
+            font-size: 0.9rem;
+            margin-bottom: 0;
+        }
+        
+        .table th {
+            font-size: 0.85rem;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+        
+        .table td {
+            vertical-align: middle;
+        }
+        
+        /* Ajustar filtros para pantallas pequeñas */
+        @media (max-width: 992px) {
+            .filter-form .col-md-2,
+            .filter-form .col-md-3 {
+                min-width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+        
+        .table-responsive {
+            margin-top: 1rem;
+        }
+        
+        .loading-spinner {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('web.dashboard') }}">
+                <i class="bi bi-building"></i> Finanzas AGV
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if session.logged_in %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle user-icon"></i>
+                            <span class="user-highlight">{{ session.username }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end user-dropdown">
+                            <li class="dropdown-header">
+                                <div class="user-info-dropdown">
+                                    <i class="bi bi-person-circle" style="font-size: 2.5rem; color: #714B67;"></i>
+                                    <div class="user-details">
+                                        <strong>{{ session.username }}</strong>
+                                        {% if session.email %}
+                                        <small class="text-muted d-block">{{ session.email }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('web.logout') }}">
+                                    <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    {% if session.logged_in %}
+    <!-- Layout con Sidebar -->
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="d-md-block sidebar p-0">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('web.dashboard') }}">
+                                <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
+                            </a>
+                        </li>
+                        
+                        <li class="nav-item">
+                            <h6 class="sidebar-heading px-3 mt-4 mb-1 text-muted">
+                                <span>COBRANZAS</span>
+                            </h6>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('web.collections_report_12') }}">
+                                <i class="bi bi-file-earmark-text"></i> <span>Reporte Cuenta 12</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('web.collections_report_national') }}">
+                                <i class="bi bi-flag"></i> <span>Reporte Nacional</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('web.collections_report_international') }}">
+                                <i class="bi bi-globe"></i> <span>Reporte Internacional</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('web.collections_dashboard') }}">
+                                <i class="bi bi-bar-chart"></i> <span>Dashboard Cobranzas</span>
+                            </a>
+                        </li>
+                        
+                        <li class="nav-item">
+                            <h6 class="sidebar-heading px-3 mt-4 mb-1 text-muted">
+                                <span>TESORERÍA</span>
+                            </h6>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('web.treasury_report_42') }}">
+                                <i class="bi bi-file-earmark-text"></i> <span>Reporte Cuenta 42</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('web.treasury_dashboard') }}">
+                                <i class="bi bi-bar-chart"></i> <span>Dashboard Tesorería</span>
+                            </a>
+                        </li>
+                        
+                        <li class="nav-item">
+                            <h6 class="sidebar-heading px-3 mt-4 mb-1 text-muted">
+                                <span>GESTIÓN</span>
+                            </h6>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('web.letters_to_recover') }}">
+                                <i class="bi bi-envelope"></i> <span>Letras por Recuperar</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('web.detractions_send') }}">
+                                <i class="bi bi-send"></i> <span>Enviar Detracciones</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="main-content-with-sidebar px-md-4 py-4">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Page Content -->
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    {% else %}
+    <!-- Content sin sidebar para login -->
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show mt-3" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        {% block content_no_sidebar %}{% endblock %}
+    </div>
+    {% endif %}
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5.3 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Common JS -->
+    <script>
+        // Función para mostrar/ocultar spinner
+        function showLoading() {
+            $('.loading-spinner').show();
+        }
+        
+        function hideLoading() {
+            $('.loading-spinner').hide();
+        }
+        
+        // Configuración DataTables en español
+        $.extend($.fn.dataTable.defaults, {
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+            }
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

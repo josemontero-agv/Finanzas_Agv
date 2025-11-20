@@ -260,6 +260,42 @@ def report_international():
         }), 500
 
 
+@collections_bp.route('/filter-options', methods=['GET'])
+def filter_options():
+    """
+    Endpoint para obtener las opciones de filtros (canales de venta, tipos de documento).
+    
+    Response (JSON):
+        {
+            "success": true,
+            "data": {
+                "sales_channels": [...],
+                "document_types": [...]
+            }
+        }
+    """
+    try:
+        # Crear repositorio y servicio
+        odoo_repo = _get_odoo_repository()
+        collections_service = CollectionsService(odoo_repo)
+        
+        # Obtener opciones de filtros
+        filter_data = collections_service.get_filter_options()
+        
+        return jsonify({
+            'success': True,
+            'data': filter_data,
+            'message': 'Opciones de filtros obtenidas exitosamente'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error al obtener opciones de filtros: {str(e)}',
+            'data': {'sales_channels': [], 'document_types': []}
+        }), 500
+
+
 @collections_bp.route('/status', methods=['GET'])
 def status():
     """
@@ -279,6 +315,7 @@ def status():
             '/report/account12',
             '/report/national',
             '/report/international',
+            '/filter-options',
             '/status'
         ]
     }), 200

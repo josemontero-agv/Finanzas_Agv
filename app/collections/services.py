@@ -24,6 +24,76 @@ class CollectionsService:
         """
         self.repository = odoo_repository
     
+    def get_filter_options(self):
+        """
+        Obtiene opciones para filtros (canales de venta, tipos de documento).
+        
+        Returns:
+            dict: Diccionario con las opciones de filtros
+        """
+        try:
+            print("[INFO] Obteniendo opciones de filtros...")
+            
+            if not self.repository.is_connected():
+                print("[ERROR] No hay conexión a Odoo disponible")
+                return {'sales_channels': [], 'document_types': []}
+            
+            # Obtener canales de venta
+            sales_channels = []
+            try:
+                # Buscar canales activos
+                channels = self.repository.search_read(
+                    'agr.sales.channel',
+                    [],
+                    ['id', 'name'],
+                    limit=200
+                )
+                sales_channels = [
+                    {'id': ch['id'], 'name': ch.get('name', '')}
+                    for ch in channels
+                ]
+                sales_channels.sort(key=lambda x: x['name'])
+            except Exception as e:
+                print(f"[WARN] No se pudo obtener canales de venta: {e}")
+            
+            # Obtener tipos de documento LATAM
+            document_types = []
+            try:
+                allowed_doc_types = ['Boleta', 'Factura', 'Nota de Crédito', 'Nota de Débito']
+                
+                doc_types = self.repository.search_read(
+                    'l10n_latam.document.type',
+                    [],
+                    ['id', 'name'],
+                    limit=200
+                )
+                
+                # Filtrar solo los tipos de documento permitidos
+                for doc in doc_types:
+                    doc_name = doc.get('name', '')
+                    if any(allowed_type.lower() in doc_name.lower() for allowed_type in allowed_doc_types):
+                        document_types.append({
+                            'id': doc['id'], 
+                            'name': doc_name
+                        })
+                
+                document_types.sort(key=lambda x: x['name'])
+            except Exception as e:
+                print(f"[WARN] No se pudo obtener tipos de documento: {e}")
+            
+            print(f"[OK] Filtros obtenidos: {len(sales_channels)} canales, {len(document_types)} tipos de documento")
+            
+            return {
+                'sales_channels': sales_channels,
+                'document_types': document_types
+            }
+            
+        except Exception as e:
+            print(f"[ERROR] Error obteniendo opciones de filtros: {e}")
+            import traceback
+            traceback.print_exc()
+            return {'sales_channels': [], 'document_types': []}
+    
     # Funciones de filtro integradas
     @staticmethod
     def filter_internacional(sales_lines):
@@ -267,6 +337,8 @@ class CollectionsService:
 
             # Combinar datos
             rows = []
+            today = datetime.today().date()
+            
             def m2o_name(val):
                 if isinstance(val, list) and len(val) >= 2:
                     return val[1]
@@ -299,6 +371,16 @@ class CollectionsService:
                 # Determinar grupos del partner
                 partner_groups_display = partner_groups_map.get(partner_id, '')
                 
+                # Calcular días de vencimiento
+                date_maturity = line.get('date_maturity', '')
+                dias_vencido = calcular_dias_vencido(date_maturity, today) if date_maturity else 0
+                
+                # Clasificar antigüedad
+                antiguedad = clasificar_antiguedad(max(0, dias_vencido))
+                
+                # Estado de deuda
+                estado_deuda = 'VENCIDO' if dias_vencido > 0 else 'VIGENTE'
+                
                 row = {
                     'payment_state': move.get('payment_state', ''),
                     'invoice_date': move.get('invoice_date', ''),
@@ -319,7 +401,7 @@ class CollectionsService:
                     'amount_currency': line.get('amount_currency', 0.0),
                     'amount_residual_currency': line.get('amount_residual', 0.0),
                     'date': line.get('date', ''),
-                    'date_maturity': line.get('date_maturity', ''),
+                    'date_maturity': date_maturity,
                     'invoice_date_due': move.get('invoice_date_due', ''),
                     'ref': move.get('ref', ''),
                     'invoice_payment_term_id': m2o_name(move.get('invoice_payment_term_id')),
@@ -330,6 +412,10 @@ class CollectionsService:
                     'move_id/payment_state': move.get('payment_state', ''),
                     'partner_groups': partner_groups_display,
                     'sub_channel_id': sub_channel_final,
+                    # Campos calculados
+                    'dias_vencido': dias_vencido,
+                    'estado_deuda': estado_deuda,
+                    'antiguedad': antiguedad,
                 }
                 
                 rows.append(row)
