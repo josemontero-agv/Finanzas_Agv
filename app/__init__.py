@@ -7,7 +7,13 @@ con diferentes configuraciones.
 """
 
 from flask import Flask, jsonify
+from flask_caching import Cache
+from flask_compress import Compress
 from config import config
+
+# Inicializar extensiones
+cache = Cache()
+compress = Compress()
 
 
 def create_app(config_name='development'):
@@ -27,6 +33,23 @@ def create_app(config_name='development'):
     # Cargar configuración
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
+    
+    # Configurar Flask-Caching
+    app.config['CACHE_TYPE'] = 'simple'  # 'redis' para producción
+    app.config['CACHE_DEFAULT_TIMEOUT'] = 300  # 5 minutos
+    cache.init_app(app)
+    
+    # Configurar Flask-Compress
+    app.config['COMPRESS_MIMETYPES'] = [
+        'text/html',
+        'text/css',
+        'text/javascript',
+        'application/json',
+        'application/javascript'
+    ]
+    app.config['COMPRESS_LEVEL'] = 6
+    app.config['COMPRESS_MIN_SIZE'] = 500
+    compress.init_app(app)
     
     # Registrar blueprints API
     from app.auth import auth_bp
@@ -92,5 +115,7 @@ def create_app(config_name='development'):
     print(f"[OK] Aplicación creada con configuración: {config_name}")
     print(f"[OK] Blueprints API registrados: auth, collections, treasury, exports, emails, letters, detractions")
     print(f"[OK] Blueprint Web (Frontend) registrado")
+    print(f"[OK] Flask-Caching configurado (timeout: 300s)")
+    print(f"[OK] Flask-Compress configurado (nivel: 6)")
     
     return app

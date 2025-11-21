@@ -6,19 +6,36 @@
 Finanzas_Agv/
 │
 ├── 📄 README.md                         # Documentación principal
-├── 📄 INSTRUCCIONES_INICIO_RAPIDO.md   # Guía de inicio rápido
-├── 📄 ESTRUCTURA_PROYECTO.md           # Este archivo
-├── 📄 EJEMPLO_USO.py                   # Script de ejemplo de uso de la API
-│
 ├── 📄 config.py                        # Configuraciones (Dev/Prod/Test)
 ├── 📄 run.py                           # Punto de entrada de la aplicación
 ├── 📄 requirements.txt                 # Dependencias del proyecto
 ├── 📄 .gitignore                       # Archivos ignorados por Git
+├── 📄 test_performance.py              # Script de pruebas de performance
 │
 ├── 📄 .env.desarrollo                  # ⚠️ CREAR MANUALMENTE - Variables de desarrollo
 ├── 📄 .env.produccion                  # ⚠️ CREAR MANUALMENTE - Variables de producción
 │
 ├── 📁 venv/                            # Entorno virtual (crear con: python -m venv venv)
+│
+├── 📁 docs/                             # 📚 Documentación completa del proyecto
+│   ├── 📄 index.md                     # Índice principal
+│   ├── 📄 PROYECTO_COMPLETO.md          # Visión general del proyecto
+│   ├── 📄 ESTRUCTURA_PROYECTO.md        # Este archivo
+│   ├── 📄 BITACORA.md                   # Historial de cambios
+│   ├── 📄 INICIO_RAPIDO_COMPLETO.md     # Guía de inicio rápido
+│   ├── 📄 INSTRUCCIONES_INICIO_RAPIDO.md # Instrucciones detalladas
+│   ├── 📄 CAMBIOS_VERSION_HIBRIDA.md    # Cambios de versión híbrida
+│   ├── 📄 DIAGNOSTICO_CARGA.md         # Diagnóstico de carga
+│   ├── 📄 DIAGNOSTICO_KPIS.md          # Diagnóstico de KPIs
+│   ├── 📄 IMPLEMENTACION_OPTIMIZACION.md # Implementación de optimizaciones
+│   ├── 📄 SCRIPTS_README.md             # Documentación de scripts
+│   ├── 📁 arquitectura/                 # Documentación arquitectónica
+│   │   ├── dream-stack-plan.md
+│   │   ├── analisis-dream-stack.md
+│   │   └── plan-correccion-performance.md
+│   ├── 📁 mejoras-stack-arquitectura/   # Análisis de mejoras
+│   │   └── analisis-arquitectonico-completo.md
+│   └── 📁 runbooks/                     # Guías operativas
 │
 └── 📁 app/                             # Código fuente de la aplicación
     │
@@ -38,10 +55,44 @@ Finanzas_Agv/
     │   ├── 📄 routes.py                # Rutas: /api/v1/collections/*
     │   └── 📄 services.py              # CollectionsService - Lógica de negocio
     │
-    └── 📁 treasury/                    # Módulo de Tesorería
-        ├── 📄 __init__.py              # Blueprint treasury_bp
-        ├── 📄 routes.py                # Rutas: /api/v1/treasury/*
-        └── 📄 services.py              # TreasuryService (placeholder)
+    ├── 📁 treasury/                    # Módulo de Tesorería
+    │   ├── 📄 __init__.py              # Blueprint treasury_bp
+    │   ├── 📄 routes.py                # Rutas: /api/v1/treasury/*
+    │   └── 📄 services.py              # TreasuryService (COMPLETO)
+    │
+    ├── 📁 exports/                     # Módulo de Exportaciones
+    │   ├── 📄 __init__.py              # Blueprint exports_bp
+    │   ├── 📄 routes.py                # Rutas: /api/v1/exports/*
+    │   └── 📄 excel_service.py          # ExcelExportService (COMPLETO)
+    │
+    ├── 📁 emails/                      # Módulo de Emails
+    │   ├── 📄 __init__.py              # Blueprint emails_bp
+    │   ├── 📄 routes.py                # Rutas: /api/v1/emails/*
+    │   └── 📄 email_service.py         # EmailService
+    │
+    ├── 📁 letters/                     # Módulo de Letras
+    │   ├── 📄 __init__.py              # Blueprint letters_bp
+    │   ├── 📄 routes.py                # Rutas: /api/v1/letters/*
+    │   └── 📄 letters_service.py        # LettersService
+    │
+    ├── 📁 detractions/                 # Módulo de Detracciones
+    │   ├── 📄 __init__.py              # Blueprint detractions_bp
+    │   ├── 📄 routes.py                # Rutas: /api/v1/detractions/*
+    │   └── 📄 detraction_service.py    # DetractionService
+    │
+    ├── 📁 web/                         # Módulo Frontend (Web)
+    │   ├── 📄 __init__.py              # Blueprint web_bp
+    │   └── 📄 routes.py                # Rutas HTML (vistas web)
+    │
+    └── 📁 templates/                   # Templates HTML
+        ├── 📄 base.html                # Template base
+        ├── 📄 login.html                # Página de login
+        ├── 📄 dashboard.html            # Dashboard principal
+        ├── 📁 collections/              # Templates de cobranzas
+        │   ├── report_account12.html
+        │   └── report_account12_rows.html
+        └── 📁 treasury/                 # Templates de tesorería
+            └── report_account42.html
 ```
 
 ## 📊 Componentes por Capa
@@ -98,6 +149,7 @@ app/treasury/
 
 ## 🔄 Flujo de Datos
 
+### Arquitectura Actual
 ```
 1. Cliente HTTP
    ↓
@@ -109,8 +161,29 @@ app/treasury/
    ↓
 5. OdooRepository (odoo.py)
    ↓
-6. Odoo (XML-RPC)
+6. Odoo (XML-RPC) ← Actualmente
 ```
+
+### Arquitectura Recomendada (Futuro)
+```
+1. Cliente HTTP
+   ↓
+2. Flask (run.py → create_app)
+   ↓
+3. Blueprint Routes (routes.py)
+   ↓
+4. Service Layer (services.py)
+   ↓
+5. SQLAlchemy ORM
+   ↓
+6. PostgreSQL (Read Replica) ← Recomendado
+   ↓
+7. ETL Celery (sincronización periódica)
+   ↓
+8. Odoo (XML-RPC) - Solo para escritura
+```
+
+> **Nota:** Ver `docs/mejoras-stack-arquitectura/analisis-arquitectonico-completo.md` para detalles del análisis arquitectónico y recomendaciones.
 
 ## 🎯 Patrones de Diseño Utilizados
 
@@ -139,16 +212,19 @@ Ver `INSTRUCCIONES_INICIO_RAPIDO.md` para detalles.
 | `app/__init__.py` | Factory y registro de blueprints | ~70 |
 | `app/core/odoo.py` | Repositorio de Odoo | ~180 |
 | `app/core/calculators.py` | Funciones de cálculo | ~180 |
-| `app/collections/services.py` | Lógica de cobranzas | ~450 |
-| `app/collections/routes.py` | Endpoints de cobranzas | ~250 |
+| `app/collections/services.py` | Lógica de cobranzas | ~1000 |
+| `app/collections/routes.py` | Endpoints de cobranzas | ~507 |
+| `app/treasury/services.py` | Lógica de tesorería | ~400 |
+| `app/exports/excel_service.py` | Exportación a Excel | ~288 |
 
 ## 📊 Estadísticas del Proyecto
 
-- **Total de Módulos:** 3 (auth, collections, treasury)
-- **Total de Endpoints:** ~10
-- **Líneas de Código:** ~1,500+
-- **Archivos Python:** 15
-- **Archivos de Documentación:** 4
+- **Total de Módulos:** 7 (auth, collections, treasury, exports, emails, letters, detractions)
+- **Total de Endpoints:** ~20+
+- **Líneas de Código:** ~5,000+
+- **Archivos Python:** 25+
+- **Archivos de Documentación:** 20+ (en `docs/`)
+- **Templates HTML:** 5+
 
 ## 🚀 Comandos Útiles
 
@@ -177,5 +253,5 @@ python run.py production     # Producción
 
 ---
 
-**Última actualización:** Noviembre 2025
+**Última actualización:** Diciembre 2024
 

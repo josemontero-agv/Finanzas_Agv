@@ -1,471 +1,448 @@
 {% extends "base.html" %}
 
-{% block title %}Reporte Cuenta 12 - Cobranzas{% endblock %}
+{% block title %}Reporte Cuenta 12 - Dream Stack{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
-    <h1 class="h2"><i class="bi bi-file-earmark-text"></i> Reporte Cuenta 12 - Cuentas por Cobrar</h1>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <button type="button" class="btn btn-sm btn-success me-2" onclick="exportToExcel()">
-            <i class="bi bi-file-earmark-excel"></i> Exportar Excel
-        </button>
-        <button type="button" class="btn btn-sm btn-primary" onclick="loadReport()">
-            <i class="bi bi-arrow-clockwise"></i> Actualizar
-        </button>
+<div x-data="reportController()" x-init="init()">
+    <!-- Header -->
+    <div class="flex justify-between items-center pb-4 mb-4 border-b">
+        <h1 class="text-2xl font-bold text-gray-800">
+            <i class="bi bi-file-earmark-text text-primary"></i>
+            Reporte Cuenta 12 - Cuentas por Cobrar
+        </h1>
+        <div class="space-x-2">
+            <button @click="exportToExcel()" 
+                    class="btn btn-sm btn-success"
+                    :disabled="loading">
+                <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+            </button>
+            <button @click="refreshData()" 
+                    class="btn btn-sm btn-primary"
+                    :disabled="loading">
+                <i class="bi" :class="loading ? 'bi-hourglass-split' : 'bi-arrow-clockwise'"></i>
+                <span x-text="loading ? 'Cargando...' : 'Actualizar'"></span>
+            </button>
+        </div>
     </div>
-</div>
 
-<!-- Filtros -->
-<div class="card mb-3">
-    <div class="card-header">
-        <i class="bi bi-funnel"></i> Filtros
+    <!-- Filtros con Alpine.js -->
+    <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Desde</label>
+                <input type="date" 
+                       x-model="filters.date_from"
+                       class="form-control">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Hasta</label>
+                <input type="date" 
+                       x-model="filters.date_to"
+                       class="form-control">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
+                <input type="text" 
+                       x-model="filters.customer"
+                       placeholder="Buscar cliente..."
+                       class="form-control">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Canal de Venta</label>
+                <select x-model="filters.sales_channel_id" class="form-select">
+                    <option value="">Todos</option>
+                    <template x-for="channel in salesChannels" :key="channel.id">
+                        <option :value="channel.id" x-text="channel.name"></option>
+                    </template>
+                </select>
+            </div>
+        </div>
+        <div class="mt-4 flex gap-2">
+            <button @click="applyFilters()" class="btn btn-primary">
+                <i class="bi bi-search"></i> Buscar
+            </button>
+            <button @click="resetFilters()" class="btn btn-secondary">
+                <i class="bi bi-x-circle"></i> Limpiar
+            </button>
+        </div>
     </div>
-    <div class="card-body">
-        <form id="filterForm">
-            <div class="row g-3">
-                <div class="col-md-2">
-                    <label class="form-label">Fecha Desde</label>
-                    <input type="date" class="form-control" id="dateFrom" name="date_from">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Fecha Hasta</label>
-                    <input type="date" class="form-control" id="dateTo" name="date_to">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Cliente</label>
-                    <input type="text" class="form-control" id="customer" name="customer" 
-                           placeholder="Buscar cliente...">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Códigos de Cuenta</label>
-                    <input type="text" class="form-control" id="accountCodes" name="account_codes" 
-                           placeholder="12,13" value="122,1212,123,1312,132">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Canal de Venta</label>
-                    <select class="form-select" id="salesChannelId" name="sales_channel_id">
-                        <option value="">Todos</option>
-                    </select>
-                </div>
-            </div>
-            <div class="row g-3 mt-2">
-                <div class="col-md-3">
-                    <label class="form-label">Tipo de Documento</label>
-                    <select class="form-select" id="docTypeId" name="doc_type_id">
-                        <option value="">Todos</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Límite</label>
-                    <select class="form-select" id="limit" name="limit">
-                        <option value="100">100 registros</option>
-                        <option value="500">500 registros</option>
-                        <option value="1000" selected>1000 registros</option>
-                        <option value="5000">5000 registros</option>
-                        <option value="10000">Todos</option>
-                    </select>
-                </div>
-            </div>
-            <div class="row mt-3">
-                <div class="col-md-12">
-                    <button type="button" class="btn btn-primary" onclick="loadReport()">
-                        <i class="bi bi-search"></i> Buscar
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="clearFilters()">
-                        <i class="bi bi-x-circle"></i> Limpiar
-                    </button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
 
-<!-- Estadísticas -->
-<div class="row mb-3">
-    <div class="col-md-3">
-        <div class="card bg-light">
-            <div class="card-body">
-                <h6 class="card-title text-muted">Total Registros</h6>
-                <h4 id="statTotal">-</h4>
-            </div>
+    <!-- KPIs con Alpine.js (reactivos) -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <h6 class="text-gray-500 text-sm font-medium mb-2">Total Registros</h6>
+            <h4 class="text-2xl font-bold text-gray-800" x-text="stats.count"></h4>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <h6 class="text-gray-500 text-sm font-medium mb-2">Monto Total</h6>
+            <h4 class="text-2xl font-bold text-blue-600" x-text="formatCurrency(stats.total)"></h4>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <h6 class="text-gray-500 text-sm font-medium mb-2">Saldo Pendiente</h6>
+            <h4 class="text-2xl font-bold text-yellow-600" x-text="formatCurrency(stats.pending)"></h4>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <h6 class="text-gray-500 text-sm font-medium mb-2">Deuda Vencida</h6>
+            <h4 class="text-2xl font-bold text-red-600" x-text="formatCurrency(stats.overdue)"></h4>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-light">
-            <div class="card-body">
-                <h6 class="card-title text-muted">Monto Total</h6>
-                <h4 id="statAmount">-</h4>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-light">
-            <div class="card-body">
-                <h6 class="card-title text-muted">Saldo Pendiente</h6>
-                <h4 id="statPending">-</h4>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-light">
-            <div class="card-body">
-                <h6 class="card-title text-muted">Deuda Vencida</h6>
-                <h4 id="statOverdue">-</h4>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Tabla de Datos -->
-<div class="card">
-    <div class="card-header">
-        <i class="bi bi-table"></i> Datos del Reporte
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table id="reportTable" class="table table-striped table-hover table-sm">
-                <thead class="table-dark">
+    <!-- Tabla con HTMX Lazy Loading -->
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div class="overflow-x-auto" style="max-height: 600px;">
+            <table class="w-full text-sm">
+                <thead class="bg-primary text-white sticky top-0 z-10">
                     <tr>
-                        <th>Factura</th>
-                        <th>Cliente</th>
-                        <th>RUC/DNI</th>
-                        <th>F. Emisión</th>
-                        <th>F. Vencimiento</th>
-                        <th>Moneda</th>
-                        <th>Monto Total</th>
-                        <th>Saldo</th>
-                        <th>Días Vencido</th>
-                        <th>Estado</th>
-                        <th>Antigüedad</th>
+                        <th class="px-3 py-3 text-left font-semibold">Estado Pago</th>
+                        <th class="px-3 py-3 text-left font-semibold">F. Emisión</th>
+                        <th class="px-3 py-3 text-left font-semibold">Tipo Doc</th>
+                        <th class="px-3 py-3 text-left font-semibold">Factura</th>
+                        <th class="px-3 py-3 text-left font-semibold">Origen</th>
+                        <th class="px-3 py-3 text-left font-semibold">Cta. Código</th>
+                        <th class="px-3 py-3 text-left font-semibold">Cta. Nombre</th>
+                        <th class="px-3 py-3 text-left font-semibold">RUC/DNI</th>
+                        <th class="px-3 py-3 text-left font-semibold">Cliente</th>
+                        <th class="px-3 py-3 text-left font-semibold">Departamento</th>
+                        <th class="px-3 py-3 text-left font-semibold">Distrito</th>
+                        <th class="px-3 py-3 text-left font-semibold">País Código</th>
+                        <th class="px-3 py-3 text-left font-semibold">País</th>
+                        <th class="px-3 py-3 text-left font-semibold">Moneda</th>
+                        <th class="px-3 py-3 text-right font-semibold">Monto Total</th>
+                        <th class="px-3 py-3 text-right font-semibold">Saldo c/ Ret.</th>
+                        <th class="px-3 py-3 text-right font-semibold">Importe</th>
+                        <th class="px-3 py-3 text-right font-semibold">Saldo</th>
+                        <th class="px-3 py-3 text-left font-semibold">F. Contable</th>
+                        <th class="px-3 py-3 text-left font-semibold">F. Vencimiento</th>
+                        <th class="px-3 py-3 text-left font-semibold">F. Venc. Fact</th>
+                        <th class="px-3 py-3 text-left font-semibold">Referencia</th>
+                        <th class="px-3 py-3 text-left font-semibold">Cond. Pago</th>
+                        <th class="px-3 py-3 text-left font-semibold">Concepto</th>
+                        <th class="px-3 py-3 text-left font-semibold">Vendedor</th>
+                        <th class="px-3 py-3 text-left font-semibold">Canal</th>
+                        <th class="px-3 py-3 text-left font-semibold">Tipo Venta</th>
+                        <th class="px-3 py-3 text-left font-semibold">Est. Pago Mov</th>
+                        <th class="px-3 py-3 text-left font-semibold">Grupo/Cadena</th>
+                        <th class="px-3 py-3 text-left font-semibold">Sub Canal</th>
+                        <th class="px-3 py-3 text-center font-semibold">Días Vencido</th>
+                        <th class="px-3 py-3 text-center font-semibold">Estado</th>
+                        <th class="px-3 py-3 text-left font-semibold">Antigüedad</th>
                     </tr>
                 </thead>
-                <tbody></tbody>
+                <tbody id="table-body">
+                    <!-- Filas se cargarán aquí vía JavaScript -->
+                </tbody>
             </table>
+        </div>
+        
+        <!-- Loading indicator -->
+        <div id="loading-spinner" 
+             x-show="loading"
+             class="flex justify-center items-center py-8"
+             style="display: none;">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+        
+        <!-- Infinite scroll trigger -->
+        <div id="infinite-scroll-trigger" 
+             class="text-center py-2 text-gray-400"
+             style="height: 20px;">
+            <span x-show="hasMore" class="text-sm">Cargando más resultados...</span>
         </div>
     </div>
 </div>
+
+<!-- Alpine.js Controller -->
+<script>
+function reportController() {
+    return {
+        loading: false,
+        currentPage: 1,
+        hasMore: true,
+        isLoadingMore: false,
+        filters: {
+            date_from: '',
+            date_to: '',
+            customer: '',
+            account_codes: '122,1212,123,1312,132',
+            sales_channel_id: ''
+        },
+        stats: {
+            count: 0,
+            total: 0,
+            pending: 0,
+            overdue: 0
+        },
+        salesChannels: [],
+        
+        async init() {
+            await this.loadSalesChannels();
+            this.setupIntersectionObserver();
+            // Cargar stats y primera página en paralelo
+            await Promise.all([
+                this.loadStats(),
+                this.loadPage(1)
+            ]);
+        },
+        
+        setupIntersectionObserver() {
+            // Observer para scroll infinito
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && this.hasMore && !this.isLoadingMore) {
+                        this.loadNextPage();
+                    }
+                });
+            }, {
+                rootMargin: '100px' // Cargar 100px antes de llegar al final
+            });
+            
+            // Observar el trigger
+            const trigger = document.getElementById('infinite-scroll-trigger');
+            if (trigger) {
+                observer.observe(trigger);
+            }
+        },
+        
+        async loadPage(page) {
+            if (this.isLoadingMore && page > 1) return;
+            
+            try {
+                this.loading = page === 1;
+                this.isLoadingMore = page > 1;
+                
+                // Construir params correctamente (filtrar valores vacíos)
+                const params = new URLSearchParams();
+                params.set('page', page);
+                Object.keys(this.filters).forEach(key => {
+                    if (this.filters[key]) {
+                        params.set(key, this.filters[key]);
+                    }
+                });
+                
+                console.log(`[DEBUG] Cargando página ${page} con filtros:`, Object.fromEntries(params));
+                
+                const response = await axios.get(`/api/v1/collections/report/account12/rows?${params}`, {
+                    headers: {
+                        'Accept': 'text/html'
+                    }
+                });
+                
+                if (response.status === 200) {
+                    let html = response.data;
+                    const tableBody = document.getElementById('table-body');
+                    
+                    // Verificar si hay más páginas (buscar comentario en la respuesta)
+                    if (html.includes('<!-- NO_MORE_DATA -->')) {
+                        this.hasMore = false;
+                        // Remover el comentario antes de insertar
+                        html = html.replace('<!-- NO_MORE_DATA -->', '');
+                    } else {
+                        this.hasMore = true;
+                    }
+                    
+                    if (page === 1) {
+                        // Primera página: reemplazar contenido
+                        tableBody.innerHTML = html;
+                    } else {
+                        // Páginas siguientes: agregar al final
+                        tableBody.insertAdjacentHTML('beforeend', html);
+                    }
+                    
+                    this.currentPage = page;
+                    console.log(`[DEBUG] Página ${page} cargada: ${tableBody.children.length} filas totales, hasMore=${this.hasMore}`);
+                }
+            } catch (error) {
+                console.error('Error cargando página:', error);
+                showToast('Error cargando datos: ' + (error.response?.data || error.message), 'error');
+                
+                // Mostrar error en la tabla
+                const tableBody = document.getElementById('table-body');
+                if (tableBody.children.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="33" class="text-center text-red-600 py-4">
+                                Error: ${error.response?.data || error.message}
+                            </td>
+                        </tr>
+                    `;
+                }
+            } finally {
+                this.loading = false;
+                this.isLoadingMore = false;
+            }
+        },
+        
+        async loadNextPage() {
+            if (this.hasMore && !this.isLoadingMore) {
+                await this.loadPage(this.currentPage + 1);
+            }
+        },
+        
+        async loadSalesChannels() {
+            try {
+                const { data } = await axios.get('/api/v1/collections/filter-options');
+                if (data.success) {
+                    this.salesChannels = data.data.sales_channels;
+                }
+            } catch (error) {
+                console.error('Error loading channels:', error);
+            }
+        },
+        
+        // ✅ Nuevo método para cargar stats desde endpoint optimizado
+        async loadStats() {
+            try {
+                // Construir params correctamente (filtrar valores vacíos)
+                const params = new URLSearchParams();
+                Object.keys(this.filters).forEach(key => {
+                    if (this.filters[key] && this.filters[key] !== '') {
+                        params.set(key, this.filters[key]);
+                    }
+                });
+                
+                console.log('[DEBUG] Cargando stats con filtros:', Object.fromEntries(params));
+                
+                const response = await axios.get(`/api/v1/collections/report/account12/stats?${params}`);
+                
+                console.log('[DEBUG] Respuesta stats:', response.data);
+                
+                if (response.data && response.data.success) {
+                    const statsData = response.data.data || {};
+                    this.stats = {
+                        count: statsData.total_count || 0,
+                        total: statsData.total_amount || 0,
+                        pending: statsData.pending_amount || 0,
+                        overdue: statsData.overdue_amount || 0
+                    };
+                    console.log('[DEBUG] Stats actualizados:', this.stats);
+                } else {
+                    console.warn('[WARN] Respuesta stats sin success:', response.data);
+                    // Inicializar con valores por defecto
+                    this.stats = {
+                        count: 0,
+                        total: 0,
+                        pending: 0,
+                        overdue: 0
+                    };
+                }
+            } catch (error) {
+                console.error('[ERROR] Error loading stats:', error);
+                console.error('[ERROR] Detalles:', {
+                    message: error.message,
+                    response: error.response?.data,
+                    status: error.response?.status
+                });
+                showToast('Error cargando estadísticas: ' + (error.response?.data?.message || error.message), 'error');
+                // Inicializar con valores por defecto en caso de error
+                this.stats = {
+                    count: 0,
+                    total: 0,
+                    pending: 0,
+                    overdue: 0
+                };
+            }
+        },
+        
+        
+        async applyFilters() {
+            // Resetear estado
+            this.currentPage = 1;
+            this.hasMore = true;
+            document.getElementById('table-body').innerHTML = '';
+            
+            // Recargar stats y datos en paralelo
+            await Promise.all([
+                this.loadStats(),
+                this.loadPage(1)
+            ]);
+        },
+        
+        resetFilters() {
+            this.filters = {
+                date_from: '',
+                date_to: '',
+                customer: '',
+                account_codes: '122,1212,123,1312,132',
+                sales_channel_id: ''
+            };
+            this.applyFilters();
+        },
+        
+        async refreshData() {
+            await this.applyFilters();
+        },
+        
+        async exportToExcel() {
+            this.loading = true;
+            try {
+                const params = new URLSearchParams(this.filters);
+                window.location.href = `/api/v1/exports/collections/excel?${params}`;
+                showToast('Exportación iniciada', 'success');
+            } catch (error) {
+                showToast('Error al exportar', 'error');
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        formatCurrency(value) {
+            return window.formatCurrency(value);
+        }
+    }
+}
+</script>
 {% endblock %}
 
 {% block extra_css %}
 <style>
-    /* Estilos mejorados para tabla compacta y responsiva */
-    .table-responsive {
-        max-height: 65vh;
-        overflow-y: auto;
-        overflow-x: auto;
+    /* Animaciones HTMX */
+    .htmx-swapping {
+        opacity: 0;
+        transition: opacity 200ms ease-out;
     }
-    
-    #reportTable {
-        font-size: 0.85rem;
-        width: 100% !important;
+
+    .htmx-settling {
+        opacity: 1;
     }
-    
-    #reportTable th {
-        background-color: #714B67 !important;
-        color: white !important;
-        font-weight: 600;
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-        padding: 8px 6px;
-        white-space: nowrap;
-        position: sticky;
-        top: 0;
-        z-index: 10;
+
+    /* Loading spinner custom */
+    .htmx-indicator {
+        display: none;
     }
-    
-    #reportTable td {
-        padding: 6px 8px;
-        white-space: nowrap;
-        font-size: 0.85rem;
-    }
-    
-    #reportTable tbody tr:hover {
-        background-color: rgba(113, 75, 103, 0.08);
-    }
-    
-    .text-end {
-        text-align: right;
-    }
-    
-    /* DataTables personalización */
-    .dataTables_wrapper {
-        font-size: 0.9rem;
-    }
-    
-    .dataTables_filter input {
-        border: 1px solid #ced4da;
-        border-radius: 4px;
-        padding: 4px 8px;
-    }
-    
-    .dataTables_length select {
-        border: 1px solid #ced4da;
-        border-radius: 4px;
-        padding: 4px 8px;
-    }
-    
-    /* Mejorar filtros */
-    .filter-bar .card {
-        margin-bottom: 15px;
-    }
-    
-    .filter-form {
+
+    .htmx-request .htmx-indicator {
         display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
     }
-    
-    .filter-group {
-        flex: 1;
-        min-width: 150px;
+
+    /* Skeleton loader para primera carga */
+    @keyframes shimmer {
+        0% { background-position: -1000px 0; }
+        100% { background-position: 1000px 0; }
     }
-    
-    .filter-group label {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: #6c757d;
-        margin-bottom: 4px;
+
+    .skeleton-row {
+        height: 40px;
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 1000px 100%;
+        animation: shimmer 2s infinite;
     }
-    
-    .filter-group input,
-    .filter-group select {
-        font-size: 0.9rem;
+
+    /* Smooth scroll */
+    .overflow-x-auto {
+        scroll-behavior: smooth;
     }
-    
-    /* Responsive ajustes */
-    @media (max-width: 768px) {
-        #reportTable {
-            font-size: 0.75rem;
-        }
-        
-        #reportTable th {
-            font-size: 0.7rem;
-            padding: 6px 4px;
-        }
-        
-        #reportTable td {
-            padding: 4px 6px;
-        }
-        
-        .filter-group {
-            min-width: 100%;
-        }
+
+    /* Tailwind + Bootstrap compatibility */
+    .btn {
+        @apply px-4 py-2 rounded font-medium transition-colors;
+    }
+
+    .btn-primary {
+        @apply bg-primary hover:bg-opacity-90 text-white;
+    }
+
+    .form-control {
+        @apply w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent;
     }
 </style>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    const API_BASE = '/api/v1';
-    let reportData = [];
-    let filterOptions = { sales_channels: [], document_types: [] };
-
-    // Cargar reporte al iniciar
-    document.addEventListener('DOMContentLoaded', function() {
-        loadFilterOptions();
-        loadReport();
-    });
-
-    // Función para cargar opciones de filtros
-    function loadFilterOptions() {
-        // Cargar canales de venta
-        fetch(`${API_BASE}/collections/filter-options`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    filterOptions = data.data;
-                    populateFilterSelects();
-                }
-            })
-            .catch(error => {
-                console.error('Error cargando opciones de filtros:', error);
-            });
-    }
-
-    // Función para poblar los selects de filtros
-    function populateFilterSelects() {
-        // Poblar canales de venta
-        const salesChannelSelect = document.getElementById('salesChannelId');
-        salesChannelSelect.innerHTML = '<option value="">Todos</option>';
-        if (filterOptions.sales_channels) {
-            filterOptions.sales_channels.forEach(channel => {
-                const option = document.createElement('option');
-                option.value = channel.id;
-                option.textContent = channel.name;
-                salesChannelSelect.appendChild(option);
-            });
-        }
-
-        // Poblar tipos de documento
-        const docTypeSelect = document.getElementById('docTypeId');
-        docTypeSelect.innerHTML = '<option value="">Todos</option>';
-        if (filterOptions.document_types) {
-            filterOptions.document_types.forEach(docType => {
-                const option = document.createElement('option');
-                option.value = docType.id;
-                option.textContent = docType.name;
-                docTypeSelect.appendChild(option);
-            });
-        }
-    }
-
-    // Función para cargar reporte
-    function loadReport() {
-        showLoading();
-        
-        const filters = {
-            date_from: document.getElementById('dateFrom').value,
-            date_to: document.getElementById('dateTo').value,
-            customer: document.getElementById('customer').value,
-            account_codes: document.getElementById('accountCodes').value,
-            sales_channel_id: document.getElementById('salesChannelId').value,
-            doc_type_id: document.getElementById('docTypeId').value,
-            limit: document.getElementById('limit').value
-        };
-
-        // Construir query string
-        const params = new URLSearchParams();
-        Object.keys(filters).forEach(key => {
-            if (filters[key]) params.append(key, filters[key]);
-        });
-
-        fetch(`${API_BASE}/collections/report/account12?${params}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    reportData = data.data;
-                    displayData(data.data);
-                    updateStatistics(data.data);
-                } else {
-                    alert('Error al cargar datos: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error al conectar con la API');
-            })
-            .finally(() => {
-                hideLoading();
-            });
-    }
-
-    // Función para mostrar datos en tabla
-    function displayData(data) {
-        // Destruir DataTable si existe
-        if ($.fn.DataTable.isDataTable('#reportTable')) {
-            $('#reportTable').DataTable().destroy();
-        }
-
-        const tbody = document.querySelector('#reportTable tbody');
-        tbody.innerHTML = '';
-
-        data.forEach(row => {
-            const tr = document.createElement('tr');
-            const diasClass = row.dias_vencido > 0 ? 'text-danger fw-bold' : '';
-            
-            tr.innerHTML = `
-                <td>${row.move_name || ''}</td>
-                <td>${row.patner_id || ''}</td>
-                <td>${row['patner_id/vat'] || ''}</td>
-                <td>${row.invoice_date || ''}</td>
-                <td>${row.date_maturity || ''}</td>
-                <td>${row.currency_id || ''}</td>
-                <td class="text-end">${formatCurrency(row.amount_currency || row.amount_total)}</td>
-                <td class="text-end">${formatCurrency(row.amount_residual_with_retention)}</td>
-                <td class="${diasClass} text-center">${row.dias_vencido || 0}</td>
-                <td><span class="badge bg-${getStatusBadge(row.estado_deuda)}">${row.estado_deuda || ''}</span></td>
-                <td><small>${row.antiguedad || ''}</small></td>
-            `;
-            tbody.appendChild(tr);
-        });
-
-        // Inicializar DataTable con configuración mejorada
-        $('#reportTable').DataTable({
-            pageLength: 25,
-            order: [[8, 'desc']],  // Ordenar por días vencido
-            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
-            buttons: [],
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
-            },
-            responsive: true,
-            scrollX: true,
-            scrollCollapse: true,
-            fixedHeader: true,
-            columnDefs: [
-                { targets: [6, 7], className: 'text-end' },  // Montos alineados a la derecha
-                { targets: [8], className: 'text-center' },  // Días vencido al centro
-                { targets: [9, 10], className: 'text-center' }  // Estado y antigüedad al centro
-            ]
-        });
-    }
-
-    // Función para actualizar estadísticas
-    function updateStatistics(data) {
-        const total = data.length;
-        const amountTotal = data.reduce((sum, row) => sum + (row.amount_currency || row.amount_total || 0), 0);
-        const amountPending = data.reduce((sum, row) => sum + (row.amount_residual_with_retention || 0), 0);
-        const amountOverdue = data.reduce((sum, row) => {
-            return sum + (row.dias_vencido > 0 ? (row.amount_residual_with_retention || 0) : 0);
-        }, 0);
-
-        document.getElementById('statTotal').textContent = total.toLocaleString();
-        document.getElementById('statAmount').textContent = formatCurrency(amountTotal);
-        document.getElementById('statPending').textContent = formatCurrency(amountPending);
-        document.getElementById('statOverdue').textContent = formatCurrency(amountOverdue);
-    }
-
-    // Función para limpiar filtros
-    function clearFilters() {
-        document.getElementById('filterForm').reset();
-        document.getElementById('accountCodes').value = '122,1212,123,1312,132';
-        document.getElementById('salesChannelId').value = '';
-        document.getElementById('docTypeId').value = '';
-        loadReport();
-    }
-
-    // Función para exportar a Excel
-    function exportToExcel() {
-        showLoading();
-        
-        const filters = {
-            date_from: document.getElementById('dateFrom').value,
-            date_to: document.getElementById('dateTo').value,
-            customer: document.getElementById('customer').value,
-            account_codes: document.getElementById('accountCodes').value,
-            sales_channel_id: document.getElementById('salesChannelId').value,
-            doc_type_id: document.getElementById('docTypeId').value,
-            limit: document.getElementById('limit').value
-        };
-
-        const params = new URLSearchParams();
-        Object.keys(filters).forEach(key => {
-            if (filters[key]) params.append(key, filters[key]);
-        });
-
-        window.location.href = `${API_BASE}/exports/collections/excel?${params}`;
-        
-        setTimeout(() => hideLoading(), 2000);
-    }
-
-    // Helpers
-    function formatCurrency(amount) {
-        return new Intl.NumberFormat('es-PE', { 
-            style: 'currency', 
-            currency: 'PEN' 
-        }).format(amount || 0);
-    }
-    
-    function formatNumber(amount) {
-        return new Intl.NumberFormat('es-PE', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(amount || 0);
-    }
-
-    function getStatusBadge(estado) {
-        return estado === 'VENCIDO' ? 'danger' : 'success';
-    }
-</script>
 {% endblock %}

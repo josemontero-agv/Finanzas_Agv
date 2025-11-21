@@ -211,4 +211,64 @@ class OdooRepository:
             bool: True si está conectado
         """
         return bool(self.uid and self.models)
+    
+    def search_count(self, model, domain):
+        """
+        Cuenta registros que coinciden con el domain sin traer los datos.
+        Optimizado para paginación y estadísticas.
+        
+        Args:
+            model (str): Nombre del modelo de Odoo
+            domain (list): Domain de búsqueda (filtros)
+        
+        Returns:
+            int: Cantidad de registros que coinciden con el domain
+        """
+        if not self.uid or not self.models:
+            print("[WARN] No hay conexión a Odoo disponible")
+            return 0
+        
+        try:
+            count = self.models.execute_kw(
+                self.db, self.uid, self.password,
+                model, 'search_count', [domain]
+            )
+            return count
+        except Exception as e:
+            print(f"[ERROR] Error en search_count para {model}: {e}")
+            return 0
+    
+    def read_group(self, model, domain, fields, groupby):
+        """
+        Realiza consulta agregada en Odoo (equivalente a GROUP BY en SQL).
+        Permite obtener sumas, promedios y conteos sin traer todos los registros.
+        
+        Args:
+            model (str): Nombre del modelo de Odoo
+            domain (list): Filtros de búsqueda
+            fields (list): Campos a agregar (ej: ['amount_total', 'amount_residual'])
+            groupby (list): Campos para agrupar ([] para agregación total)
+        
+        Returns:
+            list: Resultados agregados. Ej: [{'amount_total': 50000, '__count': 100}]
+        """
+        if not self.uid or not self.models:
+            print("[WARN] No hay conexión a Odoo disponible")
+            return []
+        
+        try:
+            result = self.models.execute_kw(
+                self.db, self.uid, self.password,
+                model, 'read_group',
+                [domain],
+                {
+                    'fields': fields,
+                    'groupby': groupby,
+                    'lazy': False
+                }
+            )
+            return result
+        except Exception as e:
+            print(f"[ERROR] Error en read_group para {model}: {e}")
+            return []
 

@@ -1,7 +1,60 @@
 # 📋 BITÁCORA DE CAMBIOS - SISTEMA FINANCIERO AGV
 
-> **Última Actualización:** ${new Date().toLocaleDateString('es-PE')}  
+> **Última Actualización:** Diciembre 2024  
 > **Proyecto:** Finanzas_Agv - Sistema de Gestión Financiera
+
+---
+
+## 📅 Diciembre 2024 - Análisis Arquitectónico y Recomendaciones de Stack
+
+### 🎯 Objetivo
+Realizar análisis arquitectónico completo del sistema actual y proporcionar recomendaciones técnicas fundamentadas para mejoras de stack, base de datos y escalabilidad.
+
+### ✅ Cambios Implementados
+
+#### 1. **Análisis Arquitectónico Completo** 🏗️
+
+**Archivo Creado:**
+- `docs/mejoras-stack-arquitectura/analisis-arquitectonico-completo.md`
+
+**Contenido:**
+- ✅ Análisis de arquitectura actual (XML-RPC, sin DB local)
+- ✅ Refutación/validación de recomendaciones previas
+- ✅ Recomendación crítica: PostgreSQL read replica (50-100x más rápido)
+- ✅ Celery + Redis: Alta prioridad para ETL y tareas asíncronas
+- ✅ Validación: Mantener monolito modular (no microservicios aún)
+- ✅ Plan de implementación en 3 fases priorizadas
+- ✅ Stack tecnológico recomendado (mínimo y escalable)
+
+**Hallazgos Clave:**
+1. **XML-RPC es el cuello de botella principal** - Consultas 50-100x más lentas que SQL directo
+2. **Base de datos local es crítica** - PostgreSQL read replica recomendado
+3. **Celery + Redis necesarios** - Para ETL, exportaciones asíncronas y reportes programados
+4. **Monolito modular es suficiente** - No requiere microservicios aún
+
+**Recomendaciones Prioritarias:**
+- **Fase 1 (Crítico):** Implementar PostgreSQL read replica
+- **Fase 2 (Importante):** Implementar Celery + Redis
+- **Fase 3 (Mejoras):** Optimizaciones y monitoreo
+
+#### 2. **Reorganización de Documentación** 📚
+
+**Archivos Movidos:**
+- `CAMBIOS_VERSION_HIBRIDA.md` → `docs/CAMBIOS_VERSION_HIBRIDA.md`
+- `DIAGNOSTICO_CARGA.md` → `docs/DIAGNOSTICO_CARGA.md`
+- `DIAGNOSTICO_KPIS.md` → `docs/DIAGNOSTICO_KPIS.md`
+- `IMPLEMENTACION_OPTIMIZACION.md` → `docs/IMPLEMENTACION_OPTIMIZACION.md`
+- `SCRIPTS_README.md` → `docs/SCRIPTS_README.md`
+
+**Actualizaciones:**
+- ✅ `mkdocs.yml` actualizado con nueva estructura
+- ✅ `ESTRUCTURA_PROYECTO.md` actualizado con estructura completa
+- ✅ Referencias actualizadas en documentación
+
+**Impacto:**
+- Documentación centralizada en `docs/`
+- Mejor organización y navegación
+- Facilita mantenimiento y actualización
 
 ---
 

@@ -51,7 +51,7 @@ workspace "Finanzas AGV" "Sistema de gestión financiera y cobranzas." {
         user -> financeSystem "Visualiza reportes, gestiona cobranzas y tesorería"
         admin -> financeSystem "Configura usuarios y parámetros"
         
-        financeSystem -> erp "Extrae facturas, pagos y clientes" "API/DB"
+        financeSystem -> erp "Extrae facturas, pagos y clientes" "XML-RPC (actual) / PostgreSQL (recomendado)"
         financeSystem -> emailSystem "Envía correos a clientes" "SMTP"
         financeSystem -> sunat "Consulta validez de comprobantes" "API"
     }
@@ -140,9 +140,34 @@ Si necesitas más detalles sobre la implementación:
 
 ---
 
+## 🔄 Arquitectura Futura (Recomendada)
+
+### Mejoras Propuestas
+
+El análisis arquitectónico recomienda las siguientes mejoras:
+
+1. **Base de Datos Local (PostgreSQL Read Replica)**
+   - Consultas 50-100x más rápidas que XML-RPC
+   - Índices personalizados para reportes
+   - Escalabilidad horizontal
+
+2. **Celery + Redis**
+   - Tareas asíncronas (ETL, exportaciones)
+   - Reportes programados
+   - Mejor experiencia de usuario
+
+3. **Mantener Monolito Modular**
+   - Estructura actual es suficiente
+   - Fácil migrar a microservicios después si es necesario
+
+> **Ver:** [Análisis Arquitectónico Completo](../mejoras-stack-arquitectura/analisis-arquitectonico-completo.md) para detalles técnicos.
+
+---
+
 ## 🔗 Referencias
 
 - [Resumen Ejecutivo](../resumen-ejecutivo.md) - Visión general sin diagramas
 - [Documentación Completa](../PROYECTO_COMPLETO.md) - Detalles técnicos del proyecto
+- [Análisis Arquitectónico](../mejoras-stack-arquitectura/analisis-arquitectonico-completo.md) - Recomendaciones de stack y mejoras
 - [Structurizr DSL](workspace.dsl) - Código fuente del diagrama (para desarrolladores)
 

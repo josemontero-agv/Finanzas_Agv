@@ -59,6 +59,18 @@ nav:
   - 🛠️ Técnico:
       - Cambios Login: CAMBIOS_LOGIN.md
       - Mejoras UI/UX: MEJORAS_UI_UX.md
+      - Cambios Versión Híbrida: CAMBIOS_VERSION_HIBRIDA.md
+      - Implementación Optimización: IMPLEMENTACION_OPTIMIZACION.md
+      - Diagnósticos:
+          - Diagnóstico Carga: DIAGNOSTICO_CARGA.md
+          - Diagnóstico KPIs: DIAGNOSTICO_KPIS.md
+  - 🏗️ Arquitectura:
+      - Dream Stack Plan: arquitectura/dream-stack-plan.md
+      - Análisis Dream Stack: arquitectura/analisis-dream-stack.md
+      - Plan Corrección Performance: arquitectura/plan-correccion-performance.md
+      - Mejoras Stack y Arquitectura: mejoras-stack-arquitectura/analisis-arquitectonico-completo.md
+  - 📜 Scripts:
+      - Scripts de Documentación: SCRIPTS_README.md
 
 markdown_extensions:
   - admonition

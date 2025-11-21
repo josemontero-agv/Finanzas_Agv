@@ -17,6 +17,13 @@
 - ⏳ Gestión de detracciones
 - ⏳ Dashboards avanzados con gráficos dinámicos
 
+**Mejoras Arquitectónicas Recomendadas:**
+- 📋 PostgreSQL read replica (consultas 50-100x más rápidas)
+- 📋 Celery + Redis (tareas asíncronas y ETL)
+- 📋 Migración de XML-RPC a SQL directo
+
+> **Ver:** [Análisis Arquitectónico Completo](mejoras-stack-arquitectura/analisis-arquitectonico-completo.md) para detalles técnicos y plan de implementación.
+
 ---
 
 ## 🎯 Lo que se Puede Usar YA (URGENCIA CUBIERTA)
@@ -285,6 +292,29 @@ Para errores o consultas:
 ---
 
 **Versión:** 1.0.0  
-**Fecha:** Noviembre 2025  
+**Fecha:** Diciembre 2024  
 **Estado:** ✅ URGENCIA CUBIERTA - Reportes 12 y 42 FUNCIONALES
+
+---
+
+## 🏗️ Arquitectura y Mejoras Recomendadas
+
+### Análisis Arquitectónico Completo
+
+Se ha realizado un análisis arquitectónico exhaustivo del sistema actual con recomendaciones técnicas fundamentadas:
+
+**Documento:** [Análisis Arquitectónico Completo](mejoras-stack-arquitectura/analisis-arquitectonico-completo.md)
+
+**Hallazgos Principales:**
+1. **XML-RPC es el cuello de botella** - Consultas 50-100x más lentas que SQL directo
+2. **Base de datos local es crítica** - PostgreSQL read replica recomendado
+3. **Celery + Redis necesarios** - Para ETL, exportaciones asíncronas y reportes programados
+4. **Monolito modular es suficiente** - No requiere microservicios aún
+
+**Plan de Implementación:**
+- **Fase 1 (Crítico):** PostgreSQL read replica (2-3 semanas)
+- **Fase 2 (Importante):** Celery + Redis (1-2 semanas)
+- **Fase 3 (Mejoras):** Optimizaciones y monitoreo (1 semana)
+
+Ver el documento completo para detalles técnicos, ejemplos de código y arquitectura propuesta.
 
