@@ -5,10 +5,13 @@
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
     <h1 class="h2"><i class="bi bi-speedometer2"></i> Dashboard Principal</h1>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
-            <i class="bi bi-arrow-clockwise"></i> Actualizar
-        </button>
+    <div class="d-flex align-items-center">
+        <span class="me-3 text-muted d-none d-md-inline">Bienvenido, <strong>{{ session.username }}</strong></span>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                <i class="bi bi-arrow-clockwise"></i> Actualizar
+            </button>
+        </div>
     </div>
 </div>
 

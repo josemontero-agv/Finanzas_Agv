@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Finanzas AGV{% endblock %}</title>
+    <title>{% block title %}Finanzas AGV{% endblock %} {% if session.username %} | {{ session.username }}{% endif %}</title>
     
     <!-- Bootstrap 5.3 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -18,11 +18,14 @@
             --primary-color: #714B67; /* Color principal Odoo/Agrovet */
             --secondary-color: #875A7B; /* Color secundario Odoo */
             --primary-hover: #5a3a52; /* Color hover más oscuro */
+            --bg-light: #f5f7fa;
         }
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f7fa;
+            background-color: var(--bg-light);
+            overflow-x: hidden; /* Evitar scroll horizontal en la página */
+            overflow-y: auto; /* Solo scroll vertical en la página */
         }
         
         .navbar {
@@ -198,8 +201,10 @@
             margin-left: 60px;
             transition: margin-left 0.3s ease;
             padding: 20px;
-            max-width: 100%;
-            overflow-x: auto;
+            max-width: calc(100vw - 60px); /* Ancho máximo menos el sidebar */
+            width: 100%;
+            overflow-x: hidden; /* Sin scroll horizontal en el contenedor principal */
+            box-sizing: border-box;
         }
         
         /* Contenedor para limitar ancho de contenido */
@@ -228,12 +233,14 @@
             border: none;
             box-shadow: 0 2px 4px rgba(0,0,0,.08);
             margin-bottom: 1.5rem;
+            border-radius: 0.5rem;
         }
         
         .card-header {
             background-color: var(--primary-color);
             color: white;
             font-weight: 600;
+            border-radius: 0.5rem 0.5rem 0 0;
         }
         
         /* Mejorar tablas responsivas */
@@ -395,13 +402,24 @@
                         
                         <li class="nav-item">
                             <h6 class="sidebar-heading px-3 mt-4 mb-1 text-muted">
-                                <span>GESTIÓN</span>
+                                <span>LETRAS</span>
                             </h6>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('web.letters_to_recover') }}">
-                                <i class="bi bi-envelope"></i> <span>Letras por Recuperar</span>
+                            <a class="nav-link" href="{{ url_for('web.letters_dashboard') }}">
+                                <i class="bi bi-speedometer"></i> <span>Dashboard Letras</span>
                             </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('web.letters_management') }}">
+                                <i class="bi bi-envelope-paper"></i> <span>Gestión de Envíos</span>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <h6 class="sidebar-heading px-3 mt-4 mb-1 text-muted">
+                                <span>GESTIÓN</span>
+                            </h6>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('web.detractions_send') }}">
@@ -481,9 +499,14 @@
                 extend: {
                     colors: {
                         primary: '#714B67',
-                        secondary: '#875A7B'
+                        'primary-hover': '#5a3a52',
+                        secondary: '#875A7B',
+                        'bg-light': '#f5f7fa'
                     }
                 }
+            },
+            corePlugins: {
+                preflight: false, // Evita conflictos con Bootstrap
             }
         }
     </script>
@@ -493,6 +516,75 @@
         // Configuración global HTMX
         document.body.addEventListener('htmx:configRequest', (event) => {
             event.detail.headers['X-Requested-With'] = 'XMLHttpRequest';
+        });
+        
+        // Cargar información del usuario dinámicamente desde la sesión
+        function loadUserInfo() {
+            // Obtener username desde el template si está disponible
+            const userSpan = document.querySelector('.user-highlight');
+            if (userSpan && userSpan.textContent.trim()) {
+                // Ya está cargado desde el servidor
+                return;
+            }
+            
+            // Si no está disponible, intentar obtenerlo de la sesión Flask
+            // Usamos un endpoint simple que devuelve la info de la sesión
+            fetch('/api/v1/auth/user-info', {
+                method: 'GET',
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                // Si no hay endpoint, intentar leer desde el DOM después de un pequeño delay
+                setTimeout(() => {
+                    const serverUsername = document.querySelector('.user-highlight');
+                    if (serverUsername && serverUsername.textContent.trim()) {
+                        // Ya se cargó desde el servidor
+                        return;
+                    }
+                }, 100);
+                throw new Error('No se pudo obtener información del usuario');
+            })
+            .then(data => {
+                if (data && data.username) {
+                    // Actualizar todos los elementos que muestran el username
+                    document.querySelectorAll('.user-highlight').forEach(el => {
+                        if (!el.textContent.trim()) {
+                            el.textContent = data.username;
+                        }
+                    });
+                    document.querySelectorAll('.user-details strong').forEach(el => {
+                        if (!el.textContent.trim()) {
+                            el.textContent = data.username;
+                        }
+                    });
+                    if (data.email) {
+                        document.querySelectorAll('.user-details small').forEach(el => {
+                            if (!el.textContent.includes('@')) {
+                                el.textContent = data.email;
+                            }
+                        });
+                    }
+                }
+            })
+            .catch(error => {
+                // Si falla, intentar leer desde el DOM después de que se renderice
+                setTimeout(() => {
+                    const serverUsername = document.querySelector('.user-highlight');
+                    if (serverUsername && serverUsername.textContent.trim()) {
+                        // Ya se cargó desde el servidor, no hacer nada
+                        return;
+                    }
+                }, 500);
+            });
+        }
+        
+        // Cargar información del usuario al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            // Esperar un momento para que el servidor renderice el template
+            setTimeout(loadUserInfo, 100);
         });
         
         // Helpers globales

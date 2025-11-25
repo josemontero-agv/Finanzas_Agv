@@ -5,7 +5,7 @@ Rutas de Autenticación.
 Endpoints para login y autenticación de usuarios.
 """
 
-from flask import request, jsonify, current_app
+from flask import request, jsonify, current_app, session
 from app.auth import auth_bp
 from app.core.odoo import OdooRepository
 
@@ -99,6 +99,31 @@ def login():
         }), 500
 
 
+@auth_bp.route('/user-info', methods=['GET'])
+def user_info():
+    """
+    Endpoint para obtener información del usuario actual desde la sesión.
+    
+    Response (JSON):
+        {
+            "success": true,
+            "username": "usuario",
+            "email": "usuario@agrovet.com.pe"
+        }
+    """
+    if session.get('logged_in'):
+        return jsonify({
+            'success': True,
+            'username': session.get('username', ''),
+            'email': session.get('email', '')
+        }), 200
+    else:
+        return jsonify({
+            'success': False,
+            'message': 'Usuario no autenticado'
+        }), 401
+
+
 @auth_bp.route('/status', methods=['GET'])
 def status():
     """
@@ -114,6 +139,6 @@ def status():
     return jsonify({
         'module': 'auth',
         'status': 'active',
-        'endpoints': ['/login', '/status']
+        'endpoints': ['/login', '/status', '/user-info']
     }), 200
 

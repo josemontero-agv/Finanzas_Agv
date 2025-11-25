@@ -46,11 +46,11 @@ class ExcelExportService:
         ws = wb.active
         ws.title = "CxC - Cuenta 12"
         
-        # Definir todas las columnas (28 columnas - incluye campos calculados)
+        # Definir todas las columnas (29 columnas - incluye campos calculados)
         columns = [
             ('invoice_date', 'Fecha Factura'),
             ('date', 'Fecha Contabilización'),
-            ('I10nn_latam_document_type_id', 'Tipo Documento'),
+            ('l10n_latam_document_type_id', 'Tipo Documento'),
             ('move_name', 'Número Documento'),
             ('invoice_origin', 'Origen'),
             ('account_id/code', 'Cuenta'),
@@ -59,7 +59,8 @@ class ExcelExportService:
             ('patner_id', 'Cliente'),
             ('currency_id', 'Moneda'),
             ('amount_currency', 'Total Moneda Origen'),
-            ('amount_residual_with_retention', 'Adeudado Moneda Origen'),
+            ('amount_residual_with_retention', 'Adeudado'),
+            ('amount_residual_signed', 'Adeudado S/.'),
             ('date_maturity', 'Fecha Vencimiento'),
             ('dias_vencido', 'Días Vencido'),
             ('estado_deuda', 'Estado'),
@@ -102,7 +103,7 @@ class ExcelExportService:
                     value = ''
                 
                 # Formatear valores numéricos
-                if key in ['amount_currency', 'amount_residual_with_retention', 'amount_total', 'dias_vencido']:
+                if key in ['amount_currency', 'amount_residual_with_retention', 'amount_residual_signed', 'amount_total', 'dias_vencido']:
                     try:
                         value = float(value) if value else 0
                         if key == 'dias_vencido':
@@ -114,7 +115,7 @@ class ExcelExportService:
                 cell.border = ExcelExportService.CELL_BORDER
                 
                 # Formato especial para números
-                if key in ['amount_currency', 'amount_residual_with_retention', 'amount_total']:
+                if key in ['amount_currency', 'amount_residual_with_retention', 'amount_residual_signed', 'amount_total']:
                     cell.number_format = '#,##0.00'
                     cell.alignment = Alignment(horizontal='right')
                 elif key == 'dias_vencido':
@@ -143,23 +144,24 @@ class ExcelExportService:
             9: 30,  # Cliente
             10: 10, # Moneda
             11: 18, # Total Moneda Origen
-            12: 20, # Adeudado Moneda Origen
-            13: 14, # Fecha Vencimiento
-            14: 12, # Días Vencido
-            15: 12, # Estado
-            16: 20, # Antigüedad
-            17: 14, # Referencia
-            18: 18, # Condición Pago
-            19: 30, # Descripción
-            20: 20, # Vendedor
-            21: 18, # Provincia
-            22: 18, # Distrito
-            23: 12, # Código País
-            24: 18, # País
-            25: 25, # Grupos
-            26: 18, # Sub Canal
-            27: 20, # Canal de Venta
-            28: 18, # Tipo de Venta
+            12: 18, # Adeudado
+            13: 18, # Adeudado S/.
+            14: 14, # Fecha Vencimiento
+            15: 12, # Días Vencido
+            16: 12, # Estado
+            17: 20, # Antigüedad
+            18: 14, # Referencia
+            19: 18, # Condición Pago
+            20: 30, # Descripción
+            21: 20, # Vendedor
+            22: 18, # Provincia
+            23: 18, # Distrito
+            24: 12, # Código País
+            25: 18, # País
+            26: 25, # Grupos
+            27: 18, # Sub Canal
+            28: 20, # Canal de Venta
+            29: 18, # Tipo de Venta
         }
         
         for col_num, width in column_widths.items():
@@ -189,7 +191,7 @@ class ExcelExportService:
         ws = wb.active
         ws.title = "CxP - Cuenta 42"
         
-        # Definir columnas expandidas (25+ campos)
+        # Definir columnas expandidas (28 campos)
         columns = [
             ('invoice_date', 'Fecha Factura'),
             ('date', 'Fecha Contabilización'),
@@ -208,8 +210,9 @@ class ExcelExportService:
             ('supplier_phone', 'Teléfono'),
             ('supplier_email', 'Email'),
             ('currency_id', 'Moneda'),
-            ('amount_total', 'Monto Total'),
-            ('amount_residual', 'Saldo Pendiente'),
+            ('amount_total_in_currency_signed', 'Total Origen'),
+            ('amount_residual_with_retention', 'Adeudado Origen'),
+            ('amount_total_signed', 'Total S/.'),
             ('invoice_date_due', 'Fecha Vencimiento'),
             ('dias_vencido', 'Días Vencido'),
             ('estado_deuda', 'Estado'),
@@ -245,7 +248,7 @@ class ExcelExportService:
                     value = ''
                 
                 # Formatear valores numéricos
-                if key in ['amount_total', 'amount_residual', 'dias_vencido']:
+                if key in ['amount_total_in_currency_signed', 'amount_residual_with_retention', 'amount_total_signed', 'dias_vencido']:
                     try:
                         value = float(value) if value else 0
                         if key == 'dias_vencido':
@@ -257,7 +260,7 @@ class ExcelExportService:
                 cell.border = ExcelExportService.CELL_BORDER
                 
                 # Formato especial para números
-                if key in ['amount_total', 'amount_residual']:
+                if key in ['amount_total_in_currency_signed', 'amount_residual_with_retention', 'amount_total_signed']:
                     cell.number_format = '#,##0.00'
                     cell.alignment = Alignment(horizontal='right')
                 elif key == 'dias_vencido':
@@ -274,7 +277,7 @@ class ExcelExportService:
                         cell.fill = PatternFill(start_color="CCFFCC", end_color="CCFFCC", fill_type="solid")
         
         # Ajustar anchos de columna
-        column_widths = [12, 14, 14, 16, 14, 12, 10, 25, 14, 30, 12, 18, 18, 18, 16, 25, 10, 16, 18, 14, 12, 12, 20, 18, 14, 14, 20, 30]
+        column_widths = [12, 14, 14, 16, 14, 12, 10, 25, 14, 30, 12, 18, 18, 18, 16, 25, 10, 18, 18, 18, 14, 12, 12, 20, 18, 14, 14, 20, 30]
         for col, width in enumerate(column_widths, 1):
             ws.column_dimensions[get_column_letter(col)].width = width
         

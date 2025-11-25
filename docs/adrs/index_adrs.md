@@ -13,6 +13,8 @@ Los Registros de Decisiones Arquitectónicas (Architecture Decision Records - AD
 | ID | Estado | Título | Fecha |
 | :--- | :--- | :--- | :--- |
 | [ADR-001](0001-uso-mkdocs.md) | ✅ Aceptado | Uso de MkDocs para Documentación | 2025-11-20 |
+| [ADR-002](0002-plataforma-externa-reporteria.md) | ✅ Aceptado | Plataforma Externa para Reportería | 2025-11-14 |
+| [ADR-003](0003-estrategia-envio-correos.md) | 🟡 Propuesto | Estrategia de Envío Masivo de Correos | 2025-10-13 |
 
 ---
 

@@ -30,9 +30,47 @@ class TreasuryService:
         """
         self.repository = odoo_repository
     
+    def get_filter_options(self):
+        """
+        Obtiene opciones para filtros de tesorería.
+        Retorna todos los tipos de documento disponibles (sin filtrar por tipo específico).
+        
+        Returns:
+            dict: Diccionario con las opciones de filtros
+        """
+        try:
+            if not self.repository.is_connected():
+                return {'document_types': []}
+            
+            # Obtener tipos de documento LATAM
+            document_types = []
+            try:
+                doc_types = self.repository.search_read(
+                    'l10n_latam.document.type',
+                    [],
+                    ['id', 'name'],
+                    limit=200
+                )
+                
+                document_types = [
+                    {'id': doc['id'], 'name': doc.get('name', '')}
+                    for doc in doc_types
+                ]
+                document_types.sort(key=lambda x: x['name'])
+            except Exception as e:
+                print(f"[WARN] No se pudo obtener tipos de documento: {e}")
+            
+            return {
+                'document_types': document_types
+            }
+            
+        except Exception as e:
+            print(f"[ERROR] Error obteniendo opciones de filtros: {e}")
+            return {'document_types': []}
+
     def get_accounts_payable_report(self, start_date=None, end_date=None, 
                                     supplier=None, limit=0, account_codes=None,
-                                    payment_state=None):
+                                    payment_state=None, doc_type_id=None):
         """
         Obtener reporte de cuentas por pagar (Cuenta 42 y 43).
         
@@ -68,7 +106,7 @@ class TreasuryService:
             line_domain = [
                 ('parent_state', '=', 'posted'),  # Solo facturas contabilizadas
                 ('reconciled', '=', False),  # Solo pendientes de pago
-                ('move_id.move_type', 'in', ['in_invoice', 'in_refund']),  # Facturas de proveedor
+                ('move_id.move_type', 'in', ['in_invoice', 'in_refund', 'entry']),  # Facturas de proveedor y asientos manuales
             ]
             
             # Construir OR para códigos de cuenta
@@ -95,7 +133,7 @@ class TreasuryService:
             line_fields = [
                 'id', 'move_id', 'partner_id', 'account_id', 'name', 'date',
                 'date_maturity', 'amount_currency', 'amount_residual', 'currency_id',
-                'reconciled', 'full_reconcile_id', 'blocked',
+                'reconciled', 'full_reconcile_id', 'blocked', 'debit', 'credit',
             ]
             
             effective_limit = limit if limit and limit > 0 else 10000
@@ -151,7 +189,8 @@ class TreasuryService:
         move_fields = [
             'id', 'name', 'ref', 'payment_state', 'invoice_date', 
             'invoice_date_due', 'invoice_origin', 'amount_total',
-            'amount_residual', 'currency_id', 'invoice_payment_term_id',
+            'amount_residual', 'amount_total_in_currency_signed', 'amount_residual_with_retention', 
+            'amount_total_signed', 'currency_id', 'invoice_payment_term_id',
             'invoice_user_id', 'company_id', 'move_type',
             'l10n_latam_document_type_id', 'narration', 'state',
             'fiscal_position_id', 'invoice_incoterm_id'
@@ -213,6 +252,22 @@ class TreasuryService:
         rows = []
         today = datetime.today().date()
         
+        # Mapas de traducción
+        PAYMENT_STATE_MAP = {
+            'not_paid': 'No Pagado',
+            'in_payment': 'En Proceso',
+            'paid': 'Pagado',
+            'partial': 'Parcial',
+            'reversed': 'Revertido',
+            'invoicing_legacy': 'Histórico'
+        }
+        
+        STATE_MAP = {
+            'draft': 'Borrador',
+            'posted': 'Publicado',
+            'cancel': 'Cancelado'
+        }
+        
         for line in lines:
             move_id = line['move_id'][0] if line.get('move_id') else None
             partner_id = line['partner_id'][0] if line.get('partner_id') else None
@@ -224,7 +279,9 @@ class TreasuryService:
             
             # Calcular días de vencimiento
             invoice_date_due = move.get('invoice_date_due', '')
-            dias_vencido = calcular_dias_vencido(invoice_date_due, today) if invoice_date_due else 0
+            # Priorizar fecha de vencimiento de la línea (más precisa para cuotas/asientos)
+            date_due = line.get('date_maturity') or invoice_date_due
+            dias_vencido = calcular_dias_vencido(date_due, today) if date_due else 0
             
             # Clasificar antigüedad
             antiguedad = clasificar_antiguedad(max(0, dias_vencido))
@@ -232,13 +289,23 @@ class TreasuryService:
             # Estado de deuda
             estado_deuda = 'VENCIDO' if dias_vencido > 0 else 'VIGENTE'
             
+            # Calcular montos de línea (evitar duplicidad de totales de factura)
+            debit = line.get('debit', 0.0) or 0.0
+            credit = line.get('credit', 0.0) or 0.0
+            amount_total_line = abs(debit - credit)
+            amount_residual_line = abs(line.get('amount_residual', 0.0) or 0.0)
+            
+            # Traducciones
+            payment_state_raw = move.get('payment_state', '')
+            state_raw = move.get('state', '')
+            
             row = {
                 # Datos de la factura
                 'move_name': move.get('name', ''),
                 'ref': move.get('ref', ''),
-                'payment_state': move.get('payment_state', ''),
+                'payment_state': PAYMENT_STATE_MAP.get(payment_state_raw, payment_state_raw),
                 'move_type': move.get('move_type', ''),
-                'state': move.get('state', ''),
+                'state': STATE_MAP.get(state_raw, state_raw),
                 'invoice_date': move.get('invoice_date', ''),
                 'invoice_date_due': invoice_date_due,
                 'invoice_origin': move.get('invoice_origin', ''),
@@ -265,10 +332,13 @@ class TreasuryService:
                 'account_code': account.get('code', ''),
                 'account_name': account.get('name', ''),
                 
-                # Montos
+                # Montos (USAR MONTOS DE LÍNEA + MONTOS DE FACTURA EN MONEDA ORIGEN Y SOLES)
                 'currency_id': self._extract_m2o_name(line.get('currency_id') or move.get('currency_id')),
-                'amount_total': move.get('amount_total', 0.0),
-                'amount_residual': move.get('amount_residual', 0.0),
+                'amount_total': amount_total_line,
+                'amount_residual': amount_residual_line,
+                'amount_total_in_currency_signed': move.get('amount_total_in_currency_signed', 0.0),
+                'amount_residual_with_retention': move.get('amount_residual_with_retention', 0.0),
+                'amount_total_signed': move.get('amount_total_signed', 0.0),
                 'amount_currency': line.get('amount_currency', 0.0),
                 'amount_residual_currency': line.get('amount_residual', 0.0),
                 

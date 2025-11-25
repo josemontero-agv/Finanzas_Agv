@@ -1,36 +1,33 @@
 # -*- coding: utf-8 -*-
 """
 Servicio de Envío de Emails.
-
-PLACEHOLDER - Estructura para implementación futura.
-
-Funcionalidades planificadas:
-1. Envío masivo de correos
-2. Templates HTML personalizados
-3. Adjuntos (Excel, PDF)
-4. Cola de correos con reintento
-5. Registro de envíos
 """
 
 from flask_mail import Mail, Message
-from flask import current_app
-
+from flask import current_app, render_template
+from app.emails.email_logger import EmailLogger
 
 class EmailService:
     """
     Servicio para envío de correos electrónicos.
-    
-    TODO: Implementar métodos completos cuando se requiera.
     """
     
     def __init__(self, mail_instance=None):
         """
         Inicializa el servicio de emails.
-        
-        Args:
-            mail_instance: Instancia de Flask-Mail (opcional)
         """
-        self.mail = mail_instance
+        if mail_instance:
+            self.mail = mail_instance
+        else:
+            # Obtener instancia de Flask-Mail desde la app
+            try:
+                self.mail = current_app.extensions.get('mail')
+            except RuntimeError:
+                # Fuera de contexto de aplicación
+                self.mail = None
+        
+        # Inicializar logger de auditoría
+        self.logger = EmailLogger()
     
     def send_letters_to_recover(self, recipients_data):
         """
@@ -46,53 +43,216 @@ class EmailService:
         
         Returns:
             dict: Resultado del envío
-        
-        TODO: Implementar lógica de envío masivo
         """
-        raise NotImplementedError("Funcionalidad pendiente de implementación")
+        results = {
+            'sent': 0,
+            'failed': 0,
+            'errors': []
+        }
+        
+        for recipient in recipients_data:
+            try:
+                # Renderizar template
+                html_body = render_template(
+                    'emails/letters_recover.html',
+                    customer_name=recipient['name'],
+                    letters=recipient['letters']
+                )
+                
+                # Configurar mensaje
+                subject = f"Recordatorio de Firma de Letras - {recipient['name']}"
+                
+                # Enviar correo
+                if self.mail:
+                    msg = Message(
+                        subject=subject,
+                        recipients=[recipient['email']],
+                        html=html_body,
+                        sender=current_app.config.get('MAIL_DEFAULT_SENDER', 'noreply@agrovetmarket.com')
+                    )
+                    self.mail.send(msg)
+                    print(f"[OK] Email enviado a {recipient['email']}")
+                else:
+                    # MOCK SEND: Imprimir en consola si no hay configuración de mail
+                    print(f"--- SIMULATING EMAIL SEND TO {recipient['email']} ---")
+                    print(f"Subject: {subject}")
+                    print("------------------------------------------------")
+                
+                results['sent'] += 1
+                
+            except Exception as e:
+                results['failed'] += 1
+                results['errors'].append(f"Error enviando a {recipient.get('name', 'Unknown')}: {str(e)}")
+        
+        return results
     
     def send_letters_in_bank(self, recipients_data):
         """
         Envía correos de letras en banco.
-        
-        Args:
-            recipients_data (list): Lista de dict con datos de destinatarios
-        
-        Returns:
-            dict: Resultado del envío
-        
-        TODO: Implementar lógica de envío masivo
         """
-        raise NotImplementedError("Funcionalidad pendiente de implementación")
+        results = {
+            'sent': 0,
+            'failed': 0,
+            'errors': []
+        }
+        
+        for recipient in recipients_data:
+            try:
+                # Renderizar template
+                html_body = render_template(
+                    'emails/letters_bank.html',
+                    customer_name=recipient['name'],
+                    letters=recipient['letters']
+                )
+                
+                # Configurar mensaje
+                subject = f"Aviso de Letras Disponibles para Pago - {recipient['name']}"
+                
+                # Enviar correo
+                if self.mail:
+                    msg = Message(
+                        subject=subject,
+                        recipients=[recipient['email']],
+                        html=html_body,
+                        sender=current_app.config.get('MAIL_DEFAULT_SENDER', 'noreply@agrovetmarket.com')
+                    )
+                    self.mail.send(msg)
+                    print(f"[OK] Email enviado a {recipient['email']}")
+                else:
+                    # MOCK SEND
+                    print(f"--- SIMULATING EMAIL SEND TO {recipient['email']} ---")
+                    print(f"Subject: {subject}")
+                    print("------------------------------------------------")
+                
+                results['sent'] += 1
+                
+            except Exception as e:
+                results['failed'] += 1
+                results['errors'].append(f"Error enviando a {recipient.get('name', 'Unknown')}: {str(e)}")
+                
+        return results
     
     def send_detraction_certificates(self, recipients_data):
         """
         Envía constancias de detracción de manera masiva.
+        """
+        raise NotImplementedError("Funcionalidad pendiente de implementación")
+    
+    def send_acceptance_reminders(self, recipients_data):
+        """
+        Envía correos para firma de letras (estado 'to_accept').
         
         Args:
-            recipients_data (list): Lista de dict con datos y adjuntos
+            recipients_data (list): Lista de dict con datos de destinatarios
+                [{
+                    'email': 'cliente@example.com',
+                    'name': 'Cliente',
+                    'letters': [...]  # Datos de letras
+                }, ...]
         
         Returns:
             dict: Resultado del envío
-        
-        TODO: Implementar lógica de envío masivo con adjuntos
         """
-        raise NotImplementedError("Funcionalidad pendiente de implementación")
+        results = {
+            'sent': 0,
+            'failed': 0,
+            'errors': []
+        }
+        
+        for recipient in recipients_data:
+            try:
+                # Construir lista de letras en HTML
+                letters_list_html = "<ul style='list-style-type: none; padding-left: 0;'>"
+                for letter in recipient['letters']:
+                    letters_list_html += f"""
+                    <li style='margin-bottom: 10px; padding: 8px; background-color: #f8f9fa; border-left: 3px solid #714B67;'>
+                        <strong>Letra {letter.get('number', 'N/A')}</strong> - 
+                        {letter.get('currency', 'PEN')} {letter.get('amount', 0):,.2f} - 
+                        Vence: {letter.get('due_date', 'N/A')}
+                    </li>
+                    """
+                letters_list_html += "</ul>"
+                
+                # Plantilla de correo según especificación del usuario
+                body_html = f"""
+                <html>
+                <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+                    <p>Buenas tardes Estimada/o,</p>
+                    <p>Se adjunta las letras para su pronta firma:</p>
+                    {letters_list_html}
+                    <p>Por favor responder correo cuando se esté enviando las letras firmadas.</p>
+                    <br>
+                    <p>Cordialmente,<br>
+                    <strong>José Montero</strong> | Asistente de Créditos y Cobranzas<br>
+                    (1) 2300 300 Anexo | +51 965 252 063 | jose.montero@agrovetmarket.com</p>
+                </body>
+                </html>
+                """
+                
+                subject = f"Letras Pendientes de Firma - {recipient['name']}"
+                
+                # Obtener IDs de letras para logging
+                letter_ids = [l.get('id') for l in recipient['letters'] if l.get('id')]
+                
+                # Enviar correo
+                if self.mail:
+                    msg = Message(
+                        subject=subject,
+                        recipients=[recipient['email']],
+                        html=body_html,
+                        sender=current_app.config.get('MAIL_DEFAULT_SENDER', 'jose.montero@agrovetmarket.com')
+                    )
+                    self.mail.send(msg)
+                    print(f"[OK] Email de aceptación enviado a {recipient['email']}")
+                    
+                    # Log exitoso
+                    self.logger.log_email_sent(
+                        recipient_email=recipient['email'],
+                        recipient_name=recipient['name'],
+                        subject=subject,
+                        letter_count=len(recipient['letters']),
+                        letter_ids=letter_ids
+                    )
+                else:
+                    # MOCK SEND (para desarrollo sin configuración SMTP)
+                    print(f"--- SIMULATING EMAIL SEND TO {recipient['email']} ---")
+                    print(f"Subject: {subject}")
+                    print("------------------------------------------------")
+                    
+                    # Log como enviado incluso en modo mock
+                    self.logger.log_email_sent(
+                        recipient_email=recipient['email'],
+                        recipient_name=recipient['name'],
+                        subject=subject,
+                        letter_count=len(recipient['letters']),
+                        letter_ids=letter_ids
+                    )
+                
+                results['sent'] += 1
+                
+            except Exception as e:
+                results['failed'] += 1
+                error_msg = f"Error enviando a {recipient.get('name', 'Unknown')}: {str(e)}"
+                results['errors'].append(error_msg)
+                print(f"[ERROR] {error_msg}")
+                
+                # Log del error
+                letter_ids = [l.get('id') for l in recipient.get('letters', []) if l.get('id')]
+                self.logger.log_email_failed(
+                    recipient_email=recipient.get('email', 'unknown'),
+                    recipient_name=recipient.get('name', 'Unknown'),
+                    subject=subject,
+                    error_message=str(e),
+                    letter_ids=letter_ids
+                )
+                
+                import traceback
+                traceback.print_exc()
+        
+        return results
     
     def send_bulk_email(self, recipients, subject, body_html, attachments=None):
         """
         Método genérico para envío masivo de correos.
-        
-        Args:
-            recipients (list): Lista de emails
-            subject (str): Asunto del correo
-            body_html (str): Cuerpo HTML del correo
-            attachments (list, optional): Lista de adjuntos
-        
-        Returns:
-            dict: Estadísticas de envío
-        
-        TODO: Implementar con Flask-Mail
         """
         raise NotImplementedError("Funcionalidad pendiente de implementación")
-

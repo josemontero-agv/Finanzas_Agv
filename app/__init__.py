@@ -9,11 +9,13 @@ con diferentes configuraciones.
 from flask import Flask, jsonify
 from flask_caching import Cache
 from flask_compress import Compress
+from flask_mail import Mail
 from config import config
 
 # Inicializar extensiones
 cache = Cache()
 compress = Compress()
+mail = Mail()
 
 
 def create_app(config_name='development'):
@@ -50,6 +52,9 @@ def create_app(config_name='development'):
     app.config['COMPRESS_LEVEL'] = 6
     app.config['COMPRESS_MIN_SIZE'] = 500
     compress.init_app(app)
+    
+    # Configurar Flask-Mail
+    mail.init_app(app)
     
     # Registrar blueprints API
     from app.auth import auth_bp
@@ -117,5 +122,6 @@ def create_app(config_name='development'):
     print(f"[OK] Blueprint Web (Frontend) registrado")
     print(f"[OK] Flask-Caching configurado (timeout: 300s)")
     print(f"[OK] Flask-Compress configurado (nivel: 6)")
+    print(f"[OK] Flask-Mail configurado (servidor: {app.config.get('MAIL_SERVER', 'N/A')})")
     
     return app

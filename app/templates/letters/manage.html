@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Créditos - Envío de Correos{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header text-white d-flex justify-content-between align-items-center" style="background-color: #714B67;">
+                    <h5 class="mb-0"><i class="fas fa-mail-bulk me-2"></i>Envío de Correos Automáticos - Créditos</h5>
+                    <span class="badge" style="background-color: rgba(255, 255, 255, 0.2); color: white;"><i class="fas fa-user me-1"></i><span id="card-username">{{ session.username or '' }}</span></span>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs mb-3" id="lettersTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="recover-tab" data-bs-toggle="tab" data-bs-target="#recover" type="button" role="tab" aria-controls="recover" aria-selected="true">
+                                <i class="fas fa-file-signature me-2"></i>Letras por Recuperar
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="bank-tab" data-bs-toggle="tab" data-bs-target="#bank" type="button" role="tab" aria-controls="bank" aria-selected="false">
+                                <i class="fas fa-university me-2"></i>Letras en Banco
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="lettersTabContent">
+                        <!-- Tab Letras por Recuperar -->
+                        <div class="tab-pane fade show active" id="recover" role="tabpanel" aria-labelledby="recover-tab">
+                            <div class="row mb-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Fecha Emisión Inicio</label>
+                                    <input type="date" class="form-control" id="recover-date-start">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Fecha Emisión Fin</label>
+                                    <input type="date" class="form-control" id="recover-date-end">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Cliente</label>
+                                    <input type="text" class="form-control" id="recover-customer" placeholder="Buscar cliente...">
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button class="btn btn-secondary w-100" onclick="loadRecoverLetters()">
+                                        <i class="fas fa-search me-1"></i>Buscar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive mb-3">
+                                <table class="table table-hover align-middle" id="table-recover">
+                                    <thead style="background-color: #714B67; color: white;">
+                                        <tr>
+                                            <th scope="col"><input type="checkbox" id="check-all-recover" class="form-check-input"></th>
+                                            <th scope="col">Ruc</th>
+                                            <th scope="col">Cliente</th>
+                                            <th scope="col">Letra</th>
+                                            <th scope="col">Número</th>
+                                            <th scope="col">Monto</th>
+                                            <th scope="col">Planilla Interna</th>
+                                            <th scope="col">F. Emision</th>
+                                            <th scope="col">F. Vencimiento</th>
+                                            <th scope="col">Estado</th>
+                                            <th scope="col">Vendedor</th>
+                                            <th scope="col">Ciudad</th>
+                                            <th scope="col">Referencia</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Data loaded via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge" style="background-color: #714B67; color: white;" id="selected-count">0 seleccionadas</span>
+                                </div>
+                                <div>
+                                    <button class="btn btn-success" onclick="sendRecoverEmails()" id="btn-send-emails">
+                                        <i class="fas fa-paper-plane me-2"></i>Enviar Recordatorios de Firma
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info mt-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Lógica de Estado:</strong>
+                                <ul class="mb-0 mt-1 small">
+                                    <li><strong>Lima:</strong> Se marca "POR RECUPERAR" si han pasado > 4 días desde la fecha de emisión.</li>
+                                    <li><strong>Provincia:</strong> Se marca "POR RECUPERAR" si han pasado > 10 días desde la fecha de emisión.</li>
+                                    <li>En caso contrario, el estado es "VIGENTE".</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Tab Letras en Banco -->
+                        <div class="tab-pane fade" id="bank" role="tabpanel" aria-labelledby="bank-tab">
+                            <!-- Manteniendo diseño anterior para banco por ahora, ajustando colores -->
+                            <div class="row mb-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Fecha Inicio</label>
+                                    <input type="date" class="form-control" id="bank-date-start">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Fecha Fin</label>
+                                    <input type="date" class="form-control" id="bank-date-end">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Banco</label>
+                                    <select class="form-select" id="bank-select">
+                                        <option value="">Todos</option>
+                                        <option value="BBVA">BBVA</option>
+                                        <option value="BCP">BCP</option>
+                                        <option value="INTERBANK">Interbank</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button class="btn btn-secondary w-100" onclick="loadBankLetters()">
+                                        <i class="fas fa-search me-1"></i>Buscar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive mb-3">
+                                <table class="table table-hover align-middle" id="table-bank">
+                                    <thead style="background-color: #714B67; color: white;">
+                                        <tr>
+                                            <th scope="col"><input type="checkbox" id="check-all-bank" class="form-check-input"></th>
+                                            <th scope="col">Letra N°</th>
+                                            <th scope="col">Número Pago</th>
+                                            <th scope="col">Cliente</th>
+                                            <th scope="col">Banco</th>
+                                            <th scope="col">Fecha Vcto.</th>
+                                            <th scope="col">Importe</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Data loaded via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="d-flex justify-content-end">
+                                <button class="btn btn-success" onclick="sendBankEmails()">
+                                    <i class="fas fa-paper-plane me-2"></i>Enviar Aviso de Pago
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set default dates (first and last day of current month)
+        const date = new Date();
+        const firstDay = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+        const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
+        
+        document.getElementById('recover-date-start').value = firstDay;
+        document.getElementById('recover-date-end').value = lastDay;
+        document.getElementById('bank-date-start').value = firstDay;
+        document.getElementById('bank-date-end').value = lastDay;
+
+        // Cargar username en el card si no está disponible
+        if (!document.getElementById('card-username').textContent.trim()) {
+            fetch('/api/v1/auth/user-info')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.username) {
+                        document.getElementById('card-username').textContent = data.username;
+                    }
+                })
+                .catch(err => console.warn('No se pudo cargar username:', err));
+        }
+        
+        // Load initial data
+        loadRecoverLetters();
+        
+        // Event listeners for tabs to load data when switched
+        document.getElementById('bank-tab').addEventListener('shown.bs.tab', function (e) {
+            loadBankLetters();
+        });
+
+        // Check all functionality
+        document.getElementById('check-all-recover').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('#table-recover tbody input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updateSelectedCount();
+        });
+        
+        // Actualizar contador de seleccionadas
+        function updateSelectedCount() {
+            const selected = document.querySelectorAll('#table-recover tbody input[type="checkbox"]:checked').length;
+            document.getElementById('selected-count').textContent = `${selected} seleccionada${selected !== 1 ? 's' : ''}`;
+        }
+        
+        // Actualizar contador cuando se selecciona/deselecciona una letra
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('letter-check')) {
+                updateSelectedCount();
+            }
+        });
+
+        document.getElementById('check-all-bank').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('#table-bank tbody input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+        });
+    });
+
+    function loadRecoverLetters() {
+        const start = document.getElementById('recover-date-start').value;
+        const end = document.getElementById('recover-date-end').value;
+        const customer = document.getElementById('recover-customer').value;
+        
+        const tbody = document.querySelector('#table-recover tbody');
+        tbody.innerHTML = '<tr><td colspan="13" class="text-center"><div class="spinner-border" style="color: #714B67;" role="status"></div></td></tr>';
+
+        fetch(`/api/v1/letters/to-accept`)
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.message || `HTTP error! status: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Datos recibidos:', data); // Debug
+                tbody.innerHTML = '';
+                if (data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
+                    data.data.forEach(item => {
+                        const statusClass = item.status_calc === 'POR RECUPERAR' 
+                            ? 'bg-warning text-dark' 
+                            : 'bg-success text-white';
+                        
+                        const row = `
+                            <tr>
+                                <td><input type="checkbox" class="letter-check form-check-input" value="${item.id}" data-customer="${item.acceptor_id || ''}" data-email="${item.customer_email || ''}"></td>
+                                <td>${item.vat || ''}</td>
+                                <td>${item.acceptor_id || ''}</td>
+                                <td>${item.number || ''}</td>
+                                <td>${item.ref_docs || ''}</td>
+                                <td>${parseFloat(item.amount || 0).toLocaleString('es-PE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                <td>${item.invoice_origin || ''}</td>
+                                <td>${item.date || ''}</td>
+                                <td>${item.due_date || ''}</td>
+                                <td><span class="badge ${statusClass}">${item.status_calc || 'VIGENTE'}</span></td>
+                                <td>${item.salesperson || ''}</td>
+                                <td>${item.city || ''}</td>
+                                <td>${item.ref || ''}</td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    });
+                    updateSelectedCount(); // Actualizar contador después de cargar datos
+                } else {
+                    const msg = data.message || 'No se encontraron letras pendientes de firma (estado: Por aceptar)';
+                    const count = data.count || 0;
+                    console.log('No hay datos o datos vacíos. Count:', count, 'Data:', data.data);
+                    tbody.innerHTML = `<tr><td colspan="13" class="text-center text-muted">${msg}</td></tr>`;
+                    document.getElementById('selected-count').textContent = '0 seleccionadas';
+                }
+            })
+            .catch(error => {
+                console.error('Error completo:', error);
+                tbody.innerHTML = '<tr><td colspan="13" class="text-center text-danger">Error al cargar datos: ' + error.message + '<br><small>Revisa la consola para más detalles</small></td></tr>';
+            });
+    }
+
+    function loadBankLetters() {
+        const start = document.getElementById('bank-date-start').value;
+        const end = document.getElementById('bank-date-end').value;
+        const bank = document.getElementById('bank-select').value;
+
+        const tbody = document.querySelector('#table-bank tbody');
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center"><div class="spinner-border" style="color: #714B67;" role="status"></div></td></tr>';
+
+        fetch(`/api/v1/letters/in-bank?start_date=${start}&end_date=${end}&bank=${bank}`)
+            .then(response => response.json())
+            .then(data => {
+                tbody.innerHTML = '';
+                if (data.success && data.data.length > 0) {
+                    data.data.forEach(item => {
+                        const row = `
+                            <tr>
+                                <td><input type="checkbox" class="letter-check form-check-input" value="${item.id}"></td>
+                                <td>${item.number}</td>
+                                <td><strong>${item.payment_number}</strong></td>
+                                <td>${item.customer}</td>
+                                <td>${item.bank}</td>
+                                <td>${item.due_date}</td>
+                                <td>${item.amount} ${item.currency}</td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center">No se encontraron letras en banco</td></tr>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error al cargar datos</td></tr>';
+            });
+    }
+
+    function sendRecoverEmails() {
+        const selected = Array.from(document.querySelectorAll('#table-recover tbody input[type="checkbox"]:checked')).map(cb => cb.value);
+        
+        if (selected.length === 0) {
+            alert('⚠️ Por favor seleccione al menos una letra');
+            return;
+        }
+
+        // Obtener información de los correos que se enviarán
+        const selectedRows = Array.from(document.querySelectorAll('#table-recover tbody input[type="checkbox"]:checked'));
+        const emails = new Set();
+        selectedRows.forEach(cb => {
+            const email = cb.getAttribute('data-email');
+            if (email) emails.add(email);
+        });
+
+        let confirmMsg = `¿Está seguro de enviar correos para ${selected.length} letra(s) seleccionada(s)?\n\n`;
+        confirmMsg += `Se enviará a ${emails.size} cliente(s):\n`;
+        emails.forEach(email => confirmMsg += `- ${email}\n`);
+
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+
+        // Deshabilitar botón durante el envío
+        const btn = document.getElementById('btn-send-emails');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enviando...';
+
+        // Enviar usando el endpoint de aceptación
+        fetch('/api/v1/letters/send-acceptance', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ letter_ids: selected })
+        })
+        .then(response => response.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Enviar Recordatorios de Firma';
+            
+            if (data.success) {
+                const details = data.details || {};
+                let message = `✅ Correos enviados exitosamente\n\n`;
+                message += `📧 Enviados: ${details.sent || 0}\n`;
+                message += `❌ Fallidos: ${details.failed || 0}\n`;
+                if (details.errors && details.errors.length > 0) {
+                    message += `\nErrores:\n${details.errors.slice(0, 3).join('\n')}`;
+                }
+                alert(message);
+                loadRecoverLetters(); // Recargar tabla
+            } else {
+                alert('❌ Error al enviar correos: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Enviar Recordatorios de Firma';
+            alert('❌ Error de conexión: ' + error.message);
+        });
+    }
+
+    function sendBankEmails() {
+        const selected = Array.from(document.querySelectorAll('#table-bank tbody input[type="checkbox"]:checked')).map(cb => cb.value);
+        
+        if (selected.length === 0) {
+            alert('Por favor seleccione al menos una letra');
+            return;
+        }
+
+        if (!confirm(`¿Está seguro de enviar avisos de pago para ${selected.length} letras seleccionadas?`)) {
+            return;
+        }
+
+        fetch('/api/v1/letters/send-bank', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ letter_ids: selected })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Avisos enviados exitosamente');
+                loadBankLetters();
+            } else {
+                alert('Error al enviar correos: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error de conexión');
+        });
+    }
+</script>
+{% endblock %}

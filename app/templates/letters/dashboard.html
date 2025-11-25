@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard de Letras - Finanzas AGV{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 mb-0 text-gray-800"><i class="bi bi-speedometer2 me-2"></i>Dashboard de Letras</h2>
+            <p class="text-muted small mb-0">Usuario: <strong>{{ session.username }}</strong></p>
+        </div>
+        <a href="{{ url_for('web.letters_management') }}" class="btn btn-primary">
+            <i class="bi bi-gear me-2"></i>Gestión de Envíos
+        </a>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row mb-4">
+        <!-- Letras por Recuperar (Count) -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Por Recuperar (Cant)</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="kpi-recover-count">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-file-earmark-text fa-2x text-gray-300" style="font-size: 2rem; opacity: 0.3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Letras por Recuperar (Amount) -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Por Recuperar (Monto)</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="kpi-recover-amount">S/ 0.00</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-currency-dollar fa-2x text-gray-300" style="font-size: 2rem; opacity: 0.3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Letras en Banco (Count) -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                En Banco (Cant)</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="kpi-bank-count">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-bank fa-2x text-gray-300" style="font-size: 2rem; opacity: 0.3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Letras en Banco (Amount) -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                En Banco (Monto)</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="kpi-bank-amount">S/ 0.00</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-cash-coin fa-2x text-gray-300" style="font-size: 2rem; opacity: 0.3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row">
+        <!-- Ageing Chart -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Antigüedad de Letras por Recuperar</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area" style="height: 350px;">
+                        <div id="ageingChart" style="width: 100%; height: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bank Distribution Chart -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Distribución por Banco</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie pt-4 pb-2" style="height: 350px;">
+                        <div id="bankChart" style="width: 100%; height: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetchData();
+    });
+
+    function fetchData() {
+        fetch('/api/v1/letters/summary')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateKPIs(data.data.kpi);
+                    initCharts(data.data.charts);
+                }
+            })
+            .catch(error => console.error('Error fetching summary:', error));
+    }
+
+    function updateKPIs(kpi) {
+        document.getElementById('kpi-recover-count').textContent = kpi.to_recover.count;
+        document.getElementById('kpi-recover-amount').textContent = formatCurrency(kpi.to_recover.amount);
+        document.getElementById('kpi-bank-count').textContent = kpi.in_bank.count;
+        document.getElementById('kpi-bank-amount').textContent = formatCurrency(kpi.in_bank.amount);
+    }
+
+    function initCharts(chartsData) {
+        // Ageing Chart
+        const ageingChart = echarts.init(document.getElementById('ageingChart'));
+        const ageingOption = {
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: { type: 'shadow' }
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            xAxis: [
+                {
+                    type: 'category',
+                    data: chartsData.ageing_labels,
+                    axisTick: { alignWithLabel: true },
+                    name: 'Días de Antigüedad'
+                }
+            ],
+            yAxis: [
+                {
+                    type: 'value',
+                    name: 'Cantidad'
+                }
+            ],
+            series: [
+                {
+                    name: 'Letras',
+                    type: 'bar',
+                    barWidth: '60%',
+                    data: chartsData.ageing,
+                    itemStyle: {
+                        color: '#4e73df'
+                    }
+                }
+            ]
+        };
+        ageingChart.setOption(ageingOption);
+
+        // Bank Chart
+        const bankChart = echarts.init(document.getElementById('bankChart'));
+        const bankOption = {
+            tooltip: {
+                trigger: 'item',
+                formatter: '{a} <br/>{b}: {c} ({d}%)' // Mostrar porcentaje y valor
+            },
+            legend: {
+                top: '5%',
+                left: 'center'
+            },
+            series: [
+                {
+                    name: 'Monto en Banco',
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: {
+                        borderRadius: 10,
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    },
+                    label: {
+                        show: false,
+                        position: 'center'
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: 20,
+                            fontWeight: 'bold'
+                        }
+                    },
+                    labelLine: {
+                        show: false
+                    },
+                    data: chartsData.by_bank
+                }
+            ]
+        };
+        bankChart.setOption(bankOption);
+        
+        // Resize charts on window resize
+        window.addEventListener('resize', function() {
+            ageingChart.resize();
+            bankChart.resize();
+        });
+    }
+</script>
+{% endblock %}
+

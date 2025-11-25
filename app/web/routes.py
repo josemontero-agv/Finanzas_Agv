@@ -155,30 +155,48 @@ def treasury_dashboard():
 # LETRAS
 # =============================================================================
 
-@web_bp.route('/letters/to-recover')
-def letters_to_recover():
+@web_bp.route('/letters/dashboard')
+def letters_dashboard():
     """
-    Gestión de letras por recuperar.
-    
-    TODO: Implementar vista
+    Dashboard de Letras.
     """
     if not session.get('logged_in'):
         return redirect(url_for('web.login'))
     
-    return render_template('en_progreso.html')
+    return render_template('letters/dashboard.html')
+
+
+@web_bp.route('/letters/management')
+def letters_management():
+    """
+    Gestión de Créditos - Envío de correos (Letras).
+    """
+    if not session.get('logged_in'):
+        return redirect(url_for('web.login'))
+    
+    return render_template('letters/manage.html')
+
+
+@web_bp.route('/letters/to-recover')
+def letters_to_recover():
+    """
+    Gestión de letras por recuperar (Redirect a Management).
+    """
+    if not session.get('logged_in'):
+        return redirect(url_for('web.login'))
+    
+    return redirect(url_for('web.letters_management'))
 
 
 @web_bp.route('/letters/in-bank')
 def letters_in_bank():
     """
-    Gestión de letras en banco.
-    
-    TODO: Implementar vista
+    Gestión de letras en banco (Redirect a Management).
     """
     if not session.get('logged_in'):
         return redirect(url_for('web.login'))
     
-    return render_template('en_progreso.html')
+    return redirect(url_for('web.letters_management'))
 
 
 # =============================================================================

@@ -52,6 +52,7 @@ def report_account42():
         supplier = request.args.get('supplier')
         account_codes = request.args.get('account_codes')
         payment_state = request.args.get('payment_state')
+        doc_type_id = request.args.get('doc_type_id', type=int)
         limit = request.args.get('limit', type=int, default=10000)
         
         # Crear repositorio y servicio
@@ -65,7 +66,8 @@ def report_account42():
             supplier=supplier,
             limit=limit,
             account_codes=account_codes,
-            payment_state=payment_state
+            payment_state=payment_state,
+            doc_type_id=doc_type_id
         )
         
         # Preparar filtros aplicados para la respuesta
@@ -75,6 +77,7 @@ def report_account42():
             'supplier': supplier,
             'account_codes': account_codes,
             'payment_state': payment_state,
+            'doc_type_id': doc_type_id,
             'limit': limit
         }
         
@@ -185,6 +188,31 @@ def summary_by_aging():
             'success': False,
             'message': f'Error al generar resumen por antigüedad: {str(e)}',
             'data': {}
+        }), 500
+
+
+@treasury_bp.route('/filter-options', methods=['GET'])
+def filter_options():
+    """
+    Endpoint para obtener las opciones de filtros (tipos de documento).
+    """
+    try:
+        odoo_repo = _get_odoo_repository()
+        treasury_service = TreasuryService(odoo_repo)
+        
+        filter_data = treasury_service.get_filter_options()
+        
+        return jsonify({
+            'success': True,
+            'data': filter_data,
+            'message': 'Opciones de filtros obtenidas exitosamente'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error al obtener opciones de filtros: {str(e)}',
+            'data': {'document_types': []}
         }), 500
 
 

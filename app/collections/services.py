@@ -167,7 +167,7 @@ class CollectionsService:
         domain = [
             ('parent_state', '=', 'posted'),
             ('reconciled', '=', False),
-            ('move_id.move_type', 'in', ['out_invoice', 'out_refund', 'out_bill']),
+            ('move_id.move_type', 'in', ['out_invoice', 'out_refund', 'out_bill', 'entry']),
         ]
         
         # Construir OR para códigos de cuenta
@@ -192,9 +192,24 @@ class CollectionsService:
             domain.append(('partner_id.name', 'ilike', customer))
         if sales_channel_id:
             domain.append(('move_id.sales_channel_id', '=', sales_channel_id))
-        if doc_type_id:
-            domain.append(('move_id.l10n_latam_document_type_id', '=', doc_type_id))
-        
+            if doc_type_id:
+                domain.append(('move_id.l10n_latam_document_type_id', '=', doc_type_id))
+            
+            # Filtro inteligente por Canal de Venta (validar consistencia con país)
+            if sales_channel_id:
+                try:
+                    channel = self.repository.read('agr.sales.channel', [sales_channel_id], ['name'])
+                    if channel:
+                        channel_name = channel[0].get('name', '').upper()
+                        if 'INTERNACIONAL' in channel_name:
+                            # Si es internacional, EXCLUIR Perú
+                            domain.append(('partner_id.country_id.code', '!=', 'PE'))
+                        elif 'NACIONAL' in channel_name:
+                            # Si es nacional, SOLO Perú
+                            domain.append(('partner_id.country_id.code', '=', 'PE'))
+                except Exception as e:
+                    print(f"[WARN] No se pudo validar nombre del canal para filtro inteligente: {e}")
+
         return domain
     
     @staticmethod
@@ -273,7 +288,7 @@ class CollectionsService:
                 ('parent_state', '=', 'posted'),
                 ('reconciled', '=', False),  # False = pendientes por cobrar
                 # Incluir facturas, notas de crédito y letras de cambio
-                ('move_id.move_type', 'in', ['out_invoice', 'out_refund', 'out_bill']),
+                ('move_id.move_type', 'in', ['out_invoice', 'out_refund', 'out_bill', 'entry']),
             ]
             
             # Construir OR para códigos de cuenta
@@ -305,6 +320,7 @@ class CollectionsService:
             line_fields = [
                 'id', 'move_id', 'partner_id', 'account_id', 'name', 'date',
                 'date_maturity', 'amount_currency', 'amount_residual', 'currency_id',
+                'debit', 'credit',
             ]
             
             effective_limit = limit if limit and limit > 0 else 10000
@@ -329,7 +345,7 @@ class CollectionsService:
                 move_fields = [
                     'id', 'name', 'payment_state', 'invoice_date', 'invoice_date_due',
                     'invoice_origin', 'l10n_latam_document_type_id', 'amount_total',
-                    'amount_residual', 'amount_residual_with_retention', 'currency_id',
+                    'amount_residual', 'amount_residual_with_retention', 'amount_residual_signed', 'currency_id',
                     'l10n_latam_boe_number',
                     'ref', 'invoice_payment_term_id', 'invoice_user_id',
                     'sales_channel_id', 'sale_type_id',
@@ -441,7 +457,7 @@ class CollectionsService:
                 row = {
                     'payment_state': move.get('payment_state', ''),
                     'invoice_date': move.get('invoice_date', ''),
-                    'I10nn_latam_document_type_id': m2o_name(move.get('l10n_latam_document_type_id')),
+                    'l10n_latam_document_type_id': m2o_name(move.get('l10n_latam_document_type_id')),
                     'move_name': move.get('name', ''),
                     'invoice_origin': move.get('invoice_origin', ''),
                     'account_id/code': account.get('code', ''),
@@ -455,6 +471,7 @@ class CollectionsService:
                     'currency_id': m2o_name(line.get('currency_id') or move.get('currency_id')),
                     'amount_total': move.get('amount_total', 0.0),
                     'amount_residual_with_retention': move.get('amount_residual_with_retention', 0.0),
+                    'amount_residual_signed': move.get('amount_residual_signed', 0.0),
                     'amount_currency': line.get('amount_currency', 0.0),
                     'amount_residual_currency': line.get('amount_residual', 0.0),
                     'date': line.get('date', ''),
@@ -520,7 +537,7 @@ class CollectionsService:
             sales_channel_id = kwargs.get('sales_channel_id')
             doc_type_id = kwargs.get('doc_type_id')
             
-            # Construir domain usando el método auxiliar
+            # Construir domain usando el método auxiliar (ahora incluye filtro inteligente)
             line_domain = self._build_report_domain(
                 start_date=start_date,
                 end_date=end_date,
@@ -585,7 +602,7 @@ class CollectionsService:
                 move_fields = [
                     'id', 'name', 'payment_state', 'invoice_date', 'invoice_date_due',
                     'invoice_origin', 'l10n_latam_document_type_id', 'amount_total',
-                    'amount_residual', 'amount_residual_with_retention', 'currency_id',
+                    'amount_residual', 'amount_residual_with_retention', 'amount_residual_signed', 'currency_id',
                     'l10n_latam_boe_number', 'ref', 'invoice_payment_term_id', 'invoice_user_id',
                     'sales_channel_id', 'sale_type_id',
                 ]
@@ -697,7 +714,7 @@ class CollectionsService:
                 row = {
                     'payment_state': move.get('payment_state', ''),
                     'invoice_date': move.get('invoice_date', ''),
-                    'I10nn_latam_document_type_id': m2o_name(move.get('l10n_latam_document_type_id')),
+                    'l10n_latam_document_type_id': m2o_name(move.get('l10n_latam_document_type_id')),
                     'move_name': move.get('name', ''),
                     'invoice_origin': move.get('invoice_origin', ''),
                     'account_id/code': account.get('code', ''),
@@ -711,6 +728,7 @@ class CollectionsService:
                     'currency_id': m2o_name(line.get('currency_id') or move.get('currency_id')),
                     'amount_total': move.get('amount_total', 0.0),
                     'amount_residual_with_retention': move.get('amount_residual_with_retention', 0.0),
+                    'amount_residual_signed': move.get('amount_residual_signed', 0.0),
                     'amount_currency': line.get('amount_currency', 0.0),
                     'amount_residual_currency': line.get('amount_residual', 0.0),
                     'date': line.get('date', ''),
@@ -806,16 +824,25 @@ class CollectionsService:
                 }
             
             # Calcular agregados desde las líneas procesadas
-            # Estas líneas ya tienen todos los campos calculados (dias_vencido, estado_deuda, etc.)
+            # Usamos los campos de la LÍNEA para evitar duplicar montos de facturas con múltiples cuotas
             total_count = len(all_lines)
             
-            # Convertir a float y manejar None/valores vacíos
-            total_amount = sum(float(line.get('amount_total', 0) or 0) for line in all_lines)
-            pending_amount = sum(float(line.get('amount_residual_with_retention', 0) or 0) for line in all_lines)
+            # amount_residual es en moneda compañía (Soles). Usamos abs() porque puede ser negativo (crédito)
+            # debit/credit también en moneda compañía. Balance = debit - credit.
+            
+            total_amount = sum(
+                abs(float(line.get('debit', 0) or 0) - float(line.get('credit', 0) or 0))
+                for line in all_lines
+            )
+            
+            pending_amount = sum(
+                abs(float(line.get('amount_residual', 0) or 0))
+                for line in all_lines
+            )
             
             # Calcular deuda vencida usando dias_vencido que ya está calculado en get_report_lines
             overdue_amount = sum(
-                float(line.get('amount_residual_with_retention', 0) or 0) 
+                abs(float(line.get('amount_residual', 0) or 0))
                 for line in all_lines 
                 if line.get('dias_vencido', 0) > 0
             )
@@ -968,7 +995,7 @@ class CollectionsService:
                     'payment_state': move.get('payment_state', ''),
                     'vat': partner.get('vat', ''),
                     'patner_id': partner.get('name', ''),
-                    'I10nn_latam_document_type_id': m2o_name(move.get('l10n_latam_document_type_id')),
+                    'l10n_latam_document_type_id': m2o_name(move.get('l10n_latam_document_type_id')),
                     'name': move.get('name', ''),
                     'invoice_origin': move.get('invoice_origin', ''),
                     'invoice_payment_term_id': m2o_name(move.get('invoice_payment_term_id')),
