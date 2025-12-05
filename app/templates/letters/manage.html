@@ -49,22 +49,22 @@
                             </div>
 
                             <div class="table-responsive mb-3">
-                                <table class="table table-hover align-middle" id="table-recover">
-                                    <thead style="background-color: #714B67; color: white;">
+                                <table class="text-sm" id="table-recover" style="width: 100%;">
+                                    <thead class="text-white sticky top-0 z-10" style="background-color: #714B67;">
                                         <tr>
-                                            <th scope="col"><input type="checkbox" id="check-all-recover" class="form-check-input"></th>
-                                            <th scope="col">Ruc</th>
-                                            <th scope="col">Cliente</th>
-                                            <th scope="col">Letra</th>
-                                            <th scope="col">Número</th>
-                                            <th scope="col">Monto</th>
-                                            <th scope="col">Planilla Interna</th>
-                                            <th scope="col">F. Emision</th>
-                                            <th scope="col">F. Vencimiento</th>
-                                            <th scope="col">Estado</th>
-                                            <th scope="col">Vendedor</th>
-                                            <th scope="col">Ciudad</th>
-                                            <th scope="col">Referencia</th>
+                                            <th class="px-3 py-3 text-left font-semibold whitespace-nowrap"><input type="checkbox" id="check-all-recover" class="form-check-input"></th>
+                                            <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Ruc</th>
+                                            <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Cliente</th>
+                                            <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Letra</th>
+                                            <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Número</th>
+                                            <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">Monto</th>
+                                            <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Planilla Interna</th>
+                                            <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">F. Emision</th>
+                                            <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">F. Vencimiento</th>
+                                            <th class="px-3 py-3 text-center font-semibold whitespace-nowrap">Estado</th>
+                                            <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Vendedor</th>
+                                            <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Ciudad</th>
+                                            <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Referencia</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -217,16 +217,28 @@
     });
 
     function loadRecoverLetters() {
-        const start = document.getElementById('recover-date-start').value;
-        const end = document.getElementById('recover-date-end').value;
-        const customer = document.getElementById('recover-customer').value;
+        console.log('[loadRecoverLetters] Función llamada');
         
         const tbody = document.querySelector('#table-recover tbody');
-        tbody.innerHTML = '<tr><td colspan="13" class="text-center"><div class="spinner-border" style="color: #714B67;" role="status"></div></td></tr>';
+        if (!tbody) {
+            console.error('[ERROR] No se encontró #table-recover tbody');
+            return;
+        }
+        
+        console.log('[loadRecoverLetters] Tbody encontrado, mostrando spinner');
+        tbody.innerHTML = '<tr class="hover:bg-gray-50"><td colspan="13" class="px-3 py-2 text-sm text-center"><div class="spinner-border" style="color: #714B67;" role="status"></div> Cargando...</td></tr>';
 
-        fetch(`/api/v1/letters/to-accept`)
+        console.log('[loadRecoverLetters] Haciendo fetch a /api/v1/letters/to-accept');
+        // Agregar timestamp para evitar caché
+        const timestamp = new Date().getTime();
+        fetch(`/api/v1/letters/to-accept?_t=${timestamp}`, {
+            cache: 'no-cache',
+            headers: {
+                'Cache-Control': 'no-cache'
+            }
+        })
             .then(response => {
-                console.log('Response status:', response.status);
+                console.log('[loadRecoverLetters] Response recibida, status:', response.status);
                 if (!response.ok) {
                     return response.json().then(err => {
                         throw new Error(err.message || `HTTP error! status: ${response.status}`);
@@ -235,45 +247,106 @@
                 return response.json();
             })
             .then(data => {
-                console.log('Datos recibidos:', data); // Debug
+                console.log('[loadRecoverLetters] ===== DATOS RECIBIDOS =====');
+                console.log('Respuesta completa:', JSON.stringify(data, null, 2));
+                console.log('Success:', data.success);
+                console.log('Data:', data.data);
+                console.log('Data es array?', Array.isArray(data.data));
+                console.log('Data length:', data.data ? data.data.length : 0);
+                
+                // Limpiar tabla
                 tbody.innerHTML = '';
+                
+                // Validar estructura de respuesta
+                if (!data) {
+                    console.error('[ERROR] No se recibió respuesta del servidor');
+                    tbody.innerHTML = '<tr><td colspan="13" class="text-center text-danger">Error: No se recibió respuesta del servidor</td></tr>';
+                    return;
+                }
+                
                 if (data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
-                    data.data.forEach(item => {
-                        const statusClass = item.status_calc === 'POR RECUPERAR' 
-                            ? 'bg-warning text-dark' 
-                            : 'bg-success text-white';
+                    console.log(`[loadRecoverLetters] Procesando ${data.data.length} letras`);
+                    
+                    let rowsHtml = '';
+                    data.data.forEach((item, index) => {
+                        console.log(`[loadRecoverLetters] Letra ${index + 1}:`, JSON.stringify(item, null, 2));
                         
-                        const row = `
-                            <tr>
-                                <td><input type="checkbox" class="letter-check form-check-input" value="${item.id}" data-customer="${item.acceptor_id || ''}" data-email="${item.customer_email || ''}"></td>
-                                <td>${item.vat || ''}</td>
-                                <td>${item.acceptor_id || ''}</td>
-                                <td>${item.number || ''}</td>
-                                <td>${item.ref_docs || ''}</td>
-                                <td>${parseFloat(item.amount || 0).toLocaleString('es-PE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                                <td>${item.invoice_origin || ''}</td>
-                                <td>${item.date || ''}</td>
-                                <td>${item.due_date || ''}</td>
-                                <td><span class="badge ${statusClass}">${item.status_calc || 'VIGENTE'}</span></td>
-                                <td>${item.salesperson || ''}</td>
-                                <td>${item.city || ''}</td>
-                                <td>${item.ref || ''}</td>
+                        // Validar y formatear campos
+                        const status = (item.status_calc || 'VIGENTE').toString().trim();
+                        const statusClass = status === 'POR RECUPERAR' 
+                            ? 'bg-yellow-100 text-yellow-800' 
+                            : 'bg-green-100 text-green-800';
+                        
+                        const amount = parseFloat(item.amount || 0) || 0;
+                        const amountFormatted = amount.toLocaleString('es-PE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                        
+                        // Formatear fechas si vienen en formato YYYY-MM-DD
+                        const formatDate = (dateStr) => {
+                            if (!dateStr) return '';
+                            try {
+                                const date = new Date(dateStr);
+                                if (isNaN(date.getTime())) return dateStr;
+                                return date.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                            } catch (e) {
+                                return dateStr;
+                            }
+                        };
+                        
+                        // Escapar HTML para prevenir XSS
+                        const escapeHtml = (text) => {
+                            if (!text) return '';
+                            const div = document.createElement('div');
+                            div.textContent = text;
+                            return div.innerHTML;
+                        };
+                        
+                        rowsHtml += `
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-3 py-2 text-sm text-left whitespace-nowrap"><input type="checkbox" class="letter-check form-check-input" value="${escapeHtml(String(item.id || ''))}" data-customer="${escapeHtml(String(item.acceptor_id || ''))}" data-email="${escapeHtml(String(item.customer_email || ''))}"></td>
+                                <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${escapeHtml(String(item.vat || ''))}</td>
+                                <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${escapeHtml(String(item.acceptor_id || item.customer_name || ''))}</td>
+                                <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${escapeHtml(String(item.number || item.l10n_latam_boe_number || ''))}</td>
+                                <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${escapeHtml(String(item.ref_docs || ''))}</td>
+                                <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${amountFormatted}</td>
+                                <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${escapeHtml(String(item.invoice_origin || ''))}</td>
+                                <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${formatDate(item.date || item.invoice_date || '')}</td>
+                                <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${formatDate(item.due_date || item.invoice_date_due || '')}</td>
+                                <td class="px-3 py-2 text-sm text-center whitespace-nowrap"><span class="px-2 py-1 rounded text-xs ${statusClass}">${escapeHtml(status)}</span></td>
+                                <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${escapeHtml(String(item.salesperson || ''))}</td>
+                                <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${escapeHtml(String(item.city || ''))}</td>
+                                <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${escapeHtml(String(item.ref || ''))}</td>
                             </tr>
                         `;
-                        tbody.innerHTML += row;
                     });
-                    updateSelectedCount(); // Actualizar contador después de cargar datos
+                    
+                    console.log('[loadRecoverLetters] HTML generado, insertando en tabla');
+                    console.log('[loadRecoverLetters] Longitud del HTML:', rowsHtml.length);
+                    tbody.innerHTML = rowsHtml;
+                    console.log(`[loadRecoverLetters] ✅ ${data.data.length} letras insertadas en la tabla`);
+                    
+                    // Verificar que se insertaron las filas
+                    const insertedRows = tbody.querySelectorAll('tr');
+                    console.log(`[loadRecoverLetters] Filas insertadas en DOM: ${insertedRows.length}`);
+                    
+                    updateSelectedCount();
                 } else {
                     const msg = data.message || 'No se encontraron letras pendientes de firma (estado: Por aceptar)';
-                    const count = data.count || 0;
-                    console.log('No hay datos o datos vacíos. Count:', count, 'Data:', data.data);
-                    tbody.innerHTML = `<tr><td colspan="13" class="text-center text-muted">${msg}</td></tr>`;
+                    console.warn('[loadRecoverLetters] No hay datos:', msg);
+                    console.warn('[loadRecoverLetters] Estructura de respuesta:', {
+                        success: data.success,
+                        hasData: !!data.data,
+                        isArray: Array.isArray(data.data),
+                        length: data.data ? data.data.length : 0
+                    });
+                    tbody.innerHTML = `<tr class="hover:bg-gray-50"><td colspan="13" class="px-3 py-2 text-sm text-center text-muted">${escapeHtml(msg)}</td></tr>`;
                     document.getElementById('selected-count').textContent = '0 seleccionadas';
                 }
             })
             .catch(error => {
-                console.error('Error completo:', error);
-                tbody.innerHTML = '<tr><td colspan="13" class="text-center text-danger">Error al cargar datos: ' + error.message + '<br><small>Revisa la consola para más detalles</small></td></tr>';
+                console.error('[loadRecoverLetters] ERROR:', error);
+                const errorMsg = escapeHtml(error.message || 'Error desconocido');
+                tbody.innerHTML = `<tr class="hover:bg-gray-50"><td colspan="13" class="px-3 py-2 text-sm text-center text-danger">Error: ${errorMsg}<br><small>Revisa la consola (F12)</small></td></tr>`;
+                document.getElementById('selected-count').textContent = '0 seleccionadas';
             });
     }
 

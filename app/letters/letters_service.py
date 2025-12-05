@@ -102,14 +102,10 @@ class LettersService:
             print("[INFO] Consultando letras desde account.move...")
             
             # Construir dominio para letras en estado 'to_accept' (Por aceptar)
-            # Intentar diferentes campos posibles para el estado to_accept
-            # Los campos más comunes son: boe_state, letter_state, l10n_latam_boe_state
-            possible_state_fields = ['boe_state', 'letter_state', 'l10n_latam_boe_state']
-            
-            # Campos base del dominio
-            base_domain = [
-                ('l10n_latam_boe_number', '!=', False),  # Que tengan número de letra
-                ('l10n_latam_boe_number', '!=', ''),  # Que no esté vacío
+            # Según la investigación: el campo 'state' contiene 'to_accept' para letras por aceptar
+            # Primero intentar solo con el estado, luego agregar filtros adicionales
+            domain = [
+                ('state', '=', 'to_accept'),  # Estado específico del módulo de letras
             ]
             
             # Campos a extraer de account.move
@@ -118,64 +114,64 @@ class LettersService:
                 'amount_total_in_currency_signed', 'invoice_origin',
                 'invoice_date', 'invoice_date_due', 'state',
                 'invoice_user_id', 'ref', 'bill_form_id', 'currency_id',
-                'boe_state', 'letter_state', 'l10n_latam_boe_state'
+                'acceptor_id', 'bill_form_invoices'
             ]
             
-            # Intentar filtrar por estado 'to_accept' usando diferentes campos
-            moves = []
-            state_field_used = None
-            
-            for state_field in possible_state_fields:
-                try:
-                    domain = base_domain + [(state_field, '=', 'to_accept')]
-                    moves = self.repository.search_read(
-                        'account.move', domain, move_fields, limit=1000
-                    )
-                    if moves:
-                        state_field_used = state_field
-                        print(f"[OK] Encontradas {len(moves)} letras con estado 'to_accept' usando campo '{state_field}'")
-                        break
-                except Exception as e:
-                    # El campo no existe o hay error, intentar siguiente
-                    continue
-            
-            # Si no encontramos con ningún campo específico, intentar sin filtro de estado
-            # y luego filtrar manualmente
-            if not moves:
-                print("[WARN] No se pudo filtrar por campo de estado específico, intentando búsqueda general...")
-                try:
-                    moves = self.repository.search_read(
-                        'account.move', base_domain, move_fields, limit=1000
-                    )
-                    print(f"[INFO] Obtenidas {len(moves)} letras (sin filtro de estado)")
-                    
-                    # Filtrar manualmente por cualquier campo que contenga 'to_accept'
-                    if moves:
-                        filtered_moves = []
-                        for move in moves:
-                            for field in possible_state_fields:
-                                state_value = move.get(field)
-                                if state_value:
-                                    # Puede ser string o tupla Many2One
-                                    if isinstance(state_value, (list, tuple)):
-                                        state_value = state_value[0] if len(state_value) == 1 else (state_value[1] if len(state_value) > 1 else '')
-                                    if str(state_value) == 'to_accept':
-                                        filtered_moves.append(move)
-                                        break
-                        if filtered_moves:
-                            moves = filtered_moves
-                            print(f"[OK] Filtradas {len(moves)} letras con estado 'to_accept' manualmente")
-                except Exception as e:
-                    print(f"[ERROR] Error al obtener letras: {e}")
-                    return []
+            # Obtener letras con estado 'to_accept'
+            try:
+                print(f"[DEBUG] Consultando con dominio: {domain}")
+                moves = self.repository.search_read(
+                    'account.move', domain, move_fields, limit=1000
+                )
+                print(f"[OK] Encontradas {len(moves)} letras con estado 'to_accept'")
+                
+                # Filtrar solo las que tienen número de letra (si es necesario)
+                if moves:
+                    moves_with_boe = [m for m in moves if m.get('l10n_latam_boe_number')]
+                    print(f"[INFO] De {len(moves)} letras, {len(moves_with_boe)} tienen número de letra")
+                    if moves_with_boe:
+                        moves = moves_with_boe
+                    else:
+                        print("[WARN] Ninguna letra tiene número de letra, mostrando todas")
+            except Exception as e:
+                print(f"[ERROR] Error al obtener letras: {e}")
+                import traceback
+                traceback.print_exc()
+                return []
             
             if not moves:
                 print("[INFO] No se encontraron letras con estado 'to_accept'")
+                # Intentar sin filtro de número de letra para debug
+                try:
+                    domain_simple = [('state', '=', 'to_accept')]
+                    moves_simple = self.repository.search_read(
+                        'account.move', domain_simple, ['id', 'name', 'state', 'l10n_latam_boe_number'], limit=5
+                    )
+                    print(f"[DEBUG] Sin filtro de BOE: {len(moves_simple)} letras encontradas")
+                    if moves_simple:
+                        print("[DEBUG] Ejemplos:")
+                        for m in moves_simple[:3]:
+                            print(f"  - ID: {m.get('id')}, Name: {m.get('name')}, State: {m.get('state')}, BOE: {m.get('l10n_latam_boe_number')}")
+                except:
+                    pass
                 return []
             
-            # Extraer IDs únicos para relaciones
-            partner_ids = list(set([m['partner_id'][0] for m in moves if m.get('partner_id')]))
-            user_ids = list(set([m['invoice_user_id'][0] for m in moves if m.get('invoice_user_id')]))
+            # Extraer IDs únicos para relaciones (manejar casos donde pueden ser False o listas vacías)
+            partner_ids = []
+            user_ids = []
+            acceptor_ids = []
+            
+            for m in moves:
+                if m.get('partner_id') and isinstance(m['partner_id'], (list, tuple)) and len(m['partner_id']) > 0:
+                    partner_ids.append(m['partner_id'][0])
+                if m.get('invoice_user_id') and isinstance(m['invoice_user_id'], (list, tuple)) and len(m['invoice_user_id']) > 0:
+                    user_ids.append(m['invoice_user_id'][0])
+                if m.get('acceptor_id') and isinstance(m['acceptor_id'], (list, tuple)) and len(m['acceptor_id']) > 0:
+                    acceptor_ids.append(m['acceptor_id'][0])
+            
+            partner_ids = list(set(partner_ids))
+            user_ids = list(set(user_ids))
+            acceptor_ids = list(set(acceptor_ids))
             
             # Obtener datos de partners (clientes)
             partner_map = {}
@@ -183,6 +179,13 @@ class LettersService:
                 partner_fields = ['id', 'name', 'vat', 'city', 'email']
                 partners = self.repository.read('res.partner', partner_ids, partner_fields)
                 partner_map = {p['id']: p for p in partners}
+            
+            # Obtener datos de acceptors (aceptantes) - pueden ser diferentes de partners
+            acceptor_map = {}
+            if acceptor_ids:
+                acceptor_fields = ['id', 'name', 'vat', 'city', 'email']
+                acceptors = self.repository.read('res.partner', acceptor_ids, acceptor_fields)
+                acceptor_map = {a['id']: a for a in acceptors}
             
             # Obtener datos de usuarios (vendedores)
             user_map = {}
@@ -243,72 +246,116 @@ class LettersService:
             # Procesar y formatear datos
             letters = []
             for move in moves:
-                partner = partner_map.get(move.get('partner_id', [None])[0]) if move.get('partner_id') else None
-                user = user_map.get(move.get('invoice_user_id', [None])[0]) if move.get('invoice_user_id') else None
-                
-                # Obtener número de factura desde bill_form_id si existe, sino usar name
-                bill_form_id = move.get('bill_form_id', [None])[0] if move.get('bill_form_id') else None
-                invoice_number = move.get('name', '')  # Por defecto usar name de la factura
-                
-                if bill_form_id and bill_form_id in bill_form_map:
-                    bill_form = bill_form_map[bill_form_id]
-                    invoice_names = bill_form.get('invoice_names', [])
-                    if invoice_names:
-                        invoice_number = ', '.join(invoice_names)
-                
-                # Obtener moneda
-                currency_code = 'PEN'  # Por defecto
-                if move.get('currency_id'):
-                    try:
-                        currency_id = move.get('currency_id', [None])[0]
-                        if currency_id:
-                            currencies = self.repository.read('res.currency', [currency_id], ['name'])
-                            if currencies:
-                                currency_code = currencies[0].get('name', 'PEN')
-                    except:
-                        pass
-                
-                # Calcular estado según lógica: Lima >4 días = POR RECUPERAR, Provincia >10 días = POR RECUPERAR
-                invoice_date = move.get('invoice_date')
-                status_calc = "VIGENTE"
-                city = partner.get('city', '') if partner else ''
-                
-                if invoice_date:
-                    try:
-                        from datetime import datetime
-                        issue_dt = datetime.strptime(invoice_date, '%Y-%m-%d')
-                        days_since_issue = (datetime.now() - issue_dt).days
-                        
-                        if city == 'Lima':
-                            if days_since_issue > 4:
-                                status_calc = "POR RECUPERAR"
-                        else:  # Provincia
-                            if days_since_issue > 10:
-                                status_calc = "POR RECUPERAR"
-                    except:
-                        pass
-                
-                letter_data = {
-                    'id': move['id'],
-                    'vat': partner.get('vat', '') if partner else '',  # Ruc
-                    'acceptor_id': partner.get('name', '') if partner else '',  # Cliente
-                    'number': move.get('l10n_latam_boe_number', ''),  # Letra
-                    'ref_docs': invoice_number,  # Número (desde bill_form_id/invoice_ids o name)
-                    'amount': move.get('amount_total_in_currency_signed', 0.0),  # Monto
-                    'currency': currency_code,  # Moneda extraída de currency_id
-                    'invoice_origin': move.get('invoice_origin', ''),  # Planilla Interna
-                    'date': move.get('invoice_date', ''),  # F. Emision
-                    'due_date': move.get('invoice_date_due', ''),  # F. Vencimiento
-                    'status_calc': status_calc,  # Estado calculado
-                    'salesperson': m2o_name(move.get('invoice_user_id')),  # Vendedor
-                    'city': city,  # Ciudad
-                    'customer_email': partner.get('email', '') if partner else '',
-                    'customer_name': partner.get('name', '') if partner else '',
-                    'ref': move.get('ref', ''),
-                    'state': move.get('state', '')
-                }
-                
-                letters.append(letter_data)
+                try:
+                    # Extraer IDs de manera segura
+                    partner_id = None
+                    if move.get('partner_id') and isinstance(move['partner_id'], (list, tuple)) and len(move['partner_id']) > 0:
+                        partner_id = move['partner_id'][0]
+                    
+                    acceptor_id = None
+                    if move.get('acceptor_id') and isinstance(move['acceptor_id'], (list, tuple)) and len(move['acceptor_id']) > 0:
+                        acceptor_id = move['acceptor_id'][0]
+                    
+                    user_id = None
+                    if move.get('invoice_user_id') and isinstance(move['invoice_user_id'], (list, tuple)) and len(move['invoice_user_id']) > 0:
+                        user_id = move['invoice_user_id'][0]
+                    
+                    # Obtener datos de los mapas
+                    partner = partner_map.get(partner_id) if partner_id else None
+                    acceptor = acceptor_map.get(acceptor_id) if acceptor_id else None
+                    user = user_map.get(user_id) if user_id else None
+                    
+                    # Usar acceptor si existe, sino usar partner
+                    client_data = acceptor if acceptor else partner
+                    
+                    # Obtener número de factura desde bill_form_id si existe, sino usar name
+                    bill_form_id = None
+                    if move.get('bill_form_id') and isinstance(move['bill_form_id'], (list, tuple)) and len(move['bill_form_id']) > 0:
+                        bill_form_id = move['bill_form_id'][0]
+                    invoice_number = move.get('name', '')  # Por defecto usar name de la factura
+                    
+                    # Intentar obtener desde bill_form_id -> invoice_ids
+                    if bill_form_id and bill_form_id in bill_form_map:
+                        bill_form = bill_form_map[bill_form_id]
+                        invoice_names = bill_form.get('invoice_names', [])
+                        if invoice_names:
+                            invoice_number = ', '.join(invoice_names)
+                    
+                    # Si bill_form_invoices tiene un ID directo, obtener esa factura
+                    elif move.get('bill_form_invoices'):
+                        try:
+                            invoice_id = move.get('bill_form_invoices')
+                            if isinstance(invoice_id, int):
+                                related_invoice = self.repository.read('account.move', [invoice_id], ['name'])
+                                if related_invoice:
+                                    invoice_number = related_invoice[0].get('name', invoice_number)
+                        except:
+                            pass
+                    
+                    # Obtener moneda
+                    currency_code = 'PEN'  # Por defecto
+                    if move.get('currency_id'):
+                        try:
+                            currency_id = None
+                            if isinstance(move['currency_id'], (list, tuple)) and len(move['currency_id']) > 0:
+                                currency_id = move['currency_id'][0]
+                            elif isinstance(move['currency_id'], int):
+                                currency_id = move['currency_id']
+                            
+                            if currency_id:
+                                currencies = self.repository.read('res.currency', [currency_id], ['name'])
+                                if currencies:
+                                    currency_code = currencies[0].get('name', 'PEN')
+                        except Exception as e:
+                            print(f"[WARN] Error obteniendo moneda: {e}")
+                            pass
+                    
+                    # Calcular estado según lógica: Lima >4 días = POR RECUPERAR, Provincia >10 días = POR RECUPERAR
+                    invoice_date = move.get('invoice_date')
+                    status_calc = "VIGENTE"
+                    city = client_data.get('city', '') if client_data else ''
+                    
+                    if invoice_date:
+                        try:
+                            from datetime import datetime
+                            issue_dt = datetime.strptime(invoice_date, '%Y-%m-%d')
+                            days_since_issue = (datetime.now() - issue_dt).days
+                            
+                            if city == 'Lima':
+                                if days_since_issue > 4:
+                                    status_calc = "POR RECUPERAR"
+                            else:  # Provincia
+                                if days_since_issue > 10:
+                                    status_calc = "POR RECUPERAR"
+                        except:
+                            pass
+                    
+                    letter_data = {
+                        'id': move['id'],
+                        'vat': client_data.get('vat', '') if client_data else '',  # Ruc
+                        'acceptor_id': client_data.get('name', '') if client_data else '',  # Cliente (aceptante)
+                        'number': move.get('l10n_latam_boe_number', ''),  # Letra
+                        'ref_docs': invoice_number,  # Número (desde bill_form_id/invoice_ids o name)
+                        'amount': move.get('amount_total_in_currency_signed', 0.0),  # Monto
+                        'currency': currency_code,  # Moneda extraída de currency_id
+                        'invoice_origin': move.get('invoice_origin', ''),  # Planilla Interna
+                        'date': move.get('invoice_date', ''),  # F. Emision
+                        'due_date': move.get('invoice_date_due', ''),  # F. Vencimiento
+                        'status_calc': status_calc,  # Estado calculado
+                        'salesperson': m2o_name(move.get('invoice_user_id')),  # Vendedor
+                        'city': city,  # Ciudad
+                        'customer_email': client_data.get('email', '') if client_data else '',
+                        'customer_name': client_data.get('name', '') if client_data else '',
+                        'ref': move.get('ref', ''),
+                        'state': move.get('state', '')
+                    }
+                    
+                    letters.append(letter_data)
+                except Exception as e:
+                    print(f"[ERROR] Error procesando letra ID {move.get('id', 'N/A')}: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    continue
             
             print(f"[OK] Procesadas {len(letters)} letras")
             return letters

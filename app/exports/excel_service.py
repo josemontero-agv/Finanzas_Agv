@@ -52,6 +52,7 @@ class ExcelExportService:
             ('date', 'Fecha Contabilización'),
             ('l10n_latam_document_type_id', 'Tipo Documento'),
             ('move_name', 'Número Documento'),
+            ('l10n_latam_boe_number', 'Letra'),
             ('invoice_origin', 'Origen'),
             ('account_id/code', 'Cuenta'),
             ('account_id/name', 'Nombre Cuenta'),

@@ -8,7 +8,9 @@
     <td class="px-3 py-2 text-sm text-left whitespace-nowrap">{{ row.l10n_latam_document_type_id or '(00)' }}</td>
     <!-- 4. Número Documento -->
     <td class="px-3 py-2 text-sm text-left whitespace-nowrap">{{ row.move_name }}</td>
-    <!-- 5. Origen -->
+    <!-- 5. Nro. Letra -->
+    <td class="px-3 py-2 text-sm text-left whitespace-nowrap">{{ row.l10n_latam_boe_number or '' }}</td>
+    <!-- 6. Origen -->
     <td class="px-3 py-2 text-sm text-left whitespace-nowrap">{{ row.invoice_origin }}</td>
     <!-- 6. Cuenta -->
     <td class="px-3 py-2 text-sm text-left whitespace-nowrap">{{ row['account_id/code'] }}</td>

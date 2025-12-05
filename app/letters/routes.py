@@ -43,21 +43,29 @@ def get_letters_to_accept():
         JSON con letras pendientes de aceptación
     """
     try:
+        print("[INFO] Endpoint /to-accept llamado")
         service = get_letters_service()
+        print("[INFO] Servicio obtenido, llamando get_letters_to_accept()...")
         data = service.get_letters_to_accept()
+        print(f"[INFO] Servicio retornó {len(data) if data else 0} letras")
         
-        return jsonify({
+        response_data = {
             'success': True,
-            'data': data,
-            'count': len(data)
-        })
+            'data': data if data else [],
+            'count': len(data) if data else 0
+        }
+        
+        print(f"[INFO] Enviando respuesta con {response_data['count']} letras")
+        return jsonify(response_data)
     except Exception as e:
-        print(f"Error en get_letters_to_accept: {str(e)}")
+        print(f"[ERROR] Error en get_letters_to_accept: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({
             'success': False,
-            'message': str(e)
+            'message': str(e),
+            'data': [],
+            'count': 0
         }), 500
 
 

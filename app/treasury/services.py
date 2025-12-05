@@ -68,45 +68,44 @@ class TreasuryService:
             print(f"[ERROR] Error obteniendo opciones de filtros: {e}")
             return {'document_types': []}
 
-    def get_accounts_payable_report(self, start_date=None, end_date=None, 
-                                    supplier=None, limit=0, account_codes=None,
-                                    payment_state=None, doc_type_id=None):
+    def get_report_lines_paginated(self, page=1, per_page=50, **kwargs):
         """
-        Obtener reporte de cuentas por pagar (Cuenta 42 y 43).
-        
-        Cuentas relevantes:
-        - 42: Cuentas por pagar comerciales - Terceros
-        - 43: Cuentas por pagar comerciales - Relacionadas
+        Obtiene líneas de reporte con paginación eficiente en Odoo y datos bancarios.
         
         Args:
-            start_date (str): Fecha inicial (formato: YYYY-MM-DD)
-            end_date (str): Fecha final (formato: YYYY-MM-DD)
-            supplier (str): Nombre del proveedor a filtrar
-            limit (int): Límite de registros (0 = sin límite)
-            account_codes (str): Códigos de cuenta separados por coma
-            payment_state (str): Estado de pago ('not_paid', 'in_payment', 'paid', 'partial')
+            page (int): Número de página (1-indexed)
+            per_page (int): Registros por página
+            **kwargs: Filtros (start_date, end_date, supplier, account_codes, doc_type_id, payment_state)
         
         Returns:
-            list: Líneas de reporte CxP con información de proveedores y cálculos
+            dict: Datos paginados con metadatos
         """
         try:
-            print("[INFO] Obteniendo reporte de cuentas por pagar...")
+            print(f"[INFO] Obteniendo página {page} de CxP (per_page={per_page})")
             
             if not self.repository.is_connected():
-                print("[ERROR] No hay conexión a Odoo disponible")
-                return []
+                raise ValueError("No hay conexión a Odoo disponible")
             
+            # Extraer filtros
+            start_date = kwargs.get('start_date')
+            end_date = kwargs.get('end_date')
+            supplier = kwargs.get('supplier')
+            account_codes = kwargs.get('account_codes')
+            payment_state = kwargs.get('payment_state')
+            doc_type_id = kwargs.get('doc_type_id')
+            
+            # Construir dominio
             # Códigos de cuenta para CxP
             if account_codes:
                 codes = [c.strip() for c in account_codes.split(',') if c.strip()]
             else:
-                codes = ['42', '421', '422', '423', '43', '431', '432']  # Cuentas CxP por defecto
+                codes = ['42', '421', '422', '423', '43', '431', '432','433']
             
             # Construir dominio base
             line_domain = [
                 ('parent_state', '=', 'posted'),  # Solo facturas contabilizadas
                 ('reconciled', '=', False),  # Solo pendientes de pago
-                ('move_id.move_type', 'in', ['in_invoice', 'in_refund', 'entry']),  # Facturas de proveedor y asientos manuales
+                ('move_id.move_type', 'in', ['in_invoice', 'in_refund', 'entry']),
             ]
             
             # Construir OR para códigos de cuenta
@@ -128,60 +127,168 @@ class TreasuryService:
                 line_domain.append(('partner_id.name', 'ilike', supplier))
             if payment_state:
                 line_domain.append(('move_id.payment_state', '=', payment_state))
+            if doc_type_id:
+                line_domain.append(('move_id.l10n_latam_document_type_id', '=', doc_type_id))
             
-            # Campos a extraer de account.move.line (expandido)
+            # 1. Obtener TOTAL de registros
+            total_count = self.repository.search_count('account.move.line', line_domain)
+            
+            # 2. Calcular offset y validar página
+            offset = (page - 1) * per_page
+            if offset >= total_count and page > 1:
+                return {
+                    'data': [],
+                    'total_count': total_count,
+                    'page': page,
+                    'per_page': per_page,
+                    'total_pages': (total_count + per_page - 1) // per_page,
+                    'has_more': False
+                }
+            
+            # 3. Obtener SOLO los registros de esta página
             line_fields = [
                 'id', 'move_id', 'partner_id', 'account_id', 'name', 'date',
                 'date_maturity', 'amount_currency', 'amount_residual', 'currency_id',
                 'reconciled', 'full_reconcile_id', 'blocked', 'debit', 'credit',
             ]
             
-            effective_limit = limit if limit and limit > 0 else 10000
             lines = self.repository.search_read(
-                'account.move.line', line_domain, line_fields,
-                limit=effective_limit
+                'account.move.line',
+                line_domain,
+                line_fields,
+                limit=per_page,
+                offset=offset,
+                order='date desc'
             )
             
-            print(f"[OK] Obtenidas {len(lines)} líneas de cuentas por pagar")
-            
             if not lines:
-                return []
+                return {
+                    'data': [],
+                    'total_count': total_count,
+                    'page': page,
+                    'per_page': per_page,
+                    'total_pages': (total_count + per_page - 1) // per_page,
+                    'has_more': False
+                }
             
-            # Extraer IDs únicos para consultas relacionadas
+            # 4. Procesar líneas y obtener datos relacionados
             move_ids = list(set([l['move_id'][0] for l in lines if l.get('move_id')]))
             partner_ids = list(set([l['partner_id'][0] for l in lines if l.get('partner_id')]))
             account_ids = list(set([l['account_id'][0] for l in lines if l.get('account_id')]))
             
-            # Obtener datos de facturas (account.move)
             move_map = self._get_moves_data(move_ids)
-            
-            # Obtener datos de proveedores (res.partner)
             partner_map = self._get_partners_data(partner_ids)
-            
-            # Obtener datos de cuentas contables (account.account)
             account_map = self._get_accounts_data(account_ids)
             
+            # --- LÓGICA DE BANCOS ---
+            bank_map = {}
+            if partner_ids:
+                try:
+                    # 1. Recolectar todos los bank_ids de los partners
+                    all_bank_ids = []
+                    partner_bank_ids_map = {} # partner_id -> [bank_ids]
+                    
+                    for pid in partner_ids:
+                        partner = partner_map.get(pid)
+                        if partner and partner.get('bank_ids'):
+                            b_ids = partner['bank_ids']
+                            partner_bank_ids_map[pid] = b_ids
+                            all_bank_ids.extend(b_ids)
+                    
+                    # 2. Leer datos de los bancos
+                    if all_bank_ids:
+                        # Campos a leer de res.partner.bank
+                        # bank_id (relacion), currency_id, acc_number, cci (si existe)
+                        bank_fields = ['id', 'bank_id', 'currency_id', 'acc_number']
+                        
+                        # Intentar determinar si existe campo cci
+                        # Por defecto asumimos que podría estar, Odoo no falla si pides un campo que no existe en read? 
+                        # Odoo SÍ falla si el campo no existe en read. 
+                        # Para estar seguros, primero inspeccionamos o asumimos estándar.
+                        # Como el usuario pidió explícitamente 'cci', voy a intentar leerlo.
+                        # Si falla, haré un fallback.
+                        try:
+                            # Intento optimista
+                            banks_data = self.repository.read('res.partner.bank', all_bank_ids, bank_fields + ['cci'])
+                        except Exception:
+                            # Fallback sin cci
+                            print("[WARN] Campo 'cci' no encontrado en res.partner.bank, intentando sin él")
+                            banks_data = self.repository.read('res.partner.bank', all_bank_ids, bank_fields)
+                        
+                        # Crear mapa de bank_id -> data
+                        banks_data_map = {b['id']: b for b in banks_data}
+                        
+                        # 3. Asociar bancos al partner
+                        for pid, b_ids in partner_bank_ids_map.items():
+                            # Tomamos el PRIMER banco para mostrar en la tabla (o concatenamos)
+                            # Usuario pidió los campos, mostraremos el primero que tenga datos
+                            first_bank = None
+                            for bid in b_ids:
+                                b_data = banks_data_map.get(bid)
+                                if b_data:
+                                    first_bank = b_data
+                                    break
+                            
+                            if first_bank:
+                                bank_name = self._extract_m2o_name(first_bank.get('bank_id'))
+                                currency = self._extract_m2o_name(first_bank.get('currency_id'))
+                                acc_number = first_bank.get('acc_number', '')
+                                cci = first_bank.get('cci', '')
+                                
+                                bank_map[pid] = {
+                                    'bank_name': bank_name,
+                                    'bank_currency': currency,
+                                    'bank_acc_number': acc_number,
+                                    'bank_cci': cci
+                                }
+
+                except Exception as e:
+                    print(f"[ERROR] Error obteniendo datos bancarios: {e}")
+
             # Combinar y procesar datos
-            rows = self._process_payable_lines(lines, move_map, partner_map, account_map)
+            rows = self._process_payable_lines(lines, move_map, partner_map, account_map, bank_map)
             
-            print(f"[OK] Procesadas {len(rows)} líneas de CxP")
-            return rows
+            # 5. Metadatos
+            total_pages = (total_count + per_page - 1) // per_page
+            has_more = page < total_pages
+            
+            print(f"[OK] Procesados {len(rows)} registros paginados")
+            
+            return {
+                'data': rows,
+                'total_count': total_count,
+                'page': page,
+                'per_page': per_page,
+                'total_pages': total_pages,
+                'has_more': has_more
+            }
             
         except Exception as e:
-            print(f"[ERROR] Error al obtener reporte de cuentas por pagar: {e}")
+            print(f"[ERROR] Error en paginación CxP: {e}")
             import traceback
             traceback.print_exc()
-            return []
+            raise
+
+    def get_accounts_payable_report(self, start_date=None, end_date=None, 
+                                    supplier=None, limit=0, account_codes=None,
+                                    payment_state=None, doc_type_id=None):
+        """
+        DEPRECATED: Usar get_report_lines_paginated para mejor rendimiento.
+        Mantenido por compatibilidad temporal.
+        """
+        # Redirigir a la versión paginada solicitando "todas" (o muchas) líneas si limit=0
+        limit_val = limit if limit and limit > 0 else 10000
+        result = self.get_report_lines_paginated(
+            page=1, per_page=limit_val,
+            start_date=start_date, end_date=end_date,
+            supplier=supplier, account_codes=account_codes,
+            payment_state=payment_state, doc_type_id=doc_type_id
+        )
+        return result['data']
     
     def _get_moves_data(self, move_ids):
         """
         Obtiene datos de las facturas (account.move).
-        
-        Args:
-            move_ids (list): Lista de IDs de account.move
-        
-        Returns:
-            dict: Mapeo de move_id -> datos de factura
         """
         if not move_ids:
             return {}
@@ -202,19 +309,14 @@ class TreasuryService:
     def _get_partners_data(self, partner_ids):
         """
         Obtiene datos de proveedores (res.partner).
-        
-        Args:
-            partner_ids (list): Lista de IDs de res.partner
-        
-        Returns:
-            dict: Mapeo de partner_id -> datos de proveedor
         """
         if not partner_ids:
             return {}
         
+        # Añadido bank_ids
         partner_fields = [
             'id', 'name', 'vat', 'country_id', 'country_code',
-            'state_id', 'city', 'phone', 'email', 'supplier_rank'
+            'state_id', 'city', 'phone', 'email', 'supplier_rank', 'bank_ids'
         ]
         
         partners = self.repository.read('res.partner', partner_ids, partner_fields)
@@ -223,12 +325,6 @@ class TreasuryService:
     def _get_accounts_data(self, account_ids):
         """
         Obtiene datos de cuentas contables (account.account).
-        
-        Args:
-            account_ids (list): Lista de IDs de account.account
-        
-        Returns:
-            dict: Mapeo de account_id -> datos de cuenta
         """
         if not account_ids:
             return {}
@@ -236,21 +332,15 @@ class TreasuryService:
         accounts = self.repository.read('account.account', account_ids, ['id', 'code', 'name'])
         return {a['id']: a for a in accounts}
     
-    def _process_payable_lines(self, lines, move_map, partner_map, account_map):
+    def _process_payable_lines(self, lines, move_map, partner_map, account_map, bank_map=None):
         """
         Procesa las líneas de CxP y combina con datos relacionados.
-        
-        Args:
-            lines (list): Líneas de account.move.line
-            move_map (dict): Datos de facturas
-            partner_map (dict): Datos de proveedores
-            account_map (dict): Datos de cuentas
-        
-        Returns:
-            list: Líneas procesadas con todos los datos combinados
+        Añadido bank_map opcional.
         """
         rows = []
         today = datetime.today().date()
+        if bank_map is None:
+            bank_map = {}
         
         # Mapas de traducción
         PAYMENT_STATE_MAP = {
@@ -276,26 +366,21 @@ class TreasuryService:
             move = move_map.get(move_id, {})
             partner = partner_map.get(partner_id, {})
             account = account_map.get(account_id, {})
+            bank_info = bank_map.get(partner_id, {})
             
             # Calcular días de vencimiento
             invoice_date_due = move.get('invoice_date_due', '')
-            # Priorizar fecha de vencimiento de la línea (más precisa para cuotas/asientos)
             date_due = line.get('date_maturity') or invoice_date_due
             dias_vencido = calcular_dias_vencido(date_due, today) if date_due else 0
             
-            # Clasificar antigüedad
             antiguedad = clasificar_antiguedad(max(0, dias_vencido))
-            
-            # Estado de deuda
             estado_deuda = 'VENCIDO' if dias_vencido > 0 else 'VIGENTE'
             
-            # Calcular montos de línea (evitar duplicidad de totales de factura)
             debit = line.get('debit', 0.0) or 0.0
             credit = line.get('credit', 0.0) or 0.0
             amount_total_line = abs(debit - credit)
             amount_residual_line = abs(line.get('amount_residual', 0.0) or 0.0)
             
-            # Traducciones
             payment_state_raw = move.get('payment_state', '')
             state_raw = move.get('state', '')
             
@@ -310,6 +395,8 @@ class TreasuryService:
                 'invoice_date_due': invoice_date_due,
                 'invoice_origin': move.get('invoice_origin', ''),
                 'invoice_payment_term_id': self._extract_m2o_name(move.get('invoice_payment_term_id')),
+                # 'invoice_user_id': self._extract_m2o_name(move.get('invoice_user_id')), # REMOVED per user request (aunque sigo extrayendo, no lo mostraré en front, pero si no cuesta dejarlo...)
+                # El usuario pidió sacarlo del REPORTE (HTML), no necesariamente del backend. Lo dejo por si acaso lo piden luego.
                 'invoice_user_id': self._extract_m2o_name(move.get('invoice_user_id')),
                 'l10n_latam_document_type_id': self._extract_m2o_name(move.get('l10n_latam_document_type_id')),
                 'narration': move.get('narration', ''),
@@ -328,11 +415,17 @@ class TreasuryService:
                 'supplier_email': partner.get('email', ''),
                 'supplier_rank': partner.get('supplier_rank', 0),
                 
+                # Datos Bancarios (Nuevos)
+                'bank_name': bank_info.get('bank_name', ''),
+                'bank_currency': bank_info.get('bank_currency', ''),
+                'bank_acc_number': bank_info.get('bank_acc_number', ''),
+                'bank_cci': bank_info.get('bank_cci', ''),
+                
                 # Datos de la cuenta contable
                 'account_code': account.get('code', ''),
                 'account_name': account.get('name', ''),
                 
-                # Montos (USAR MONTOS DE LÍNEA + MONTOS DE FACTURA EN MONEDA ORIGEN Y SOLES)
+                # Montos
                 'currency_id': self._extract_m2o_name(line.get('currency_id') or move.get('currency_id')),
                 'amount_total': amount_total_line,
                 'amount_residual': amount_residual_line,
@@ -364,80 +457,8 @@ class TreasuryService:
     def _extract_m2o_name(value):
         """
         Extrae el nombre de un campo Many2One de Odoo.
-        
-        Args:
-            value: Valor del campo M2O (puede ser lista [id, name] o False)
-        
-        Returns:
-            str: Nombre extraído o cadena vacía
         """
         if isinstance(value, list) and len(value) >= 2:
             return value[1]
         return ''
-    
-    def get_summary_by_supplier(self, start_date=None, end_date=None):
-        """
-        Obtiene resumen de CxP agrupado por proveedor.
-        
-        Args:
-            start_date (str): Fecha inicial
-            end_date (str): Fecha final
-        
-        Returns:
-            list: Resumen con totales por proveedor
-        """
-        lines = self.get_accounts_payable_report(start_date, end_date)
-        
-        # Agrupar por proveedor
-        suppliers_summary = {}
-        
-        for line in lines:
-            supplier = line['supplier_name']
-            if supplier not in suppliers_summary:
-                suppliers_summary[supplier] = {
-                    'supplier_name': supplier,
-                    'supplier_vat': line['supplier_vat'],
-                    'total_debt': 0.0,
-                    'total_overdue': 0.0,
-                    'count_invoices': 0,
-                    'oldest_invoice_days': 0
-                }
-            
-            suppliers_summary[supplier]['total_debt'] += line['amount_residual']
-            suppliers_summary[supplier]['count_invoices'] += 1
-            
-            if line['dias_vencido'] > 0:
-                suppliers_summary[supplier]['total_overdue'] += line['amount_residual']
-            
-            if line['dias_vencido'] > suppliers_summary[supplier]['oldest_invoice_days']:
-                suppliers_summary[supplier]['oldest_invoice_days'] = line['dias_vencido']
-        
-        return list(suppliers_summary.values())
-    
-    def get_summary_by_aging(self, start_date=None, end_date=None):
-        """
-        Obtiene resumen de CxP agrupado por antigüedad.
-        
-        Args:
-            start_date (str): Fecha inicial
-            end_date (str): Fecha final
-        
-        Returns:
-            dict: Resumen con totales por rango de antigüedad
-        """
-        lines = self.get_accounts_payable_report(start_date, end_date)
-        
-        aging_summary = {
-            'Vigente': {'count': 0, 'amount': 0.0},
-            'Atraso Corto (1-30)': {'count': 0, 'amount': 0.0},
-            'Atraso Medio (31-60)': {'count': 0, 'amount': 0.0},
-            'Atraso Prolongado (61-90)': {'count': 0, 'amount': 0.0},
-            'Cobranza Judicial (+90)': {'count': 0, 'amount': 0.0}
-        }
-        
-        for line in lines:
-            antiguedad = line['antiguedad']
-            aging_summary[antiguedad]['count'] += 1
-            aging_summary[antiguedad]['amount'] += line['amount_residual']
-        
-        return aging_summary
+

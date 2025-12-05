@@ -94,54 +94,7 @@
         </div>
     </div>
 
-    <!-- KPI Summary Ribbon - Compact Enterprise Style -->
-    <div class="bg-white rounded-lg shadow-sm mb-4 overflow-hidden">
-        <div class="flex items-stretch divide-x divide-gray-200">
-            <!-- Total Registros -->
-            <div class="flex-1 px-6 py-3 hover:bg-gray-50 transition-colors">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Total Registros</p>
-                        <p class="text-xl font-bold text-gray-800" x-text="stats.count">0</p>
-                    </div>
-                    <i class="bi bi-list-check text-2xl text-gray-400"></i>
-                </div>
-            </div>
-            
-            <!-- Monto Total -->
-            <div class="flex-1 px-6 py-3 hover:bg-blue-50 transition-colors">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-medium text-blue-600 uppercase tracking-wide mb-1">Monto Total</p>
-                        <p class="text-xl font-bold text-blue-600" x-text="formatCurrency(stats.total)">S/ 0.00</p>
-                    </div>
-                    <i class="bi bi-cash-stack text-2xl text-blue-400"></i>
-                </div>
-            </div>
-            
-            <!-- Saldo Pendiente -->
-            <div class="flex-1 px-6 py-3 hover:bg-yellow-50 transition-colors">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-medium text-yellow-600 uppercase tracking-wide mb-1">Saldo Pendiente</p>
-                        <p class="text-xl font-bold text-yellow-600" x-text="formatCurrency(stats.pending)">S/ 0.00</p>
-                    </div>
-                    <i class="bi bi-clock-history text-2xl text-yellow-400"></i>
-                </div>
-            </div>
-            
-            <!-- Deuda Vencida -->
-            <div class="flex-1 px-6 py-3 hover:bg-red-50 transition-colors">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-medium text-red-600 uppercase tracking-wide mb-1">Deuda Vencida</p>
-                        <p class="text-xl font-bold text-red-600" x-text="formatCurrency(stats.overdue)">S/ 0.00</p>
-                    </div>
-                    <i class="bi bi-exclamation-triangle text-2xl text-red-400"></i>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- KPI Summary Ribbon Removed -->
 
     <!-- Tabla con Sticky Headers -->
     <div class="bg-white rounded-lg shadow-sm overflow-hidden" style="max-width: 100%; width: 100%;">
@@ -160,12 +113,16 @@
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">RUC Proveedor</th>
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Proveedor</th>
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Código País</th>
-                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">País</th>
-                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Provincia</th>
-                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Ciudad</th>
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Teléfono</th>
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Email</th>
-                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Moneda</th>
+                        
+                        <!-- Campos de Banco Nuevos -->
+                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Banco</th>
+                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Moneda Banco</th>
+                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Cuenta Bancaria</th>
+                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">CCI</th>
+                        
+                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Moneda Doc</th>
                         <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">Total Origen</th>
                         <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">Adeudado Origen</th>
                         <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">Total S/.</th>
@@ -173,10 +130,9 @@
                         <th class="px-3 py-3 text-center font-semibold whitespace-nowrap">Días Vencido</th>
                         <th class="px-3 py-3 text-center font-semibold whitespace-nowrap">Estado</th>
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Antigüedad</th>
-                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Condición Pago</th>
+                        <!-- Eliminado Condición Pago -->
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Estado Pago</th>
-                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Estado Factura</th>
-                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Usuario Responsable</th>
+                        <!-- Eliminado Usuario Responsable -->
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Descripción</th>
                     </tr>
                 </thead>
@@ -184,6 +140,8 @@
                     <!-- Filas se cargarán aquí vía JavaScript -->
                 </tbody>
             </table>
+            <!-- Sentinel for infinite scroll -->
+            <div id="scroll-sentinel" class="h-4 w-full"></div>
         </div>
         
         <!-- Loading indicator -->
@@ -209,17 +167,15 @@ function reportController() {
             limit: '1000',
             doc_type_id: ''
         },
-        stats: {
-            count: 0,
-            total: 0,
-            pending: 0,
-            overdue: 0
-        },
-        data: [],
+        allData: [], // Almacena TODOS los datos
+        pageSize: 50, // Renderizar de 50 en 50
+        currentIndex: 0,
         documentTypes: [],
+        observer: null,
         
         async init() {
             await this.loadFilterOptions();
+            this.setupObserver();
             await this.loadData();
         },
         
@@ -234,28 +190,46 @@ function reportController() {
             }
         },
         
-        // Procesar el texto de códigos de cuenta (convertir a formato API)
+        // Procesar el texto de códigos de cuenta
         getAccountCodesForAPI() {
             const text = this.filters.account_codes_text.trim();
             if (!text) return '';
-            // Limpiar espacios alrededor de comas y retornar
             return text.split(',').map(code => code.trim()).filter(code => code).join(',');
+        },
+        
+        setupObserver() {
+            const options = {
+                root: document.querySelector('.overflow-y-auto'),
+                rootMargin: '100px',
+                threshold: 0.1
+            };
+            
+            this.observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !this.loading && this.currentIndex < this.allData.length) {
+                        this.renderNextChunk();
+                    }
+                });
+            }, options);
+            
+            const sentinel = document.getElementById('scroll-sentinel');
+            if (sentinel) this.observer.observe(sentinel);
         },
         
         async loadData() {
             this.loading = true;
+            this.currentIndex = 0;
+            document.getElementById('table-body').innerHTML = ''; // Limpiar tabla
+            
             try {
                 // Construir params
                 const params = new URLSearchParams();
                 Object.keys(this.filters).forEach(key => {
                     let value = this.filters[key];
-                    
-                    // Procesamiento especial para account_codes_text
                     if (key === 'account_codes_text') {
                         value = this.getAccountCodesForAPI();
-                        key = 'account_codes'; // Cambiar el nombre de la clave
+                        key = 'account_codes';
                     }
-                    
                     if (value && value !== '') {
                         params.set(key, value);
                     }
@@ -264,9 +238,12 @@ function reportController() {
                 const response = await axios.get(`/api/v1/treasury/report/account42?${params}`);
                 
                 if (response.data && response.data.success) {
-                    this.data = response.data.data || [];
-                    this.updateStats(this.data);
-                    this.renderTable(this.data);
+                    this.allData = response.data.data || [];
+                    if (this.allData.length === 0) {
+                        this.showEmptyState();
+                    } else {
+                        this.renderNextChunk(); // Renderizar primer chunk
+                    }
                 } else {
                     showToast('Error al cargar datos', 'error');
                 }
@@ -278,33 +255,31 @@ function reportController() {
             }
         },
         
-        updateStats(data) {
-            this.stats.count = data.length;
-            this.stats.total = data.reduce((sum, row) => sum + (parseFloat(row.amount_total) || 0), 0);
-            this.stats.pending = data.reduce((sum, row) => sum + (parseFloat(row.amount_residual) || 0), 0);
-            this.stats.overdue = data.reduce((sum, row) => {
-                const dias = parseInt(row.dias_vencido) || 0;
-                return sum + (dias > 0 ? (parseFloat(row.amount_residual) || 0) : 0);
-            }, 0);
+        renderNextChunk() {
+            const nextIndex = Math.min(this.currentIndex + this.pageSize, this.allData.length);
+            const chunk = this.allData.slice(this.currentIndex, nextIndex);
+            
+            if (chunk.length > 0) {
+                this.appendRows(chunk);
+                this.currentIndex = nextIndex;
+            }
         },
         
-        renderTable(data) {
+        showEmptyState() {
             const tbody = document.getElementById('table-body');
-            if (!tbody) return;
-            
-            if (data.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="28" class="text-center py-8 text-gray-500">
-                            <i class="bi bi-inbox text-4xl mb-2"></i>
-                            <p>No se encontraron registros</p>
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-            
-            tbody.innerHTML = data.map(row => {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="30" class="text-center py-8 text-gray-500">
+                        <i class="bi bi-inbox text-4xl mb-2"></i>
+                        <p>No se encontraron registros</p>
+                    </td>
+                </tr>
+            `;
+        },
+        
+        appendRows(data) {
+            const tbody = document.getElementById('table-body');
+            const html = data.map(row => {
                 const diasClass = (row.dias_vencido || 0) > 0 ? 'text-red-600 font-bold' : '';
                 const estadoBadge = row.estado_deuda === 'VENCIDO' 
                     ? 'bg-red-100 text-red-800' 
@@ -323,11 +298,15 @@ function reportController() {
                         <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.supplier_vat || ''}</td>
                         <td class="px-3 py-2 text-sm text-left truncate-cell" title="${row.supplier_name || ''}">${row.supplier_name || ''}</td>
                         <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.supplier_country_code || ''}</td>
-                        <td class="px-3 py-2 text-sm text-left">${row.supplier_country || ''}</td>
-                        <td class="px-3 py-2 text-sm text-left">${row.supplier_state || ''}</td>
-                        <td class="px-3 py-2 text-sm text-left">${row.supplier_city || ''}</td>
                         <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.supplier_phone || ''}</td>
                         <td class="px-3 py-2 text-sm text-left truncate-cell" title="${row.supplier_email || ''}">${row.supplier_email || ''}</td>
+                        
+                        <!-- Campos Banco -->
+                        <td class="px-3 py-2 text-sm text-left truncate-cell" title="${row.bank_name || ''}">${row.bank_name || ''}</td>
+                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.bank_currency || ''}</td>
+                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.bank_acc_number || ''}</td>
+                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.bank_cci || ''}</td>
+                        
                         <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.currency_id || ''}</td>
                         <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${this.formatNumberWithCommas(row.amount_total_in_currency_signed)}</td>
                         <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${this.formatNumberWithCommas(row.amount_residual_with_retention)}</td>
@@ -338,14 +317,16 @@ function reportController() {
                             <span class="px-2 py-1 rounded text-xs ${estadoBadge}">${row.estado_deuda || ''}</span>
                         </td>
                         <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.antiguedad || ''}</td>
-                        <td class="px-3 py-2 text-sm text-left">${row.invoice_payment_term_id || ''}</td>
+                        
+                        <!-- Eliminado Condición Pago -->
                         <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.payment_state || ''}</td>
-                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.state || ''}</td>
-                        <td class="px-3 py-2 text-sm text-left truncate-cell" title="${row.invoice_user_id || ''}">${row.invoice_user_id || ''}</td>
+                        <!-- Eliminado Usuario Responsable -->
                         <td class="px-3 py-2 text-sm text-left truncate-cell" title="${row.name || ''}">${row.name || ''}</td>
                     </tr>
                 `;
             }).join('');
+            
+            tbody.insertAdjacentHTML('beforeend', html);
         },
         
         formatNumber(value) {
@@ -384,13 +365,10 @@ function reportController() {
                 const params = new URLSearchParams();
                 Object.keys(this.filters).forEach(key => {
                     let value = this.filters[key];
-                    
-                    // Procesamiento especial para account_codes_text
                     if (key === 'account_codes_text') {
                         value = this.getAccountCodesForAPI();
-                        key = 'account_codes'; // Cambiar el nombre de la clave
+                        key = 'account_codes';
                     }
-                    
                     if (value && value !== '') {
                         params.set(key, value);
                     }
@@ -483,7 +461,7 @@ function reportController() {
     /* Responsive improvements */
     @media (max-width: 768px) {
         /* Ajustar grid de filtros en móvil */
-        .grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3.xl\\:grid-cols-6 {
+        .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3.xl\:grid-cols-6 {
             grid-template-columns: 1fr !important;
         }
         
@@ -500,21 +478,21 @@ function reportController() {
     
     /* Tablet */
     @media (min-width: 769px) and (max-width: 1024px) {
-        .grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3.xl\\:grid-cols-6 {
+        .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3.xl\:grid-cols-6 {
             grid-template-columns: repeat(2, 1fr) !important;
         }
     }
     
     /* Desktop */
     @media (min-width: 1025px) and (max-width: 1439px) {
-        .grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3.xl\\:grid-cols-6 {
+        .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3.xl\:grid-cols-6 {
             grid-template-columns: repeat(3, 1fr) !important;
         }
     }
     
     /* Desktop grande */
     @media (min-width: 1440px) {
-        .grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3.xl\\:grid-cols-6 {
+        .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3.xl\:grid-cols-6 {
             grid-template-columns: repeat(6, 1fr) !important;
         }
     }

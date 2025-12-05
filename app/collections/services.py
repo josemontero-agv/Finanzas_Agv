@@ -459,6 +459,7 @@ class CollectionsService:
                     'invoice_date': move.get('invoice_date', ''),
                     'l10n_latam_document_type_id': m2o_name(move.get('l10n_latam_document_type_id')),
                     'move_name': move.get('name', ''),
+                    'l10n_latam_boe_number': move.get('l10n_latam_boe_number', ''),
                     'invoice_origin': move.get('invoice_origin', ''),
                     'account_id/code': account.get('code', ''),
                     'account_id/name': account.get('name', ''),
@@ -716,6 +717,7 @@ class CollectionsService:
                     'invoice_date': move.get('invoice_date', ''),
                     'l10n_latam_document_type_id': m2o_name(move.get('l10n_latam_document_type_id')),
                     'move_name': move.get('name', ''),
+                    'l10n_latam_boe_number': move.get('l10n_latam_boe_number', ''),
                     'invoice_origin': move.get('invoice_origin', ''),
                     'account_id/code': account.get('code', ''),
                     'account_id/name': account.get('name', ''),
@@ -769,108 +771,109 @@ class CollectionsService:
             traceback.print_exc()
             raise
     
-    def get_aggregated_stats(self, **kwargs):
-        """
-        Obtiene estadísticas agregadas usando el método get_report_lines existente.
-        VERSIÓN CORREGIDA - Usa el método que ya funciona correctamente y tiene todos los campos calculados.
-        
-        Args:
-            **kwargs: Filtros (start_date, end_date, customer, account_codes, sales_channel_id, doc_type_id)
-        
-        Returns:
-            dict: {
-                'total_count': 1234,
-                'total_amount': 500000.00,
-                'pending_amount': 250000.00,
-                'overdue_amount': 50000.00,
-                'paid_amount': 250000.00
-            }
-        """
-        try:
-            print("[INFO] Calculando estadísticas agregadas...")
-            
-            if not self.repository.is_connected():
-                raise ValueError("No hay conexión a Odoo disponible")
-            
-            # Extraer filtros
-            start_date = kwargs.get('start_date')
-            end_date = kwargs.get('end_date')
-            customer = kwargs.get('customer')
-            account_codes = kwargs.get('account_codes')
-            sales_channel_id = kwargs.get('sales_channel_id')
-            doc_type_id = kwargs.get('doc_type_id')
-            
-            # ✅ USAR EL MÉTODO QUE YA FUNCIONA (get_report_lines)
-            # Este método ya procesa todas las líneas y calcula dias_vencido, etc.
-            # Limitamos a 50000 para evitar timeout, pero es suficiente para stats
-            all_lines = self.get_report_lines(
-                start_date=start_date,
-                end_date=end_date,
-                customer=customer,
-                account_codes=account_codes,
-                sales_channel_id=sales_channel_id,
-                doc_type_id=doc_type_id,
-                limit=50000  # Límite razonable para stats (antes era 10000)
-            )
-            
-            if not all_lines:
-                print("[INFO] No se encontraron líneas para calcular stats")
-                return {
-                    'total_count': 0,
-                    'total_amount': 0.0,
-                    'pending_amount': 0.0,
-                    'overdue_amount': 0.0,
-                    'paid_amount': 0.0
-                }
-            
-            # Calcular agregados desde las líneas procesadas
-            # Usamos los campos de la LÍNEA para evitar duplicar montos de facturas con múltiples cuotas
-            total_count = len(all_lines)
-            
-            # amount_residual es en moneda compañía (Soles). Usamos abs() porque puede ser negativo (crédito)
-            # debit/credit también en moneda compañía. Balance = debit - credit.
-            
-            total_amount = sum(
-                abs(float(line.get('debit', 0) or 0) - float(line.get('credit', 0) or 0))
-                for line in all_lines
-            )
-            
-            pending_amount = sum(
-                abs(float(line.get('amount_residual', 0) or 0))
-                for line in all_lines
-            )
-            
-            # Calcular deuda vencida usando dias_vencido que ya está calculado en get_report_lines
-            overdue_amount = sum(
-                abs(float(line.get('amount_residual', 0) or 0))
-                for line in all_lines 
-                if line.get('dias_vencido', 0) > 0
-            )
-            
-            paid_amount = total_amount - pending_amount
-            
-            result = {
-                'total_count': total_count,
-                'total_amount': round(total_amount, 2),
-                'pending_amount': round(pending_amount, 2),
-                'overdue_amount': round(overdue_amount, 2),
-                'paid_amount': round(paid_amount, 2)
-            }
-            
-            print(f"[OK] Stats calculados: {result['total_count']} registros, Total: {result['total_amount']:,.2f}, Pendiente: {result['pending_amount']:,.2f}, Vencido: {result['overdue_amount']:,.2f}")
-            return result
-            
-        except Exception as e:
-            print(f"[ERROR] Error obteniendo stats: {e}")
-            import traceback
-            traceback.print_exc()
-            return {
-                'total_count': 0,
-                'total_amount': 0.0,
-                'pending_amount': 0.0,
-                'overdue_amount': 0.0,
-                'paid_amount': 0.0
-            }
+    # KPI Method - Disabled as per user request due to data inconsistency
+    # def get_aggregated_stats(self, **kwargs):
+    #     """
+    #     Obtiene estadísticas agregadas usando el método get_report_lines existente.
+    #     VERSIÓN CORREGIDA - Usa el método que ya funciona correctamente y tiene todos los campos calculados.
+    #     
+    #     Args:
+    #         **kwargs: Filtros (start_date, end_date, customer, account_codes, sales_channel_id, doc_type_id)
+    #     
+    #     Returns:
+    #         dict: {
+    #             'total_count': 1234,
+    #             'total_amount': 500000.00,
+    #             'pending_amount': 250000.00,
+    #             'overdue_amount': 50000.00,
+    #             'paid_amount': 250000.00
+    #         }
+    #     """
+    #     try:
+    #         print("[INFO] Calculando estadísticas agregadas...")
+    #         
+    #         if not self.repository.is_connected():
+    #             raise ValueError("No hay conexión a Odoo disponible")
+    #         
+    #         # Extraer filtros
+    #         start_date = kwargs.get('start_date')
+    #         end_date = kwargs.get('end_date')
+    #         customer = kwargs.get('customer')
+    #         account_codes = kwargs.get('account_codes')
+    #         sales_channel_id = kwargs.get('sales_channel_id')
+    #         doc_type_id = kwargs.get('doc_type_id')
+    #         
+    #         # ✅ USAR EL MÉTODO QUE YA FUNCIONA (get_report_lines)
+    #         # Este método ya procesa todas las líneas y calcula dias_vencido, etc.
+    #         # Limitamos a 50000 para evitar timeout, pero es suficiente para stats
+    #         all_lines = self.get_report_lines(
+    #             start_date=start_date,
+    #             end_date=end_date,
+    #             customer=customer,
+    #             account_codes=account_codes,
+    #             sales_channel_id=sales_channel_id,
+    #             doc_type_id=doc_type_id,
+    #             limit=50000  # Límite razonable para stats (antes era 10000)
+    #         )
+    #         
+    #         if not all_lines:
+    #             print("[INFO] No se encontraron líneas para calcular stats")
+    #             return {
+    #                 'total_count': 0,
+    #                 'total_amount': 0.0,
+    #                 'pending_amount': 0.0,
+    #                 'overdue_amount': 0.0,
+    #                 'paid_amount': 0.0
+    #             }
+    #         
+    #         # Calcular agregados desde las líneas procesadas
+    #         # Usamos los campos de la LÍNEA para evitar duplicar montos de facturas con múltiples cuotas
+    #         total_count = len(all_lines)
+    #         
+    #         # amount_residual es en moneda compañía (Soles). Usamos abs() porque puede ser negativo (crédito)
+    #         # debit/credit también en moneda compañía. Balance = debit - credit.
+    #         
+    #         total_amount = sum(
+    #             abs(float(line.get('debit', 0) or 0) - float(line.get('credit', 0) or 0))
+    #             for line in all_lines
+    #         )
+    #         
+    #         pending_amount = sum(
+    #             abs(float(line.get('amount_residual', 0) or 0))
+    #             for line in all_lines
+    #         )
+    #         
+    #         # Calcular deuda vencida usando dias_vencido que ya está calculado en get_report_lines
+    #         overdue_amount = sum(
+    #             abs(float(line.get('amount_residual', 0) or 0))
+    #             for line in all_lines 
+    #             if line.get('dias_vencido', 0) > 0
+    #         )
+    #         
+    #         paid_amount = total_amount - pending_amount
+    #         
+    #         result = {
+    #             'total_count': total_count,
+    #             'total_amount': round(total_amount, 2),
+    #             'pending_amount': round(pending_amount, 2),
+    #             'overdue_amount': round(overdue_amount, 2),
+    #             'paid_amount': round(paid_amount, 2)
+    #         }
+    #         
+    #         print(f"[OK] Stats calculados: {result['total_count']} registros, Total: {result['total_amount']:,.2f}, Pendiente: {result['pending_amount']:,.2f}, Vencido: {result['overdue_amount']:,.2f}")
+    #         return result
+    #         
+    #     except Exception as e:
+    #         print(f"[ERROR] Error obteniendo stats: {e}")
+    #         import traceback
+    #         traceback.print_exc()
+    #         return {
+    #             'total_count': 0,
+    #             'total_amount': 0.0,
+    #             'pending_amount': 0.0,
+    #             'overdue_amount': 0.0,
+    #             'paid_amount': 0.0
+    #         }
 
     def get_report_internacional(self, start_date=None, end_date=None, customer=None, payment_state=None, limit=0):
         """
