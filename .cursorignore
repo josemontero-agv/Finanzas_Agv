@@ -1,0 +1,58 @@
+# 🚫 Ignorar carpetas que consumen muchos tokens
+
+# Compilados y caché de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Entornos virtuales
+venv/
+env/
+ENV/
+
+# Dependencias de Node (si hay)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Documentación generada (muy voluminosa)
+site/
+.mkdocs_build/
+
+# Git
+.git/
+.github/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Archivos de configuración no críticos
+.env.produccion
+.env.staging
+*.bak
+*.log
+
+# Tests y coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Otros
+.cursorignore
+

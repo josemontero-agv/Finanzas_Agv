@@ -74,7 +74,6 @@ Porque:
 
 ## Referencias
 
-- [Notas de Reunión - 14 Nov 2025](../../Downloads/PROYECTO%20FINANZAS-CTA%2012%20Y%2042-AVANCE%20-%202025_11_14%2016_59%20GMT-05_00%20-%20Notas%20de%20Gemini.txt)
 - [RB-101: Conexión Odoo](../runbooks/rb-101-odoo-connection.md)
 - [Análisis Arquitectónico Completo](../mejoras-stack-arquitectura/analisis-arquitectonico-completo.md)
 - [Reporte de Estado de Proyectos](../reporte-estado-proyectos.md)

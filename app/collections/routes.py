@@ -55,6 +55,12 @@ def report_account12():
         account_codes = request.args.get('account_codes')
         sales_channel_id = request.args.get('sales_channel_id', type=int)
         doc_type_id = request.args.get('doc_type_id', type=int)
+        cutoff_date = request.args.get('date_cutoff')
+        include_reconciled = request.args.get('include_reconciled') == 'true'
+        summary_only = request.args.get('summary_only') == 'true'
+        if cutoff_date:
+            # En modo histórico incluimos conciliados para cuadrar con el mayor
+            include_reconciled = True
         limit = request.args.get('limit', type=int, default=10000)
         
         # Crear repositorio y servicio
@@ -69,8 +75,64 @@ def report_account12():
             limit=limit,
             account_codes=account_codes,
             sales_channel_id=sales_channel_id,
-            doc_type_id=doc_type_id
+            doc_type_id=doc_type_id,
+            cutoff_date=cutoff_date,
+            include_reconciled=include_reconciled
         )
+
+        def _summarize(rows):
+            overall = {
+                'debit': 0.0,
+                'credit': 0.0,
+                'pending_cutoff': 0.0,
+                'paid_after_cutoff': 0.0,
+                'saldo': 0.0,
+                'count': 0
+            }
+            accounts = {}
+            for row in rows:
+                acc = row.get('account_id/code') or 'N/A'
+                acc_name = row.get('account_id/name') or ''
+                debit = float(row.get('debit', 0.0) or 0.0)
+                credit = float(row.get('credit', 0.0) or 0.0)
+                pending = float(row.get('amount_residual_historical', row.get('amount_residual_currency', 0.0)) or 0.0)
+                paid_after = float(row.get('paid_after_cutoff', 0.0) or 0.0)
+
+                overall['debit'] += debit
+                overall['credit'] += credit
+                overall['pending_cutoff'] += pending
+                overall['paid_after_cutoff'] += paid_after
+                overall['count'] += 1
+
+                if acc not in accounts:
+                    accounts[acc] = {
+                        'account_code': acc,
+                        'account_name': acc_name,
+                        'debit': 0.0,
+                        'credit': 0.0,
+                        'pending_cutoff': 0.0,
+                        'paid_after_cutoff': 0.0,
+                        'saldo': 0.0,
+                        'count': 0
+                    }
+                accounts[acc]['debit'] += debit
+                accounts[acc]['credit'] += credit
+                accounts[acc]['pending_cutoff'] += pending
+                accounts[acc]['paid_after_cutoff'] += paid_after
+                accounts[acc]['count'] += 1
+
+            for acc_code, acc_data in accounts.items():
+                acc_data['saldo'] = acc_data['debit'] - acc_data['credit']
+            overall['saldo'] = overall['debit'] - overall['credit']
+
+            by_account = list(accounts.values())
+            by_account.sort(key=lambda x: x['account_code'])
+            return {
+                'overall': overall,
+                'by_account': by_account
+            }
+
+        summary = _summarize(data)
         
         # Preparar filtros aplicados para la respuesta
         filters_applied = {
@@ -80,13 +142,17 @@ def report_account12():
             'account_codes': account_codes,
             'sales_channel_id': sales_channel_id,
             'doc_type_id': doc_type_id,
+            'date_cutoff': cutoff_date,
+            'include_reconciled': include_reconciled,
+            'summary_only': summary_only,
             'limit': limit
         }
         
         return jsonify({
             'success': True,
-            'data': data,
-            'count': len(data),
+            'data': [] if summary_only else data,
+            'count': 0 if summary_only else len(data),
+            'summary': summary,
             'filters': filters_applied,
             'message': f'Reporte generado exitosamente con {len(data)} registros'
         }), 200
@@ -314,9 +380,13 @@ def report_account12_rows():
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
         customer = request.args.get('customer')
-        account_codes = request.args.get('account_codes', '122,1212,123,1312,132')
+        account_codes = request.args.get('account_codes', '122,1212,123,1312,132,13')
         sales_channel_id = request.args.get('sales_channel_id', type=int)
         doc_type_id = request.args.get('doc_type_id', type=int)
+        cutoff_date = request.args.get('date_cutoff')
+        include_reconciled = request.args.get('include_reconciled') == 'true'
+        if cutoff_date:
+            include_reconciled = True
         
         # Crear repositorio y servicio
         odoo_repo = _get_odoo_repository()
@@ -332,7 +402,9 @@ def report_account12_rows():
                 customer=customer,
                 account_codes=account_codes,
                 sales_channel_id=sales_channel_id,
-                doc_type_id=doc_type_id
+                doc_type_id=doc_type_id,
+                cutoff_date=cutoff_date,
+                include_reconciled=include_reconciled
             )
             
             data = result['data']
@@ -352,6 +424,8 @@ def report_account12_rows():
                 account_codes=account_codes,
                 sales_channel_id=sales_channel_id,
                 doc_type_id=doc_type_id,
+                cutoff_date=cutoff_date,
+                include_reconciled=include_reconciled,
                 limit=0
             )
             # Paginar en memoria como fallback
@@ -366,7 +440,7 @@ def report_account12_rows():
         if not data and page == 1:
             return '''
                 <tr>
-                    <td colspan="33" class="text-center py-4 text-gray-500">
+                    <td colspan="32" class="text-center py-4 text-gray-500">
                         No se encontraron registros con los filtros aplicados
                     </td>
                 </tr>
@@ -397,7 +471,7 @@ def report_account12_rows():
         traceback.print_exc()
         return f'''
             <tr>
-                <td colspan="33" class="text-center text-red-600 py-4">
+                <td colspan="32" class="text-center text-red-600 py-4">
                     Error: {str(e)}
                 </td>
             </tr>
@@ -409,7 +483,7 @@ def report_account12_rows():
 def report_account12_stats():
     """
     Endpoint para obtener KPIs agregados sin traer filas.
-    Optimizado con consultas agregadas en Odoo.
+    Deshabilitado: se retornan ceros para evitar errores, según solicitud.
     
     Query Parameters:
         - date_from (str, optional): Fecha inicial (formato: YYYY-MM-DD)
@@ -444,29 +518,22 @@ def report_account12_stats():
         
         print(f"[DEBUG] Filtros recibidos: date_from={date_from}, date_to={date_to}, customer={customer}, account_codes={account_codes}, sales_channel_id={sales_channel_id}, doc_type_id={doc_type_id}")
         
-        # Crear servicio
-        odoo_repo = _get_odoo_repository()
-        collections_service = CollectionsService(odoo_repo)
-        
-        # Obtener stats agregados
-        stats = collections_service.get_aggregated_stats(
-            start_date=date_from,
-            end_date=date_to,
-            customer=customer,
-            account_codes=account_codes,
-            sales_channel_id=sales_channel_id,
-            doc_type_id=doc_type_id
-        )
-        
-        print(f"[DEBUG] Stats calculados: {stats}")
-        
+        # KPIs deshabilitados: devolver ceros para evitar fallos en frontend
+        stats = {
+            'total_count': 0,
+            'total_amount': 0.0,
+            'pending_amount': 0.0,
+            'overdue_amount': 0.0,
+            'paid_amount': 0.0
+        }
         return jsonify({
             'success': True,
             'data': stats,
-            'message': 'Stats calculados exitosamente'
+            'message': 'KPIs deshabilitados; se devuelven ceros.'
         }), 200
         
     except Exception as e:
+        # Incluso ante error, devolver formato estable
         return jsonify({
             'success': False,
             'message': f'Error calculando stats: {str(e)}',
@@ -477,7 +544,7 @@ def report_account12_stats():
                 'overdue_amount': 0.0,
                 'paid_amount': 0.0
             }
-        }), 500
+        }), 200
 
 
 @collections_bp.route('/status', methods=['GET'])

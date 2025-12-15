@@ -19,9 +19,18 @@ openpyxl==3.1.2
 # Envío de correos
 Flask-Mail==0.9.1
 
-# Optimización de Performance
+# Optimización de Performance & Caching
 Flask-Caching==2.1.0
 Flask-Compress==1.14
+redis==5.0.1
+
+# Asincronía y Colas
+celery==5.3.6
+
+# Base de Datos y Cloud (Supabase)
+supabase==2.3.0
+psycopg2-binary==2.9.9
+SQLAlchemy==2.0.23
 
 # Servidor WSGI para producción (opcional)
 gunicorn==21.2.0

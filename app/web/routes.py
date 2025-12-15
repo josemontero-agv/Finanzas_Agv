@@ -138,6 +138,29 @@ def treasury_report_42():
     return render_template('treasury/report_account42.html')
 
 
+@web_bp.route('/treasury/report-daily-payments')
+def treasury_report_daily_payments():
+    """
+    Reporte de Pagos Diarios - Registros Abiertos.
+    """
+    if not session.get('logged_in'):
+        return redirect(url_for('web.login'))
+    
+    return render_template('treasury/report_daily_payments.html')
+
+
+@web_bp.route('/treasury/report-supplier-banks')
+def treasury_report_supplier_banks():
+    """
+    Reporte de Cuentas Bancarias de Proveedores.
+    """
+    if not session.get('logged_in'):
+        return redirect(url_for('web.login'))
+    
+    return render_template('treasury/report_supplier_banks.html')
+
+
+
 @web_bp.route('/treasury/dashboard')
 def treasury_dashboard():
     """

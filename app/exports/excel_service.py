@@ -46,7 +46,7 @@ class ExcelExportService:
         ws = wb.active
         ws.title = "CxC - Cuenta 12"
         
-        # Definir todas las columnas (29 columnas - incluye campos calculados)
+        # Definir columnas (incluye campos históricos y débitos/hábers)
         columns = [
             ('invoice_date', 'Fecha Factura'),
             ('date', 'Fecha Contabilización'),
@@ -62,6 +62,10 @@ class ExcelExportService:
             ('amount_currency', 'Total Moneda Origen'),
             ('amount_residual_with_retention', 'Adeudado'),
             ('amount_residual_signed', 'Adeudado S/.'),
+            ('debit', 'Débito'),
+            ('credit', 'Haber'),
+            ('amount_residual_historical', 'Pendiente al corte'),
+            ('paid_after_cutoff', 'Pagado después corte'),
             ('date_maturity', 'Fecha Vencimiento'),
             ('dias_vencido', 'Días Vencido'),
             ('estado_deuda', 'Estado'),
@@ -104,7 +108,7 @@ class ExcelExportService:
                     value = ''
                 
                 # Formatear valores numéricos
-                if key in ['amount_currency', 'amount_residual_with_retention', 'amount_residual_signed', 'amount_total', 'dias_vencido']:
+                if key in ['amount_currency', 'amount_residual_with_retention', 'amount_residual_signed', 'amount_total', 'debit', 'credit', 'amount_residual_historical', 'paid_after_cutoff', 'dias_vencido']:
                     try:
                         value = float(value) if value else 0
                         if key == 'dias_vencido':
@@ -116,7 +120,7 @@ class ExcelExportService:
                 cell.border = ExcelExportService.CELL_BORDER
                 
                 # Formato especial para números
-                if key in ['amount_currency', 'amount_residual_with_retention', 'amount_residual_signed', 'amount_total']:
+                if key in ['amount_currency', 'amount_residual_with_retention', 'amount_residual_signed', 'amount_total', 'debit', 'credit', 'amount_residual_historical', 'paid_after_cutoff']:
                     cell.number_format = '#,##0.00'
                     cell.alignment = Alignment(horizontal='right')
                 elif key == 'dias_vencido':
@@ -192,28 +196,31 @@ class ExcelExportService:
         ws = wb.active
         ws.title = "CxP - Cuenta 42"
         
-        # Definir columnas expandidas (28 campos)
+        # Definir columnas expandidas (incluye históricos y débitos/hábers)
         columns = [
             ('invoice_date', 'Fecha Factura'),
             ('date', 'Fecha Contabilización'),
             ('l10n_latam_document_type_id', 'Tipo Documento'),
             ('move_name', 'Número Documento'),
+            ('l10n_latam_boe_number', 'Número Letra'),
             ('ref', 'Referencia'),
             ('invoice_origin', 'Origen'),
             ('account_code', 'Cuenta'),
             ('account_name', 'Nombre Cuenta'),
             ('supplier_vat', 'RUC Proveedor'),
             ('supplier_name', 'Proveedor'),
-            ('supplier_country_code', 'Código País'),
             ('supplier_country', 'País'),
             ('supplier_state', 'Provincia'),
             ('supplier_city', 'Ciudad'),
-            ('supplier_phone', 'Teléfono'),
             ('supplier_email', 'Email'),
             ('currency_id', 'Moneda'),
             ('amount_total_in_currency_signed', 'Total Origen'),
             ('amount_residual_with_retention', 'Adeudado Origen'),
             ('amount_total_signed', 'Total S/.'),
+            ('debit', 'Débito'),
+            ('credit', 'Haber'),
+            ('amount_residual_historical', 'Pendiente al corte'),
+            ('paid_after_cutoff', 'Pagado después corte'),
             ('invoice_date_due', 'Fecha Vencimiento'),
             ('dias_vencido', 'Días Vencido'),
             ('estado_deuda', 'Estado'),
@@ -249,7 +256,7 @@ class ExcelExportService:
                     value = ''
                 
                 # Formatear valores numéricos
-                if key in ['amount_total_in_currency_signed', 'amount_residual_with_retention', 'amount_total_signed', 'dias_vencido']:
+                if key in ['amount_total_in_currency_signed', 'amount_residual_with_retention', 'amount_total_signed', 'debit', 'credit', 'amount_residual_historical', 'paid_after_cutoff', 'dias_vencido']:
                     try:
                         value = float(value) if value else 0
                         if key == 'dias_vencido':
@@ -261,7 +268,7 @@ class ExcelExportService:
                 cell.border = ExcelExportService.CELL_BORDER
                 
                 # Formato especial para números
-                if key in ['amount_total_in_currency_signed', 'amount_residual_with_retention', 'amount_total_signed']:
+                if key in ['amount_total_in_currency_signed', 'amount_residual_with_retention', 'amount_total_signed', 'debit', 'credit', 'amount_residual_historical', 'paid_after_cutoff']:
                     cell.number_format = '#,##0.00'
                     cell.alignment = Alignment(horizontal='right')
                 elif key == 'dias_vencido':

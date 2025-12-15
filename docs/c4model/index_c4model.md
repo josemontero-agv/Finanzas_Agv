@@ -170,4 +170,5 @@ El análisis arquitectónico recomienda las siguientes mejoras:
 - [Documentación Completa](../PROYECTO_COMPLETO.md) - Detalles técnicos del proyecto
 - [Análisis Arquitectónico](../mejoras-stack-arquitectura/analisis-arquitectonico-completo.md) - Recomendaciones de stack y mejoras
 - [Structurizr DSL](workspace.dsl) - Código fuente del diagrama (para desarrolladores)
+- [C4 Letras](letras.md) - Vistas y hallazgos específicos del módulo de Letras
 

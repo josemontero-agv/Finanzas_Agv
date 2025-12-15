@@ -69,7 +69,6 @@ Opciones en evaluación:
 
 ## Referencias
 
-- [Notas de Reunión - 13 Oct 2025](../../Downloads/Levante%20de%20Información%20y%20Procesos%20-%20Tesoreria%20-%202025_10_13%2015_56%20GMT-05_00%20-%20Notas%20de%20Gemini.txt)
 - [RB-102: Envío de Correos](../runbooks/rb-102-email-failure.md)
 - [Reporte de Estado de Proyectos](../reporte-estado-proyectos.md)
 

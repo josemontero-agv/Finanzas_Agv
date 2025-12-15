@@ -173,9 +173,9 @@ Verificar que no haya errores tipo:
 
 - [ADR-003: Estrategia de Envío Masivo de Correos](../adrs/0003-estrategia-envio-correos.md)
 - [RB-102: Fallas en Envío de Correos](rb-102-email-failure.md)
-- [Código Fuente - Servicio de Emails](../../app/emails/email_service.py)
 - [Reporte de Estado de Proyectos](../reporte-estado-proyectos.md)
-- [Notas de Reunión - 13 Oct 2025](../../../Downloads/Levante%20de%20Información%20y%20Procesos%20-%20Tesoreria%20-%202025_10_13%2015_56%20GMT-05_00%20-%20Notas%20de%20Gemini.txt)
+
+> **Nota:** El código fuente se encuentra en `app/emails/email_service.py` del repositorio principal.
 
 ## 📞 Contacto
 

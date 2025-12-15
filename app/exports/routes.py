@@ -46,6 +46,10 @@ def export_collections_excel():
         sales_channel_id = request.args.get('sales_channel_id', type=int)
         doc_type_id = request.args.get('doc_type_id', type=int)
         limit = request.args.get('limit', type=int, default=10000)
+        cutoff_date = request.args.get('date_cutoff')
+        include_reconciled = request.args.get('include_reconciled') == 'true'
+        if cutoff_date:
+            include_reconciled = True
         
         # Obtener datos
         odoo_repo = _get_odoo_repository()
@@ -58,7 +62,9 @@ def export_collections_excel():
             limit=limit,
             account_codes=account_codes,
             sales_channel_id=sales_channel_id,
-            doc_type_id=doc_type_id
+            doc_type_id=doc_type_id,
+            cutoff_date=cutoff_date,
+            include_reconciled=include_reconciled
         )
         
         # Generar Excel
@@ -68,7 +74,9 @@ def export_collections_excel():
         from datetime import datetime
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filters_suffix = ""
-        if date_from or date_to:
+        if cutoff_date:
+            filters_suffix = f"_corte_{cutoff_date}"
+        elif date_from or date_to:
             filters_suffix = f"_{date_from or 'inicio'}_{date_to or 'hoy'}"
         
         filename = f"reporte_cxc_general{filters_suffix}_{timestamp}.xlsx"
@@ -93,7 +101,7 @@ def export_treasury_excel():
     Exporta reporte de tesorería a Excel.
     
     Query Parameters:
-        - date_from, date_to, supplier, etc.
+        - date_from, date_to, date_cutoff, supplier, etc.
     
     Response:
         Archivo Excel descargable
@@ -102,9 +110,20 @@ def export_treasury_excel():
         # Obtener parámetros
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
+        date_cutoff = request.args.get('date_cutoff') # Nuevo parámetro
         supplier = request.args.get('supplier')
         account_codes = request.args.get('account_codes')
+        payment_state = request.args.get('payment_state')
+        doc_type_id = request.args.get('doc_type_id', type=int)
+        reference = request.args.get('reference')
+        has_retention = request.args.get('has_retention') == 'true'
+        has_origin = request.args.get('has_origin') == 'true'
+        include_reconciled = request.args.get('include_reconciled') == 'true'
         limit = request.args.get('limit', type=int, default=10000)
+
+        # En corte histórico incluir conciliados para cuadrar con el mayor (misma lógica que /treasury/report/account42)
+        if date_cutoff:
+            include_reconciled = True
         
         # Obtener datos
         odoo_repo = _get_odoo_repository()
@@ -113,16 +132,29 @@ def export_treasury_excel():
         data = treasury_service.get_accounts_payable_report(
             start_date=date_from,
             end_date=date_to,
+            cutoff_date=date_cutoff, # Pasando el parámetro
             supplier=supplier,
             limit=limit,
-            account_codes=account_codes
+            account_codes=account_codes,
+            payment_state=payment_state,
+            doc_type_id=doc_type_id,
+            reference=reference,
+            has_retention=has_retention,
+            has_origin=has_origin,
+            include_reconciled=include_reconciled
         )
         
         # Generar Excel
         excel_buffer = ExcelExportService.export_treasury_report(data)
         
         # Generar nombre de archivo
-        filename = f"reporte_tesoreria_{date_from or 'all'}_{date_to or 'all'}.xlsx"
+        suffix = ""
+        if date_cutoff:
+            suffix = f"_corte_{date_cutoff}"
+        else:
+            suffix = f"_{date_from or 'inicio'}_{date_to or 'hoy'}"
+            
+        filename = f"reporte_tesoreria{suffix}.xlsx"
         
         return send_file(
             excel_buffer,

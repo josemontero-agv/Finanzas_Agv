@@ -70,12 +70,13 @@ class TreasuryService:
 
     def get_report_lines_paginated(self, page=1, per_page=50, **kwargs):
         """
-        Obtiene líneas de reporte con paginación eficiente en Odoo y datos bancarios.
+        Obtiene líneas de reporte con paginación eficiente en Odoo.
+        Soporta 'Fecha de Corte' (Historical Reporting).
         
         Args:
             page (int): Número de página (1-indexed)
             per_page (int): Registros por página
-            **kwargs: Filtros (start_date, end_date, supplier, account_codes, doc_type_id, payment_state)
+            **kwargs: Filtros (start_date, end_date, supplier, account_codes, doc_type_id, payment_state, cutoff_date)
         
         Returns:
             dict: Datos paginados con metadatos
@@ -89,10 +90,15 @@ class TreasuryService:
             # Extraer filtros
             start_date = kwargs.get('start_date')
             end_date = kwargs.get('end_date')
+            cutoff_date = kwargs.get('cutoff_date') # NUEVO: Fecha de corte
             supplier = kwargs.get('supplier')
             account_codes = kwargs.get('account_codes')
             payment_state = kwargs.get('payment_state')
             doc_type_id = kwargs.get('doc_type_id')
+            reference = kwargs.get('reference')
+            has_retention = kwargs.get('has_retention') # NUEVO: Filtro retención
+            has_origin = kwargs.get('has_origin') # NUEVO: Filtro origen
+            include_reconciled = kwargs.get('include_reconciled', False) # NUEVO: Incluir conciliados
             
             # Construir dominio
             # Códigos de cuenta para CxP
@@ -102,33 +108,67 @@ class TreasuryService:
                 codes = ['42', '421', '422', '423', '43', '431', '432','433']
             
             # Construir dominio base
+            # Incluir move_types para facturas, notas y letras de cambio
             line_domain = [
                 ('parent_state', '=', 'posted'),  # Solo facturas contabilizadas
-                ('reconciled', '=', False),  # Solo pendientes de pago
-                ('move_id.move_type', 'in', ['in_invoice', 'in_refund', 'entry']),
+                ('move_id.move_type', 'in', ['in_invoice', 'in_refund', 'entry', 'in_receipt', 'in_payment']),
             ]
+            
+            # Lógica de Fecha de Corte (Historical) vs Reporte Actual
+            if cutoff_date:
+                # Modo Histórico: Traer TODO lo que existía antes del corte
+                line_domain.append(('date', '<=', cutoff_date))
+                # NO filtramos por reconciled=False, porque algo pagado hoy pudo estar abierto antes
+            else:
+                # Modo Actual (Default)
+                if not include_reconciled:
+                    line_domain.append(('reconciled', '=', False))
+                
+                if start_date:
+                    line_domain.append(('date', '>=', start_date))
+                if end_date:
+                    line_domain.append(('date', '<=', end_date))
             
             # Construir OR para códigos de cuenta
             if len(codes) > 1:
                 or_operators = ['|'] * (len(codes) - 1)
                 code_conditions = []
                 for code in codes:
-                    code_conditions.append(('account_id.code', '=like', f'{code}%'))
+                    # Si el usuario pasa un código "completo" (ej: 4230002), hacemos match exacto.
+                    # Si pasa un prefijo (ej: 42, 423), usamos prefijo.
+                    is_exact = code.isdigit() and len(code) >= 6
+                    if is_exact:
+                        code_conditions.append(('account_id.code', '=', code))
+                    else:
+                        code_conditions.append(('account_id.code', '=like', f'{code}%'))
                 line_domain = or_operators + code_conditions + line_domain
             else:
-                line_domain.insert(0, ('account_id.code', '=like', f'{codes[0]}%'))
+                code0 = codes[0]
+                is_exact = code0.isdigit() and len(code0) >= 6
+                if is_exact:
+                    line_domain.insert(0, ('account_id.code', '=', code0))
+                else:
+                    line_domain.insert(0, ('account_id.code', '=like', f'{code0}%'))
             
             # Filtros adicionales
-            if start_date:
-                line_domain.append(('date', '>=', start_date))
-            if end_date:
-                line_domain.append(('date', '<=', end_date))
+            if not cutoff_date: # Solo aplicar filtro de fecha normal si no es reporte historico
+                if start_date:
+                    line_domain.append(('date', '>=', start_date))
+                if end_date:
+                    line_domain.append(('date', '<=', end_date))
+            
             if supplier:
                 line_domain.append(('partner_id.name', 'ilike', supplier))
-            if payment_state:
+            if payment_state and not cutoff_date: # Estado de pago actual solo sirve en reporte actual
                 line_domain.append(('move_id.payment_state', '=', payment_state))
             if doc_type_id:
                 line_domain.append(('move_id.l10n_latam_document_type_id', '=', doc_type_id))
+            if reference:
+                line_domain.append(('move_id.ref', 'ilike', reference.strip()))
+            if has_retention:
+                line_domain.append(('move_id.l10n_pe_retention_check', '=', True))
+            if has_origin:
+                line_domain.append(('move_id.invoice_origin', '!=', False))
             
             # 1. Obtener TOTAL de registros
             total_count = self.repository.search_count('account.move.line', line_domain)
@@ -150,6 +190,7 @@ class TreasuryService:
                 'id', 'move_id', 'partner_id', 'account_id', 'name', 'date',
                 'date_maturity', 'amount_currency', 'amount_residual', 'currency_id',
                 'reconciled', 'full_reconcile_id', 'blocked', 'debit', 'credit',
+                'matched_debit_ids', 'matched_credit_ids' # Necesarios para calcular fecha de pago real
             ]
             
             lines = self.repository.search_read(
@@ -176,77 +217,25 @@ class TreasuryService:
             partner_ids = list(set([l['partner_id'][0] for l in lines if l.get('partner_id')]))
             account_ids = list(set([l['account_id'][0] for l in lines if l.get('account_id')]))
             
+            # Obtener datos de conciliaciones para reporte histórico (fechas y montos)
+            reconciliation_map = {}
+            if cutoff_date:
+                reconciliation_map = self._get_reconciliation_amounts(lines, cutoff_date)
+            
             move_map = self._get_moves_data(move_ids)
             partner_map = self._get_partners_data(partner_ids)
             account_map = self._get_accounts_data(account_ids)
-            
-            # --- LÓGICA DE BANCOS ---
-            bank_map = {}
-            if partner_ids:
-                try:
-                    # 1. Recolectar todos los bank_ids de los partners
-                    all_bank_ids = []
-                    partner_bank_ids_map = {} # partner_id -> [bank_ids]
-                    
-                    for pid in partner_ids:
-                        partner = partner_map.get(pid)
-                        if partner and partner.get('bank_ids'):
-                            b_ids = partner['bank_ids']
-                            partner_bank_ids_map[pid] = b_ids
-                            all_bank_ids.extend(b_ids)
-                    
-                    # 2. Leer datos de los bancos
-                    if all_bank_ids:
-                        # Campos a leer de res.partner.bank
-                        # bank_id (relacion), currency_id, acc_number, cci (si existe)
-                        bank_fields = ['id', 'bank_id', 'currency_id', 'acc_number']
-                        
-                        # Intentar determinar si existe campo cci
-                        # Por defecto asumimos que podría estar, Odoo no falla si pides un campo que no existe en read? 
-                        # Odoo SÍ falla si el campo no existe en read. 
-                        # Para estar seguros, primero inspeccionamos o asumimos estándar.
-                        # Como el usuario pidió explícitamente 'cci', voy a intentar leerlo.
-                        # Si falla, haré un fallback.
-                        try:
-                            # Intento optimista
-                            banks_data = self.repository.read('res.partner.bank', all_bank_ids, bank_fields + ['cci'])
-                        except Exception:
-                            # Fallback sin cci
-                            print("[WARN] Campo 'cci' no encontrado en res.partner.bank, intentando sin él")
-                            banks_data = self.repository.read('res.partner.bank', all_bank_ids, bank_fields)
-                        
-                        # Crear mapa de bank_id -> data
-                        banks_data_map = {b['id']: b for b in banks_data}
-                        
-                        # 3. Asociar bancos al partner
-                        for pid, b_ids in partner_bank_ids_map.items():
-                            # Tomamos el PRIMER banco para mostrar en la tabla (o concatenamos)
-                            # Usuario pidió los campos, mostraremos el primero que tenga datos
-                            first_bank = None
-                            for bid in b_ids:
-                                b_data = banks_data_map.get(bid)
-                                if b_data:
-                                    first_bank = b_data
-                                    break
-                            
-                            if first_bank:
-                                bank_name = self._extract_m2o_name(first_bank.get('bank_id'))
-                                currency = self._extract_m2o_name(first_bank.get('currency_id'))
-                                acc_number = first_bank.get('acc_number', '')
-                                cci = first_bank.get('cci', '')
-                                
-                                bank_map[pid] = {
-                                    'bank_name': bank_name,
-                                    'bank_currency': currency,
-                                    'bank_acc_number': acc_number,
-                                    'bank_cci': cci
-                                }
-
-                except Exception as e:
-                    print(f"[ERROR] Error obteniendo datos bancarios: {e}")
 
             # Combinar y procesar datos
-            rows = self._process_payable_lines(lines, move_map, partner_map, account_map, bank_map)
+            rows = self._process_payable_lines(
+                lines,
+                move_map,
+                partner_map,
+                account_map,
+                cutoff_date,
+                reconciliation_map,
+                include_reconciled
+            )
             
             # 5. Metadatos
             total_pages = (total_count + per_page - 1) // per_page
@@ -269,9 +258,10 @@ class TreasuryService:
             traceback.print_exc()
             raise
 
-    def get_accounts_payable_report(self, start_date=None, end_date=None, 
+    def get_accounts_payable_report(self, start_date=None, end_date=None, cutoff_date=None,
                                     supplier=None, limit=0, account_codes=None,
-                                    payment_state=None, doc_type_id=None):
+                                    payment_state=None, doc_type_id=None, reference=None,
+                                    has_retention=None, has_origin=None, include_reconciled=False):
         """
         DEPRECATED: Usar get_report_lines_paginated para mejor rendimiento.
         Mantenido por compatibilidad temporal.
@@ -281,10 +271,109 @@ class TreasuryService:
         result = self.get_report_lines_paginated(
             page=1, per_page=limit_val,
             start_date=start_date, end_date=end_date,
+            cutoff_date=cutoff_date,
             supplier=supplier, account_codes=account_codes,
-            payment_state=payment_state, doc_type_id=doc_type_id
+            payment_state=payment_state, doc_type_id=doc_type_id,
+            reference=reference,
+            has_retention=has_retention, has_origin=has_origin,
+            include_reconciled=include_reconciled
         )
         return result['data']
+    
+    def get_supplier_bank_accounts(self, supplier_name=None):
+        """
+        Obtiene reporte de cuentas bancarias de proveedores.
+        
+        Args:
+            supplier_name (str, optional): Filtro por nombre de proveedor
+            
+        Returns:
+            list: Lista de cuentas bancarias de proveedores
+        """
+        try:
+            if not self.repository.is_connected():
+                raise ValueError("No hay conexión a Odoo disponible")
+
+            # 1. Buscar proveedores
+            domain = [('supplier_rank', '>', 0)]
+            if supplier_name:
+                domain.append(('name', 'ilike', supplier_name))
+
+            # Obtener IDs de partners
+            # Leemos directamente los campos necesarios incluyendo bank_ids
+            partners = self.repository.search_read(
+                'res.partner',
+                domain,
+                ['id', 'name', 'vat', 'bank_ids', 'country_id', 'email', 'phone'],
+                limit=2000  # Limite razonable
+            )
+            
+            if not partners:
+                return []
+
+            # 2. Recolectar IDs de bancos
+            all_bank_ids = []
+            partner_map = {}
+            
+            for p in partners:
+                partner_map[p['id']] = p
+                if p.get('bank_ids'):
+                    all_bank_ids.extend(p['bank_ids'])
+            
+            if not all_bank_ids:
+                return []
+            
+            # 3. Leer detalles de bancos (res.partner.bank)
+            bank_fields = ['id', 'bank_id', 'currency_id', 'acc_number', 'partner_id']
+            
+            try:
+                banks_data = self.repository.read('res.partner.bank', all_bank_ids, bank_fields + ['cci'])
+            except Exception:
+                # Fallback sin cci si no existe el campo
+                print("[WARN] Campo 'cci' no encontrado en res.partner.bank")
+                banks_data = self.repository.read('res.partner.bank', all_bank_ids, bank_fields)
+                
+            # 4. Construir reporte plano
+            report_rows = []
+            
+            for bank_record in banks_data:
+                # Obtener partner asociado al banco
+                # El campo partner_id en res.partner.bank es Many2One al partner dueño
+                partner_id_raw = bank_record.get('partner_id')
+                if not partner_id_raw:
+                    continue
+                    
+                partner_id = partner_id_raw[0]
+                partner = partner_map.get(partner_id)
+                
+                if not partner:
+                    # Si no lo encontramos en nuestro mapa inicial (por filtros), lo saltamos
+                    # O podríamos hacer fetch si es crítico, pero asumimos consistencia por bank_ids
+                    continue
+                
+                row = {
+                    'supplier_name': partner.get('name', ''),
+                    'supplier_vat': partner.get('vat', ''),
+                    'supplier_email': partner.get('email', ''),
+                    'supplier_country': self._extract_m2o_name(partner.get('country_id')),
+                    
+                    'bank_name': self._extract_m2o_name(bank_record.get('bank_id')),
+                    'currency': self._extract_m2o_name(bank_record.get('currency_id')),
+                    'acc_number': bank_record.get('acc_number', ''),
+                    'cci': bank_record.get('cci', ''),
+                }
+                report_rows.append(row)
+                
+            # Ordenar por nombre de proveedor
+            report_rows.sort(key=lambda x: x['supplier_name'])
+            
+            return report_rows
+            
+        except Exception as e:
+            print(f"[ERROR] Error obteniendo cuentas bancarias: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
     
     def _get_moves_data(self, move_ids):
         """
@@ -300,7 +389,8 @@ class TreasuryService:
             'amount_total_signed', 'currency_id', 'invoice_payment_term_id',
             'invoice_user_id', 'company_id', 'move_type',
             'l10n_latam_document_type_id', 'narration', 'state',
-            'fiscal_position_id', 'invoice_incoterm_id'
+            'fiscal_position_id', 'invoice_incoterm_id', 'l10n_pe_retention_check',
+            'l10n_latam_boe_number'  # Número de letra de cambio
         ]
         
         moves = self.repository.read('account.move', move_ids, move_fields)
@@ -313,7 +403,7 @@ class TreasuryService:
         if not partner_ids:
             return {}
         
-        # Añadido bank_ids
+        # bank_ids ya no es necesario aquí para el reporte principal, pero no hace daño dejarlo
         partner_fields = [
             'id', 'name', 'vat', 'country_id', 'country_code',
             'state_id', 'city', 'phone', 'email', 'supplier_rank', 'bank_ids'
@@ -332,15 +422,71 @@ class TreasuryService:
         accounts = self.repository.read('account.account', account_ids, ['id', 'code', 'name'])
         return {a['id']: a for a in accounts}
     
-    def _process_payable_lines(self, lines, move_map, partner_map, account_map, bank_map=None):
+    def _get_reconciliation_amounts(self, lines, cutoff_date=None):
+        """
+        Obtiene montos conciliados por línea y separa pagos antes/después del corte.
+        Retorna dict: {
+            line_id: {
+                'max_date': 'YYYY-MM-DD' | None,
+                'paid_before': float,
+                'paid_after': float
+            }
+        }
+        """
+        reconcile_ids = set()
+        line_to_reconcile_map = {}  # line_id -> [partial_ids]
+        
+        for line in lines:
+            partials = (line.get('matched_debit_ids') or []) + (line.get('matched_credit_ids') or [])
+            if partials:
+                reconcile_ids.update(partials)
+                line_to_reconcile_map[line['id']] = partials
+        
+        if not reconcile_ids:
+            return {}
+        
+        fields = ['max_date', 'amount']
+        partials_data = self.repository.read('account.partial.reconcile', list(reconcile_ids), fields)
+        partial_date_map = {p['id']: p for p in partials_data}
+        
+        line_map = {}
+        for line_id, partials in line_to_reconcile_map.items():
+            max_date = None
+            paid_before = 0.0
+            paid_after = 0.0
+            for pid in partials:
+                pdata = partial_date_map.get(pid)
+                if not pdata:
+                    continue
+                pdate = pdata.get('max_date')
+                amount = float(pdata.get('amount', 0.0) or 0.0)
+                if pdate:
+                    if not max_date or pdate > max_date:
+                        max_date = pdate
+                    if cutoff_date:
+                        if pdate > cutoff_date:
+                            paid_after += amount
+                        else:
+                            paid_before += amount
+                else:
+                    # Sin fecha, considerar como antes del corte por seguridad
+                    paid_before += amount
+            line_map[line_id] = {
+                'max_date': max_date,
+                'paid_before': paid_before,
+                'paid_after': paid_after
+            }
+        
+        return line_map
+
+    def _process_payable_lines(self, lines, move_map, partner_map, account_map, cutoff_date=None, reconciliation_map=None, include_reconciled=False):
         """
         Procesa las líneas de CxP y combina con datos relacionados.
-        Añadido bank_map opcional.
+        Si cutoff_date está presente, recalcula estado histórico.
         """
         rows = []
-        today = datetime.today().date()
-        if bank_map is None:
-            bank_map = {}
+        # Si es histórico, el día de referencia es el corte. Si no, es hoy.
+        today = datetime.strptime(cutoff_date, '%Y-%m-%d').date() if cutoff_date else datetime.today().date()
         
         # Mapas de traducción
         PAYMENT_STATE_MAP = {
@@ -359,6 +505,24 @@ class TreasuryService:
         }
         
         for line in lines:
+            rec_info = reconciliation_map.get(line['id'], {}) if reconciliation_map else {}
+            reconcile_date = rec_info.get('max_date')
+            paid_after_cutoff = float(rec_info.get('paid_after', 0.0) or 0.0)
+            paid_before_cutoff = float(rec_info.get('paid_before', 0.0) or 0.0)
+
+            # Lógica de Filtrado Histórico (Post-Fetch)
+            if cutoff_date:
+                is_reconciled_now = line.get('reconciled', False)
+                
+                if is_reconciled_now and reconcile_date:
+                    # Si se pagó antes o en el corte y no pedimos conciliados, omitir
+                    if reconcile_date <= cutoff_date and not include_reconciled:
+                        continue
+                elif is_reconciled_now and not reconcile_date:
+                    # Conciliado pero sin fecha: si no incluimos conciliados, omitir
+                    if not include_reconciled:
+                        continue
+
             move_id = line['move_id'][0] if line.get('move_id') else None
             partner_id = line['partner_id'][0] if line.get('partner_id') else None
             account_id = line['account_id'][0] if line.get('account_id') else None
@@ -366,7 +530,6 @@ class TreasuryService:
             move = move_map.get(move_id, {})
             partner = partner_map.get(partner_id, {})
             account = account_map.get(account_id, {})
-            bank_info = bank_map.get(partner_id, {})
             
             # Calcular días de vencimiento
             invoice_date_due = move.get('invoice_date_due', '')
@@ -379,16 +542,32 @@ class TreasuryService:
             debit = line.get('debit', 0.0) or 0.0
             credit = line.get('credit', 0.0) or 0.0
             amount_total_line = abs(debit - credit)
-            amount_residual_line = abs(line.get('amount_residual', 0.0) or 0.0)
+            current_residual = abs(line.get('amount_residual', 0.0) or 0.0)
+            amount_residual_line = current_residual
+            amount_residual_historical = amount_residual_line
+
+            paid_after_cutoff = paid_after_cutoff if cutoff_date else 0.0
+
+            # Ajuste de montos para histórico con pagos después del corte
+            if cutoff_date:
+                # El pendiente histórico es el residual actual + lo pagado después del corte
+                amount_residual_historical = current_residual + paid_after_cutoff
+                if reconcile_date and reconcile_date <= cutoff_date and include_reconciled:
+                    amount_residual_historical = 0.0
             
             payment_state_raw = move.get('payment_state', '')
+            # Ajuste estado de pago visual
+            payment_state_display = PAYMENT_STATE_MAP.get(payment_state_raw, payment_state_raw)
+            if cutoff_date and amount_residual_historical > 0:
+                payment_state_display = "No Pagado (al corte)"
+
             state_raw = move.get('state', '')
             
             row = {
                 # Datos de la factura
                 'move_name': move.get('name', ''),
                 'ref': move.get('ref', ''),
-                'payment_state': PAYMENT_STATE_MAP.get(payment_state_raw, payment_state_raw),
+                'payment_state': payment_state_display,
                 'move_type': move.get('move_type', ''),
                 'state': STATE_MAP.get(state_raw, state_raw),
                 'invoice_date': move.get('invoice_date', ''),
@@ -399,6 +578,7 @@ class TreasuryService:
                 # El usuario pidió sacarlo del REPORTE (HTML), no necesariamente del backend. Lo dejo por si acaso lo piden luego.
                 'invoice_user_id': self._extract_m2o_name(move.get('invoice_user_id')),
                 'l10n_latam_document_type_id': self._extract_m2o_name(move.get('l10n_latam_document_type_id')),
+                'l10n_latam_boe_number': move.get('l10n_latam_boe_number', ''),  # Número de letra de cambio
                 'narration': move.get('narration', ''),
                 'fiscal_position_id': self._extract_m2o_name(move.get('fiscal_position_id')),
                 'invoice_incoterm_id': self._extract_m2o_name(move.get('invoice_incoterm_id')),
@@ -408,18 +588,10 @@ class TreasuryService:
                 'supplier_vat': partner.get('vat', ''),
                 'supplier_name': partner.get('name', ''),
                 'supplier_country': self._extract_m2o_name(partner.get('country_id')),
-                'supplier_country_code': partner.get('country_code', ''),
                 'supplier_state': self._extract_m2o_name(partner.get('state_id')),
                 'supplier_city': partner.get('city', ''),
-                'supplier_phone': partner.get('phone', ''),
                 'supplier_email': partner.get('email', ''),
                 'supplier_rank': partner.get('supplier_rank', 0),
-                
-                # Datos Bancarios (Nuevos)
-                'bank_name': bank_info.get('bank_name', ''),
-                'bank_currency': bank_info.get('bank_currency', ''),
-                'bank_acc_number': bank_info.get('bank_acc_number', ''),
-                'bank_cci': bank_info.get('bank_cci', ''),
                 
                 # Datos de la cuenta contable
                 'account_code': account.get('code', ''),
@@ -429,11 +601,15 @@ class TreasuryService:
                 'currency_id': self._extract_m2o_name(line.get('currency_id') or move.get('currency_id')),
                 'amount_total': amount_total_line,
                 'amount_residual': amount_residual_line,
+                'amount_residual_historical': amount_residual_historical,
                 'amount_total_in_currency_signed': move.get('amount_total_in_currency_signed', 0.0),
                 'amount_residual_with_retention': move.get('amount_residual_with_retention', 0.0),
                 'amount_total_signed': move.get('amount_total_signed', 0.0),
                 'amount_currency': line.get('amount_currency', 0.0),
                 'amount_residual_currency': line.get('amount_residual', 0.0),
+                'paid_after_cutoff': paid_after_cutoff,
+                'debit': debit,
+                'credit': credit,
                 
                 # Fechas y línea
                 'date': line.get('date', ''),
@@ -442,11 +618,13 @@ class TreasuryService:
                 'reconciled': line.get('reconciled', False),
                 'blocked': line.get('blocked', False),
                 'full_reconcile_id': self._extract_m2o_name(line.get('full_reconcile_id')),
+                'reconciliation_date': reconcile_date if cutoff_date else '',
                 
                 # Campos calculados
                 'dias_vencido': dias_vencido,
                 'estado_deuda': estado_deuda,
                 'antiguedad': antiguedad,
+                'l10n_pe_retention_check': move.get('l10n_pe_retention_check', False),
             }
             
             rows.append(row)
@@ -461,4 +639,3 @@ class TreasuryService:
         if isinstance(value, list) and len(value) >= 2:
             return value[1]
         return ''
-

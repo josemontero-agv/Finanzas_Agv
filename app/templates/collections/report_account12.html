@@ -30,17 +30,26 @@
 
     <!-- Filtros con Alpine.js -->
     <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Corte (Histórico)</label>
+                <input type="date" 
+                       x-model="filters.date_cutoff"
+                       class="form-control"
+                       title="Muestra el estado al cierre de esa fecha">
+            </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Desde</label>
                 <input type="date" 
                        x-model="filters.date_from"
+                       :disabled="!!filters.date_cutoff"
                        class="form-control">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Hasta</label>
                 <input type="date" 
                        x-model="filters.date_to"
+                       :disabled="!!filters.date_cutoff"
                        class="form-control">
             </div>
             <div>
@@ -76,6 +85,14 @@
                     </template>
                 </select>
             </div>
+            <div class="flex items-end pb-2">
+                <label class="inline-flex items-center cursor-pointer">
+                    <input type="checkbox" 
+                           x-model="filters.include_reconciled" 
+                           class="form-checkbox h-5 w-5 text-primary border-gray-300 rounded focus:ring-primary">
+                    <span class="ml-2 text-sm text-gray-700">Incluir pagados (mostrar en histórico)</span>
+                </label>
+            </div>
         </div>
         <div class="mt-4 flex gap-2">
             <button @click="applyFilters()" 
@@ -94,51 +111,94 @@
         </div>
     </div>
 
-    <!-- KPI Summary Ribbon - Compact Enterprise Style -->
-    <div class="bg-white rounded-lg shadow-sm mb-4 overflow-hidden">
-        <div class="flex items-stretch divide-x divide-gray-200">
-            <!-- Total Registros -->
-            <div class="flex-1 px-6 py-3 hover:bg-gray-50 transition-colors">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Total Registros</p>
-                        <p class="text-xl font-bold text-gray-800" x-text="stats.count">0</p>
-                    </div>
-                    <i class="bi bi-list-check text-2xl text-gray-400"></i>
-                </div>
+    <!-- Resumen al corte (similar a Cuenta 42) -->
+    <!-- Loading Overlay -->
+    <div x-show="loading" 
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center"
+         style="display: none;">
+        <div class="bg-white rounded-lg shadow-xl p-8 flex flex-col items-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-primary mb-4" style="border-color: var(--primary-color);"></div>
+            <p class="text-lg font-semibold text-gray-700">Cargando datos...</p>
+            <p class="text-sm text-gray-500 mt-2">Por favor espere</p>
+        </div>
+    </div>
+
+    <!-- Resumen al corte -->
+    <div class="bg-white rounded-lg shadow-sm p-4 mb-4" x-show="summary && summary.overall && !loading">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <i class="bi bi-calculator text-primary"></i>
+                Resumen General
+            </h3>
+            <div class="bg-gray-100 px-4 py-2 rounded-lg">
+                <span class="text-sm text-gray-600">Total de registros: </span>
+                <span class="text-lg font-bold text-gray-900" x-text="summary.overall.count || 0"></span>
             </div>
-            
-            <!-- Monto Total -->
-            <div class="flex-1 px-6 py-3 hover:bg-blue-50 transition-colors">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-medium text-blue-600 uppercase tracking-wide mb-1">Monto Total</p>
-                        <p class="text-xl font-bold text-blue-600" x-text="formatCurrency(stats.total)">S/ 0.00</p>
-                    </div>
-                    <i class="bi bi-cash-stack text-2xl text-blue-400"></i>
-                </div>
+        </div>
+
+        <div class="flex flex-wrap gap-4">
+            <div class="flex-1 min-w-[220px] border-2 border-blue-200 rounded-lg p-3 bg-blue-50">
+                <p class="text-sm text-blue-700 font-medium">Débito</p>
+                <p class="text-2xl font-bold text-blue-900" x-text="formatNumberWithCommas(summary.overall.debit || 0)"></p>
             </div>
-            
-            <!-- Saldo Pendiente -->
-            <div class="flex-1 px-6 py-3 hover:bg-yellow-50 transition-colors">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-medium text-yellow-600 uppercase tracking-wide mb-1">Saldo Pendiente</p>
-                        <p class="text-xl font-bold text-yellow-600" x-text="formatCurrency(stats.pending)">S/ 0.00</p>
-                    </div>
-                    <i class="bi bi-clock-history text-2xl text-yellow-400"></i>
-                </div>
+            <div class="flex-1 min-w-[220px] border-2 border-green-200 rounded-lg p-3 bg-green-50">
+                <p class="text-sm text-green-700 font-medium">Haber</p>
+                <p class="text-2xl font-bold text-green-900" x-text="formatNumberWithCommas(summary.overall.credit || 0)"></p>
             </div>
-            
-            <!-- Deuda Vencida -->
-            <div class="flex-1 px-6 py-3 hover:bg-red-50 transition-colors">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-medium text-red-600 uppercase tracking-wide mb-1">Deuda Vencida</p>
-                        <p class="text-xl font-bold text-red-600" x-text="formatCurrency(stats.overdue)">S/ 0.00</p>
-                    </div>
-                    <i class="bi bi-exclamation-triangle text-2xl text-red-400"></i>
-                </div>
+            <div class="flex-1 min-w-[220px] border-2 border-purple-200 rounded-lg p-3 bg-purple-50">
+                <p class="text-sm text-purple-700 font-medium">Saldo (Débito - Haber)</p>
+                <p class="text-2xl font-bold text-purple-900" x-text="formatNumberWithCommas(summary.overall.saldo || 0)"></p>
+            </div>
+            <div class="flex-1 min-w-[220px] border-2 border-orange-200 rounded-lg p-3 bg-orange-50" x-show="filters.date_cutoff">
+                <p class="text-sm text-orange-700 font-medium">Pendiente al corte</p>
+                <p class="text-2xl font-bold text-orange-900" x-text="formatNumberWithCommas(summary.overall.pending_cutoff || 0)"></p>
+            </div>
+            <div class="flex-1 min-w-[220px] border-2 border-red-200 rounded-lg p-3 bg-red-50" x-show="filters.date_cutoff">
+                <p class="text-sm text-red-700 font-medium">Pagado después del corte</p>
+                <p class="text-2xl font-bold text-red-900" x-text="formatNumberWithCommas(summary.overall.paid_after_cutoff || 0)"></p>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <p class="text-sm font-semibold text-gray-700 mb-2">Resumen por cuenta</p>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-100 text-gray-700">
+                        <tr>
+                            <th class="px-3 py-2 text-left font-semibold">Cuenta</th>
+                            <th class="px-3 py-2 text-left font-semibold">Nombre</th>
+                            <th class="px-3 py-2 text-center font-semibold">Registros</th>
+                            <th class="px-3 py-2 text-right font-semibold">Débito</th>
+                            <th class="px-3 py-2 text-right font-semibold">Haber</th>
+                            <th class="px-3 py-2 text-right font-semibold">Saldo (Débito - Haber)</th>
+                            <th class="px-3 py-2 text-right font-semibold" x-show="filters.date_cutoff">Pendiente al corte</th>
+                            <th class="px-3 py-2 text-right font-semibold" x-show="filters.date_cutoff">Pagado después corte</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="row in summary.by_account" :key="row.account_code">
+                            <tr class="border-b border-gray-100">
+                                <td class="px-3 py-2 whitespace-nowrap" x-text="row.account_code"></td>
+                                <td class="px-3 py-2 truncate" x-text="row.account_name"></td>
+                                <td class="px-3 py-2 text-center font-semibold" x-text="row.count || 0"></td>
+                                <td class="px-3 py-2 text-right" x-text="formatNumberWithCommas(row.debit || 0)"></td>
+                                <td class="px-3 py-2 text-right" x-text="formatNumberWithCommas(row.credit || 0)"></td>
+                                <td class="px-3 py-2 text-right" x-text="formatNumberWithCommas((row.saldo !== undefined ? row.saldo : (row.debit - row.credit)) || 0)"></td>
+                                <td class="px-3 py-2 text-right" x-show="filters.date_cutoff" x-text="formatNumberWithCommas(row.pending_cutoff || 0)"></td>
+                                <td class="px-3 py-2 text-right" x-show="filters.date_cutoff" x-text="formatNumberWithCommas(row.paid_after_cutoff || 0)"></td>
+                            </tr>
+                        </template>
+                        <tr x-show="!summary.by_account || summary.by_account.length === 0">
+                            <td colspan="8" class="px-3 py-2 text-center text-gray-500">Sin datos de resumen</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -163,6 +223,8 @@
                         <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">Total Moneda Origen</th>
                         <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">Adeudado</th>
                         <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">Adeudado S/.</th>
+                        <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">Pendiente al corte</th>
+                        <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">Pagado después corte</th>
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Fecha Vencimiento</th>
                         <th class="px-3 py-3 text-center font-semibold whitespace-nowrap">Días Vencido</th>
                         <th class="px-3 py-3 text-center font-semibold whitespace-nowrap">Estado</th>
@@ -216,25 +278,22 @@ function reportController() {
             date_from: '',
             date_to: '',
             customer: '',
-            account_codes_text: '122,1212,123,1312,132',
+            account_codes_text: '122,1212,123,1312,132,13',
             sales_channel_id: '',
-            doc_type_id: ''
+            doc_type_id: '',
+            date_cutoff: '',
+            include_reconciled: false
         },
-        stats: {
-            count: 0,
-            total: 0,
-            pending: 0,
-            overdue: 0
-        },
+        summary: { overall: {}, by_account: [] },
         salesChannels: [],
         documentTypes: [],
         
         async init() {
             await this.loadFilterOptions();
             this.setupIntersectionObserver();
-            // Cargar stats y primera página en paralelo
+            // Cargar resumen y primera página en paralelo
             await Promise.all([
-                this.loadStats(),
+                this.loadSummary(),
                 this.loadPage(1)
             ]);
         },
@@ -284,6 +343,10 @@ function reportController() {
                         value = this.getAccountCodesForAPI();
                         key = 'account_codes'; // Cambiar el nombre de la clave
                     }
+                    // Forzar incluir conciliados si hay fecha de corte
+                    if (key === 'include_reconciled' && this.filters.date_cutoff) {
+                        value = true;
+                    }
                     
                     if (value) {
                         params.set(key, value);
@@ -331,7 +394,7 @@ function reportController() {
                 if (tableBody.children.length === 0) {
                     tableBody.innerHTML = `
                         <tr>
-                            <td colspan="33" class="text-center text-red-600 py-4">
+                            <td colspan="32" class="text-center text-red-600 py-4">
                                 Error: ${error.response?.data || error.message}
                             </td>
                         </tr>
@@ -361,8 +424,8 @@ function reportController() {
             }
         },
         
-        // ✅ Nuevo método para cargar stats desde endpoint optimizado
-        async loadStats() {
+        // Resumen al corte (similar a Cuenta 42)
+        async loadSummary() {
             try {
                 // Construir params correctamente (filtrar valores vacíos)
                 const params = new URLSearchParams();
@@ -374,52 +437,30 @@ function reportController() {
                         value = this.getAccountCodesForAPI();
                         key = 'account_codes'; // Cambiar el nombre de la clave
                     }
+                    // Forzar incluir conciliados si hay fecha de corte
+                    if (key === 'include_reconciled' && this.filters.date_cutoff) {
+                        value = true;
+                    }
                     
                     if (value && value !== '') {
                         params.set(key, value);
                     }
                 });
+                params.set('summary_only', 'true');
                 
-                console.log('[DEBUG] Cargando stats con filtros:', Object.fromEntries(params));
+                console.log('[DEBUG] Cargando summary con filtros:', Object.fromEntries(params));
                 
-                const response = await axios.get(`/api/v1/collections/report/account12/stats?${params}`);
-                
-                console.log('[DEBUG] Respuesta stats:', response.data);
+                const response = await axios.get(`/api/v1/collections/report/account12?${params}`);
                 
                 if (response.data && response.data.success) {
-                    const statsData = response.data.data || {};
-                    this.stats = {
-                        count: statsData.total_count || 0,
-                        total: statsData.total_amount || 0,
-                        pending: statsData.pending_amount || 0,
-                        overdue: statsData.overdue_amount || 0
-                    };
-                    console.log('[DEBUG] Stats actualizados:', this.stats);
+                    this.summary = response.data.summary || { overall: {}, by_account: [] };
                 } else {
-                    console.warn('[WARN] Respuesta stats sin success:', response.data);
-                    // Inicializar con valores por defecto
-                    this.stats = {
-                        count: 0,
-                        total: 0,
-                        pending: 0,
-                        overdue: 0
-                    };
+                    this.summary = { overall: {}, by_account: [] };
                 }
             } catch (error) {
-                console.error('[ERROR] Error loading stats:', error);
-                console.error('[ERROR] Detalles:', {
-                    message: error.message,
-                    response: error.response?.data,
-                    status: error.response?.status
-                });
-                showToast('Error cargando estadísticas: ' + (error.response?.data?.message || error.message), 'error');
-                // Inicializar con valores por defecto en caso de error
-                this.stats = {
-                    count: 0,
-                    total: 0,
-                    pending: 0,
-                    overdue: 0
-                };
+                console.error('[ERROR] Error loading summary:', error);
+                showToast('Error cargando resumen: ' + (error.response?.data?.message || error.message), 'error');
+                this.summary = { overall: {}, by_account: [] };
             }
         },
         
@@ -432,7 +473,7 @@ function reportController() {
             
             // Recargar stats y datos en paralelo
             await Promise.all([
-                this.loadStats(),
+                this.loadSummary(),
                 this.loadPage(1)
             ]);
         },
@@ -444,7 +485,9 @@ function reportController() {
                 customer: '',
                 account_codes_text: '122,1212,123,1312,132',
                 sales_channel_id: '',
-                doc_type_id: ''
+                doc_type_id: '',
+                date_cutoff: '',
+                include_reconciled: false
             };
             this.applyFilters();
         },
@@ -481,6 +524,11 @@ function reportController() {
         
         formatCurrency(value) {
             return window.formatCurrency(value);
+        },
+
+        formatNumberWithCommas(value) {
+            const num = parseFloat(value) || 0;
+            return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
     }
 }
@@ -600,29 +648,29 @@ function reportController() {
         }
         
         /* Ajustar grid de filtros en móvil */
-        .grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-5 {
+        .grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-6 {
             grid-template-columns: 1fr !important;
         }
     }
     
     /* Tablet */
     @media (min-width: 769px) and (max-width: 1024px) {
-        .grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-5 {
+        .grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-6 {
             grid-template-columns: repeat(2, 1fr) !important;
         }
     }
     
     /* Desktop */
     @media (min-width: 1025px) {
-        .grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-5 {
+        .grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-6 {
             grid-template-columns: repeat(3, 1fr) !important;
         }
     }
     
     /* Desktop grande */
     @media (min-width: 1440px) {
-        .grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-5 {
-            grid-template-columns: repeat(5, 1fr) !important;
+        .grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-6 {
+            grid-template-columns: repeat(6, 1fr) !important;
         }
     }
 

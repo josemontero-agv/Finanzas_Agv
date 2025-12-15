@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # 1. REDIS: Base de datos en memoria. 
+  # Docker lo descarga y arranca automáticamente. No necesitas instalarlo en Windows.
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app_network
+
+  # 2. WEB: Tu aplicación Flask
+  web:
+    build: .
+    command: gunicorn --bind 0.0.0.0:5000 run:app --reload
+    volumes:
+      - .:/app
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env.desarrollo
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+    networks:
+      - app_network
+
+  # 3. WORKER: El proceso de Celery que corre los ETLs
+  worker:
+    build: .
+    command: celery -A celery_worker.celery worker --loglevel=info
+    volumes:
+      - .:/app
+    env_file:
+      - .env.desarrollo
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - web
+    networks:
+      - app_network
+
+  # 4. DWH LOCAL: PostgreSQL para analítica (Reemplazo local de Supabase)
+  dwh:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=agv_admin
+      - POSTGRES_PASSWORD=agv_password
+      - POSTGRES_DB=finanzas_dwh
+    volumes:
+      - dwh_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+
+networks:
+  app_network:
+
+volumes:
+  redis_data:
+  dwh_data:
+

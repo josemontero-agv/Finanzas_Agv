@@ -32,16 +32,25 @@
     <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Desde</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Corte (Histórico)</label>
                 <input type="date" 
-                       x-model="filters.date_from"
-                       class="form-control">
+                       x-model="filters.date_cutoff"
+                       class="form-control border-primary"
+                       title="Si selecciona fecha de corte, muestra el estado al cierre de ese día">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Hasta</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1" :class="{'text-gray-400': filters.date_cutoff}">Fecha Desde (Emisión)</label>
+                <input type="date" 
+                       x-model="filters.date_from"
+                       class="form-control"
+                       :disabled="!!filters.date_cutoff">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" :class="{'text-gray-400': filters.date_cutoff}">Fecha Hasta (Emisión)</label>
                 <input type="date" 
                        x-model="filters.date_to"
-                       class="form-control">
+                       class="form-control"
+                       :disabled="!!filters.date_cutoff">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Proveedor</label>
@@ -49,6 +58,14 @@
                        x-model="filters.supplier"
                        placeholder="Buscar proveedor..."
                        class="form-control">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Referencia / N° Factura</label>
+                <input type="text" 
+                       x-model="filters.reference"
+                       placeholder="Ej: FAC-001234 o 1234"
+                       class="form-control"
+                       title="Filtra por el número de factura (campo ref)">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Cuenta Contable (Códigos)</label>
@@ -76,6 +93,14 @@
                     <option value="10000">Todos</option>
                 </select>
             </div>
+            <div class="flex items-end pb-2">
+                <label class="inline-flex items-center cursor-pointer">
+                    <input type="checkbox" 
+                           x-model="filters.include_reconciled" 
+                           class="form-checkbox h-5 w-5 text-primary border-gray-300 rounded focus:ring-primary">
+                    <span class="ml-2 text-sm text-gray-700">Incluir Pagados</span>
+                </label>
+            </div>
         </div>
         <div class="mt-4 flex gap-2">
             <button @click="applyFilters()" 
@@ -96,6 +121,79 @@
 
     <!-- KPI Summary Ribbon Removed -->
 
+    <!-- Resumen al corte -->
+    <div class="bg-white rounded-lg shadow-sm p-4 mb-4" x-show="summary && summary.overall">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <i class="bi bi-calculator text-primary"></i>
+                Resumen General
+            </h3>
+            <div class="bg-gray-100 px-4 py-2 rounded-lg">
+                <span class="text-sm text-gray-600">Total de registros: </span>
+                <span class="text-lg font-bold text-gray-900" x-text="allData.length"></span>
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-4">
+            <div class="flex-1 min-w-[220px] border-2 border-blue-200 rounded-lg p-3 bg-blue-50">
+                <p class="text-sm text-blue-700 font-medium">Débito</p>
+                <p class="text-2xl font-bold text-blue-900" x-text="formatNumberWithCommas(summary.overall.debit || 0)"></p>
+            </div>
+            <div class="flex-1 min-w-[220px] border-2 border-green-200 rounded-lg p-3 bg-green-50">
+                <p class="text-sm text-green-700 font-medium">Haber</p>
+                <p class="text-2xl font-bold text-green-900" x-text="formatNumberWithCommas(summary.overall.credit || 0)"></p>
+            </div>
+            <div class="flex-1 min-w-[220px] border-2 border-purple-200 rounded-lg p-3 bg-purple-50">
+                <p class="text-sm text-purple-700 font-medium">Saldo (Debe - Haber)</p>
+                <p class="text-2xl font-bold text-purple-900" x-text="formatNumberWithCommas(summary.overall.saldo || 0)"></p>
+            </div>
+            <div class="flex-1 min-w-[220px] border-2 border-orange-200 rounded-lg p-3 bg-orange-50" x-show="filters.date_cutoff">
+                <p class="text-sm text-orange-700 font-medium">Pendiente al corte</p>
+                <p class="text-2xl font-bold text-orange-900" x-text="formatNumberWithCommas(summary.overall.pending_cutoff || 0)"></p>
+            </div>
+            <div class="flex-1 min-w-[220px] border-2 border-red-200 rounded-lg p-3 bg-red-50" x-show="filters.date_cutoff">
+                <p class="text-sm text-red-700 font-medium">Pagado después del corte</p>
+                <p class="text-2xl font-bold text-red-900" x-text="formatNumberWithCommas(summary.overall.paid_after_cutoff || 0)"></p>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <p class="text-sm font-semibold text-gray-700 mb-2">Resumen por cuenta</p>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-100 text-gray-700">
+                        <tr>
+                            <th class="px-3 py-2 text-left font-semibold">Cuenta</th>
+                            <th class="px-3 py-2 text-left font-semibold">Nombre</th>
+                            <th class="px-3 py-2 text-center font-semibold">Registros</th>
+                            <th class="px-3 py-2 text-right font-semibold">Débito</th>
+                            <th class="px-3 py-2 text-right font-semibold">Haber</th>
+                            <th class="px-3 py-2 text-right font-semibold">Saldo (Debe - Haber)</th>
+                            <th class="px-3 py-2 text-right font-semibold" x-show="filters.date_cutoff">Pendiente al corte</th>
+                            <th class="px-3 py-2 text-right font-semibold" x-show="filters.date_cutoff">Pagado después corte</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="row in summary.by_account" :key="row.account_code">
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="px-3 py-2 whitespace-nowrap font-mono" x-text="row.account_code"></td>
+                                <td class="px-3 py-2 truncate" x-text="row.account_name"></td>
+                                <td class="px-3 py-2 text-center font-semibold" x-text="row.count || 0"></td>
+                                <td class="px-3 py-2 text-right font-mono" x-text="formatNumberWithCommas(row.debit || 0)"></td>
+                                <td class="px-3 py-2 text-right font-mono" x-text="formatNumberWithCommas(row.credit || 0)"></td>
+                                <td class="px-3 py-2 text-right font-mono font-bold" x-text="formatNumberWithCommas((row.saldo !== undefined ? row.saldo : (row.debit - row.credit)) || 0)"></td>
+                                <td class="px-3 py-2 text-right font-mono" x-show="filters.date_cutoff" x-text="formatNumberWithCommas(row.pending_cutoff || 0)"></td>
+                                <td class="px-3 py-2 text-right font-mono" x-show="filters.date_cutoff" x-text="formatNumberWithCommas(row.paid_after_cutoff || 0)"></td>
+                            </tr>
+                        </template>
+                        <tr x-show="!summary.by_account || summary.by_account.length === 0">
+                            <td colspan="8" class="px-3 py-2 text-center text-gray-500">Sin datos de resumen</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- Tabla con Sticky Headers -->
     <div class="bg-white rounded-lg shadow-sm overflow-hidden" style="max-width: 100%; width: 100%;">
         <div class="overflow-x-auto overflow-y-auto" style="max-height: 75vh; scroll-behavior: smooth; width: 100%;">
@@ -106,26 +204,24 @@
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Fecha Contabilización</th>
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Tipo Documento</th>
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Número Documento</th>
+                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Número Letra</th>
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Referencia</th>
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Origen</th>
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Cuenta</th>
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Nombre Cuenta</th>
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">RUC Proveedor</th>
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Proveedor</th>
-                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Código País</th>
-                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Teléfono</th>
+                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Descripción</th>
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Email</th>
-                        
-                        <!-- Campos de Banco Nuevos -->
-                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Banco</th>
-                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Moneda Banco</th>
-                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Cuenta Bancaria</th>
-                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">CCI</th>
                         
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Moneda Doc</th>
                         <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">Total Origen</th>
                         <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">Adeudado Origen</th>
                         <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">Total S/.</th>
+                        <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">Débito</th>
+                        <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">Haber</th>
+                        <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">Pendiente al Corte</th>
+                        <th class="px-3 py-3 text-right font-semibold whitespace-nowrap">Pagado Después Corte</th>
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Fecha Vencimiento</th>
                         <th class="px-3 py-3 text-center font-semibold whitespace-nowrap">Días Vencido</th>
                         <th class="px-3 py-3 text-center font-semibold whitespace-nowrap">Estado</th>
@@ -133,7 +229,6 @@
                         <!-- Eliminado Condición Pago -->
                         <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Estado Pago</th>
                         <!-- Eliminado Usuario Responsable -->
-                        <th class="px-3 py-3 text-left font-semibold whitespace-nowrap">Descripción</th>
                     </tr>
                 </thead>
                 <tbody id="table-body">
@@ -144,13 +239,6 @@
             <div id="scroll-sentinel" class="h-4 w-full"></div>
         </div>
         
-        <!-- Loading indicator -->
-        <div id="loading-spinner" 
-             x-show="loading"
-             class="flex justify-center items-center py-8"
-             style="display: none;">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div>
     </div>
 </div>
 
@@ -162,15 +250,19 @@ function reportController() {
         filters: {
             date_from: '',
             date_to: '',
+            date_cutoff: '', // Nuevo filtro
             supplier: '',
+            reference: '',
             account_codes_text: '421,422,423,424',
             limit: '1000',
-            doc_type_id: ''
+            doc_type_id: '',
+            include_reconciled: false
         },
         allData: [], // Almacena TODOS los datos
         pageSize: 50, // Renderizar de 50 en 50
         currentIndex: 0,
         documentTypes: [],
+        summary: { overall: {}, by_account: [] },
         observer: null,
         
         async init() {
@@ -219,6 +311,7 @@ function reportController() {
         async loadData() {
             this.loading = true;
             this.currentIndex = 0;
+            this.summary = { overall: {}, by_account: [] };
             document.getElementById('table-body').innerHTML = ''; // Limpiar tabla
             
             try {
@@ -235,15 +328,26 @@ function reportController() {
                     }
                 });
                 
+                console.log('[DEBUG] Parámetros de consulta:', Object.fromEntries(params));
+                
                 const response = await axios.get(`/api/v1/treasury/report/account42?${params}`);
+                
+                console.log('[DEBUG] Respuesta del servidor:', response.data);
                 
                 if (response.data && response.data.success) {
                     this.allData = response.data.data || [];
+                    this.summary = response.data.summary || { overall: {}, by_account: [] };
+                    
+                    console.log('[DEBUG] Total de registros:', this.allData.length);
+                    console.log('[DEBUG] Resumen:', this.summary);
+                    
                     if (this.allData.length === 0) {
                         this.showEmptyState();
                     } else {
                         this.renderNextChunk(); // Renderizar primer chunk
                     }
+                    
+                    showToast(`Cargados ${this.allData.length} registros`, 'success');
                 } else {
                     showToast('Error al cargar datos', 'error');
                 }
@@ -269,7 +373,7 @@ function reportController() {
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="30" class="text-center py-8 text-gray-500">
+                    <td colspan="28" class="text-center py-8 text-gray-500">
                         <i class="bi bi-inbox text-4xl mb-2"></i>
                         <p>No se encontraron registros</p>
                     </td>
@@ -291,26 +395,24 @@ function reportController() {
                         <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.date || ''}</td>
                         <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.l10n_latam_document_type_id || '(00)'}</td>
                         <td class="px-3 py-2 text-sm text-left truncate-cell" title="${row.move_name || ''}">${row.move_name || ''}</td>
+                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.l10n_latam_boe_number || ''}</td>
                         <td class="px-3 py-2 text-sm text-left truncate-cell" title="${row.ref || ''}">${row.ref || ''}</td>
                         <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.invoice_origin || ''}</td>
                         <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.account_code || ''}</td>
                         <td class="px-3 py-2 text-sm text-left truncate-cell" title="${row.account_name || ''}">${row.account_name || ''}</td>
                         <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.supplier_vat || ''}</td>
                         <td class="px-3 py-2 text-sm text-left truncate-cell" title="${row.supplier_name || ''}">${row.supplier_name || ''}</td>
-                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.supplier_country_code || ''}</td>
-                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.supplier_phone || ''}</td>
+                        <td class="px-3 py-2 text-sm text-left truncate-cell" title="${row.narration || ''}">${row.narration || ''}</td>
                         <td class="px-3 py-2 text-sm text-left truncate-cell" title="${row.supplier_email || ''}">${row.supplier_email || ''}</td>
-                        
-                        <!-- Campos Banco -->
-                        <td class="px-3 py-2 text-sm text-left truncate-cell" title="${row.bank_name || ''}">${row.bank_name || ''}</td>
-                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.bank_currency || ''}</td>
-                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.bank_acc_number || ''}</td>
-                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.bank_cci || ''}</td>
                         
                         <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.currency_id || ''}</td>
                         <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${this.formatNumberWithCommas(row.amount_total_in_currency_signed)}</td>
                         <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${this.formatNumberWithCommas(row.amount_residual_with_retention)}</td>
                         <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${this.formatNumberWithCommas(row.amount_total_signed)}</td>
+                        <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${this.formatNumberWithCommas(row.debit)}</td>
+                        <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${this.formatNumberWithCommas(row.credit)}</td>
+                        <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${this.formatNumberWithCommas(row.amount_residual_historical ?? row.amount_residual)}</td>
+                        <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${this.formatNumberWithCommas(row.paid_after_cutoff)}</td>
                         <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.invoice_date_due || ''}</td>
                         <td class="px-3 py-2 text-sm text-center whitespace-nowrap ${diasClass}">${row.dias_vencido || 0}</td>
                         <td class="px-3 py-2 text-sm text-center whitespace-nowrap">
@@ -321,7 +423,6 @@ function reportController() {
                         <!-- Eliminado Condición Pago -->
                         <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.payment_state || ''}</td>
                         <!-- Eliminado Usuario Responsable -->
-                        <td class="px-3 py-2 text-sm text-left truncate-cell" title="${row.name || ''}">${row.name || ''}</td>
                     </tr>
                 `;
             }).join('');
@@ -339,6 +440,11 @@ function reportController() {
             return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         },
         
+        formatNumberNoDec(value) {
+            const num = parseFloat(value) || 0;
+            return num.toLocaleString('en-US', { maximumFractionDigits: 0 });
+        },
+        
         async applyFilters() {
             await this.loadData();
         },
@@ -347,10 +453,13 @@ function reportController() {
             this.filters = {
                 date_from: '',
                 date_to: '',
+                date_cutoff: '',
                 supplier: '',
                 account_codes_text: '421,422,423,424',
                 limit: '1000',
-                doc_type_id: ''
+                doc_type_id: '',
+                reference: '',
+                include_reconciled: false
             };
             this.applyFilters();
         },

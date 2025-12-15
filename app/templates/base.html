@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,6 +26,162 @@
             background-color: var(--bg-light);
             overflow-x: hidden; /* Evitar scroll horizontal en la página */
             overflow-y: auto; /* Solo scroll vertical en la página */
+        }
+
+        /* =========================
+           Modo oscuro (Bootstrap 5.3 + overrides para utilidades tipo Tailwind)
+           ========================= */
+        [data-bs-theme="dark"] body {
+            background-color: #0b1220; /* fondo principal */
+            color: #e5e7eb;
+        }
+
+        /* Cards/containers */
+        [data-bs-theme="dark"] .card,
+        [data-bs-theme="dark"] .bg-white.rounded-lg,
+        [data-bs-theme="dark"] .bg-white {
+            background-color: #111827 !important; /* gray-900 */
+            color: #e5e7eb !important;
+        }
+
+        [data-bs-theme="dark"] .border-gray-200 {
+            border-color: rgba(255, 255, 255, 0.12) !important;
+        }
+
+        [data-bs-theme="dark"] .bg-gray-50 { background-color: rgba(255,255,255,0.03) !important; }
+        [data-bs-theme="dark"] .bg-gray-100 { background-color: rgba(255,255,255,0.06) !important; }
+        [data-bs-theme="dark"] .bg-gray-200 { background-color: rgba(255,255,255,0.10) !important; }
+
+        [data-bs-theme="dark"] .text-gray-500 { color: #9ca3af !important; }
+        [data-bs-theme="dark"] .text-gray-600 { color: #cbd5e1 !important; }
+        [data-bs-theme="dark"] .text-gray-700 { color: #e5e7eb !important; }
+        [data-bs-theme="dark"] .text-gray-800 { color: #f3f4f6 !important; }
+        [data-bs-theme="dark"] .text-gray-900 { color: #f9fafb !important; }
+
+        /* Sidebar en modo oscuro */
+        [data-bs-theme="dark"] .sidebar {
+            background-color: #0b1220 !important;
+            box-shadow: 2px 0 8px rgba(0,0,0,.35);
+        }
+
+        [data-bs-theme="dark"] .sidebar .nav-link {
+            color: rgba(229,231,235,0.80) !important;
+        }
+
+        [data-bs-theme="dark"] .sidebar .nav-link:hover {
+            background-color: rgba(255,255,255,0.06);
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme="dark"] .sidebar .nav-link.active {
+            background-color: rgba(113, 75, 103, 0.55);
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme="dark"] .sidebar .sidebar-heading {
+            color: rgba(229,231,235,0.55) !important;
+        }
+
+        /* KPI cards (clases tipo Tailwind) en modo oscuro */
+        [data-bs-theme="dark"] .bg-blue-50 { background-color: rgba(59,130,246,0.10) !important; }
+        [data-bs-theme="dark"] .bg-green-50 { background-color: rgba(34,197,94,0.10) !important; }
+        [data-bs-theme="dark"] .bg-purple-50 { background-color: rgba(168,85,247,0.10) !important; }
+        [data-bs-theme="dark"] .bg-orange-50 { background-color: rgba(249,115,22,0.10) !important; }
+        [data-bs-theme="dark"] .bg-red-50 { background-color: rgba(239,68,68,0.10) !important; }
+
+        [data-bs-theme="dark"] .border-blue-200 { border-color: rgba(59,130,246,0.35) !important; }
+        [data-bs-theme="dark"] .border-green-200 { border-color: rgba(34,197,94,0.35) !important; }
+        [data-bs-theme="dark"] .border-purple-200 { border-color: rgba(168,85,247,0.35) !important; }
+        [data-bs-theme="dark"] .border-orange-200 { border-color: rgba(249,115,22,0.35) !important; }
+        [data-bs-theme="dark"] .border-red-200 { border-color: rgba(239,68,68,0.35) !important; }
+
+        [data-bs-theme="dark"] .text-blue-700,
+        [data-bs-theme="dark"] .text-green-700,
+        [data-bs-theme="dark"] .text-purple-700,
+        [data-bs-theme="dark"] .text-orange-700,
+        [data-bs-theme="dark"] .text-red-700 {
+            color: rgba(229,231,235,0.85) !important;
+        }
+
+        [data-bs-theme="dark"] .text-blue-900,
+        [data-bs-theme="dark"] .text-green-900,
+        [data-bs-theme="dark"] .text-purple-900,
+        [data-bs-theme="dark"] .text-orange-900,
+        [data-bs-theme="dark"] .text-red-900 {
+            color: #f9fafb !important;
+        }
+
+        /* Inputs */
+        [data-bs-theme="dark"] .form-control,
+        [data-bs-theme="dark"] .form-select {
+            background-color: rgba(255,255,255,0.06) !important;
+            color: #e5e7eb !important;
+            border-color: rgba(255,255,255,0.18) !important;
+        }
+
+        [data-bs-theme="dark"] .form-control::placeholder {
+            color: rgba(229,231,235,0.65) !important;
+        }
+
+        /* Tables */
+        [data-bs-theme="dark"] .table,
+        [data-bs-theme="dark"] table {
+            color: #e5e7eb;
+        }
+        [data-bs-theme="dark"] thead {
+            border-color: rgba(255,255,255,0.12);
+        }
+
+        /* Fila "seleccionada" / foco en tablas (evita que se ponga blanca en dark) */
+        [data-bs-theme="dark"] .table > :not(caption) > * > * {
+            border-color: rgba(255,255,255,0.10);
+        }
+
+        [data-bs-theme="dark"] .table-active,
+        [data-bs-theme="dark"] tr.table-active,
+        [data-bs-theme="dark"] tr.active,
+        [data-bs-theme="dark"] tr:focus,
+        [data-bs-theme="dark"] tr:focus-within,
+        [data-bs-theme="dark"] tr[aria-selected="true"],
+        [data-bs-theme="dark"] tr.selected {
+            background-color: rgba(255, 255, 255, 0.08) !important;
+            color: #f9fafb !important;
+        }
+
+        [data-bs-theme="dark"] .table-hover tbody tr:hover,
+        [data-bs-theme="dark"] tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.06) !important;
+        }
+
+        [data-bs-theme="dark"] tr.table-active td,
+        [data-bs-theme="dark"] tr.active td,
+        [data-bs-theme="dark"] tr:focus td,
+        [data-bs-theme="dark"] tr:focus-within td,
+        [data-bs-theme="dark"] tr[aria-selected="true"] td,
+        [data-bs-theme="dark"] tr.selected td {
+            background-color: transparent !important;
+            color: inherit !important;
+        }
+
+        /* Hover "expand" de celdas truncadas (evitar fondo blanco en modo oscuro) */
+        [data-bs-theme="dark"] .truncate-cell:hover,
+        [data-bs-theme="dark"] .cell-truncate:hover {
+            background-color: #111827 !important; /* gray-900 */
+            color: #f9fafb !important;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.45) !important;
+            border: 1px solid rgba(255,255,255,0.12);
+        }
+
+        /* Dropdowns */
+        [data-bs-theme="dark"] .dropdown-menu {
+            background-color: #111827;
+            border-color: rgba(255,255,255,0.12);
+        }
+        [data-bs-theme="dark"] .dropdown-item {
+            color: #e5e7eb;
+        }
+        [data-bs-theme="dark"] .dropdown-item:hover {
+            background-color: rgba(255,255,255,0.08);
         }
         
         .navbar {
@@ -291,10 +447,35 @@
         .loading-spinner {
             display: none;
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            inset: 0;
+            background: rgba(17, 24, 39, 0.45); /* gray-900 @ 45% */
+            backdrop-filter: blur(2px);
             z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.2);
+            padding: 22px 26px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            min-width: 260px;
+            text-align: center;
+        }
+
+        .loading-title {
+            font-weight: 700;
+            color: #374151; /* gray-700 */
+        }
+
+        .loading-subtitle {
+            color: #6b7280; /* gray-500 */
+            font-size: 0.9rem;
         }
     </style>
     
@@ -310,37 +491,51 @@
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    {% if session.logged_in %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-person-circle user-icon"></i>
-                            <span class="user-highlight">{{ session.username }}</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end user-dropdown">
-                            <li class="dropdown-header">
-                                <div class="user-info-dropdown">
-                                    <i class="bi bi-person-circle" style="font-size: 2.5rem; color: #714B67;"></i>
-                                    <div class="user-details">
-                                        <strong>{{ session.username }}</strong>
-                                        {% if session.email %}
-                                        <small class="text-muted d-block">{{ session.email }}</small>
-                                        {% endif %}
-                                    </div>
+
+            <!-- Acciones siempre visibles (NO dentro del collapse) -->
+            {% if session.logged_in %}
+            <div class="d-flex align-items-center gap-2 ms-auto">
+                <button id="theme-toggle"
+                        type="button"
+                        class="btn btn-sm btn-outline-light"
+                        title="Cambiar modo oscuro">
+                    <i id="theme-toggle-icon" class="bi bi-moon-stars"></i>
+                </button>
+
+                <a class="nav-link text-white px-2" href="{{ url_for('web.logout') }}" title="Cerrar Sesión">
+                    <i class="bi bi-box-arrow-right" style="font-size: 1.3rem;"></i>
+                </a>
+
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle user-icon"></i>
+                        <span class="user-highlight">{{ session.username }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end user-dropdown">
+                        <li class="dropdown-header">
+                            <div class="user-info-dropdown">
+                                <i class="bi bi-person-circle" style="font-size: 2.5rem; color: #714B67;"></i>
+                                <div class="user-details">
+                                    <strong>{{ session.username }}</strong>
+                                    {% if session.email %}
+                                    <small class="text-muted d-block">{{ session.email }}</small>
+                                    {% endif %}
                                 </div>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <a class="dropdown-item" href="{{ url_for('web.logout') }}">
-                                    <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                    {% endif %}
-                </ul>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('web.logout') }}">
+                                <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
+            {% endif %}
+
+            <!-- Collapse (si en el futuro agregas links arriba) -->
+            <div class="collapse navbar-collapse" id="navbarNav"></div>
         </div>
     </nav>
 
@@ -392,6 +587,16 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('web.treasury_report_42') }}">
                                 <i class="bi bi-file-earmark-text"></i> <span>Reporte Cuenta 42</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('web.treasury_report_daily_payments') }}">
+                                <i class="bi bi-calendar-check"></i> <span>Reporte Pagos Diarios</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('web.treasury_report_supplier_banks') }}">
+                                <i class="bi bi-bank"></i> <span>Cuentas Bancarias</span>
                             </a>
                         </li>
                         <li class="nav-item">
@@ -469,8 +674,12 @@
 
     <!-- Loading Spinner -->
     <div class="loading-spinner">
-        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
-            <span class="visually-hidden">Cargando...</span>
+        <div class="loading-card" role="status" aria-live="polite" aria-busy="true">
+            <div class="spinner-border text-primary" role="img" aria-label="Cargando" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <div class="loading-title">Cargando…</div>
+            <div class="loading-subtitle">Procesando información, por favor espere</div>
         </div>
     </div>
 
@@ -513,6 +722,145 @@
 
     <!-- Common JS -->
     <script>
+        /**
+         * Loader global (toda la app)
+         * - Maneja múltiples requests concurrentes con un contador
+         * - Se activa automáticamente con Axios / HTMX / fetch / navegación
+         */
+        (function initGlobalLoader() {
+            const spinner = document.querySelector('.loading-spinner');
+            if (!spinner) return;
+
+            let counter = 0;
+            let showTimer = null;
+
+            function render() {
+                // Pequeño debounce para evitar "parpadeo" en requests muy rápidos
+                if (counter > 0) {
+                    if (!showTimer) {
+                        showTimer = setTimeout(() => {
+                            spinner.style.display = 'flex';
+                            showTimer = null;
+                        }, 120);
+                    }
+                } else {
+                    if (showTimer) {
+                        clearTimeout(showTimer);
+                        showTimer = null;
+                    }
+                    spinner.style.display = 'none';
+                }
+            }
+
+            window.AppLoading = {
+                start() { counter += 1; render(); },
+                stop() { counter = Math.max(0, counter - 1); render(); },
+                reset() { counter = 0; render(); },
+                getCount() { return counter; }
+            };
+
+            // Axios interceptors
+            if (window.axios && typeof window.axios.interceptors === 'object') {
+                window.axios.interceptors.request.use((config) => {
+                    // Evitar loader en requests explícitamente marcados
+                    if (!config?.headers?.['X-Skip-Global-Loader']) window.AppLoading.start();
+                    return config;
+                }, (error) => {
+                    window.AppLoading.stop();
+                    return Promise.reject(error);
+                });
+
+                window.axios.interceptors.response.use((response) => {
+                    window.AppLoading.stop();
+                    return response;
+                }, (error) => {
+                    window.AppLoading.stop();
+                    return Promise.reject(error);
+                });
+            }
+
+            // HTMX hooks
+            document.body.addEventListener('htmx:beforeRequest', () => window.AppLoading.start());
+            document.body.addEventListener('htmx:afterRequest', () => window.AppLoading.stop());
+            document.body.addEventListener('htmx:responseError', () => window.AppLoading.stop());
+            document.body.addEventListener('htmx:sendError', () => window.AppLoading.stop());
+
+            // fetch() wrapper (para fetch sueltos en la app)
+            const originalFetch = window.fetch;
+            if (typeof originalFetch === 'function') {
+                window.fetch = function(...args) {
+                    window.AppLoading.start();
+                    return originalFetch.apply(this, args)
+                        .finally(() => window.AppLoading.stop());
+                };
+            }
+
+            // Navegación: clicks en links y submits de formularios
+            document.addEventListener('click', (e) => {
+                const a = e.target?.closest?.('a');
+                if (!a) return;
+                if (a.target === '_blank') return;
+                const href = a.getAttribute('href');
+                if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+                // Si tiene atributos HTMX, lo gestiona HTMX (ya enganchado)
+                if (a.hasAttribute('hx-get') || a.hasAttribute('hx-post')) return;
+                // Solo same-origin
+                try {
+                    const url = new URL(href, window.location.href);
+                    if (url.origin !== window.location.origin) return;
+                } catch (_) { /* ignore */ }
+                window.AppLoading.start();
+            }, true);
+
+            document.addEventListener('submit', (e) => {
+                const form = e.target;
+                if (!form || form.hasAttribute('hx-post') || form.hasAttribute('hx-get')) return;
+                window.AppLoading.start();
+            }, true);
+
+            // Asegurar estado inicial correcto
+            render();
+        })();
+
+        /**
+         * Modo oscuro global (Bootstrap 5.3)
+         * - Usa data-bs-theme="light|dark" en <html>
+         * - Persiste preferencia en localStorage
+         */
+        (function initThemeToggle() {
+            const root = document.documentElement; // <html>
+            const btn = document.getElementById('theme-toggle');
+            const icon = document.getElementById('theme-toggle-icon');
+
+            function getPreferredTheme() {
+                const saved = localStorage.getItem('theme');
+                if (saved === 'light' || saved === 'dark') return saved;
+                return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+                    ? 'dark'
+                    : 'light';
+            }
+
+            function applyTheme(theme) {
+                root.setAttribute('data-bs-theme', theme);
+                localStorage.setItem('theme', theme);
+                if (icon) {
+                    icon.className = theme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+                }
+                if (btn) {
+                    btn.title = theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
+                }
+            }
+
+            applyTheme(getPreferredTheme());
+
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    const current = root.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
+                    applyTheme(current === 'dark' ? 'light' : 'dark');
+                });
+            }
+        })();
+
         // Configuración global HTMX
         document.body.addEventListener('htmx:configRequest', (event) => {
             event.detail.headers['X-Requested-With'] = 'XMLHttpRequest';

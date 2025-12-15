@@ -32,6 +32,7 @@ def report_account42():
     Query Parameters:
         - date_from (str, optional): Fecha inicial (formato: YYYY-MM-DD)
         - date_to (str, optional): Fecha final (formato: YYYY-MM-DD)
+        - date_cutoff (str, optional): Fecha de corte para reporte histórico
         - supplier (str, optional): Nombre del proveedor a filtrar
         - account_codes (str, optional): Códigos de cuenta separados por coma
         - payment_state (str, optional): Estado de pago
@@ -49,10 +50,18 @@ def report_account42():
         # Obtener parámetros de query
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
+        date_cutoff = request.args.get('date_cutoff') # Nuevo
         supplier = request.args.get('supplier')
         account_codes = request.args.get('account_codes')
         payment_state = request.args.get('payment_state')
         doc_type_id = request.args.get('doc_type_id', type=int)
+        reference = request.args.get('reference')
+        has_retention = request.args.get('has_retention') == 'true' # Checkbox param
+        has_origin = request.args.get('has_origin') == 'true' # Checkbox param
+        include_reconciled = request.args.get('include_reconciled') == 'true' # Checkbox param
+        if date_cutoff:
+            # En corte histórico incluir conciliados para cuadrar con el mayor
+            include_reconciled = True
         limit = request.args.get('limit', type=int, default=10000)
         
         # Crear repositorio y servicio
@@ -63,21 +72,99 @@ def report_account42():
         data = treasury_service.get_accounts_payable_report(
             start_date=date_from,
             end_date=date_to,
+            cutoff_date=date_cutoff,
             supplier=supplier,
             limit=limit,
             account_codes=account_codes,
             payment_state=payment_state,
-            doc_type_id=doc_type_id
+            doc_type_id=doc_type_id,
+            reference=reference,
+            has_retention=has_retention,
+            has_origin=has_origin,
+            include_reconciled=include_reconciled
         )
+        
+        def _summarize(rows):
+            overall = {
+                'debit': 0.0,
+                'credit': 0.0,
+                'pending_cutoff': 0.0,
+                'paid_after_cutoff': 0.0,
+                'saldo': 0.0,
+                'count': 0
+            }
+            accounts = {}
+            
+            for row in rows:
+                acc = row.get('account_code') or 'N/A'
+                acc_name = row.get('account_name') or ''
+                debit = float(row.get('debit', 0.0) or 0.0)
+                credit = float(row.get('credit', 0.0) or 0.0)
+                pending = float(row.get('amount_residual_historical', row.get('amount_residual', 0.0)) or 0.0)
+                paid_after = float(row.get('paid_after_cutoff', 0.0) or 0.0)
+                
+                overall['debit'] += debit
+                overall['credit'] += credit
+                overall['pending_cutoff'] += pending
+                overall['paid_after_cutoff'] += paid_after
+                overall['count'] += 1
+                
+                if acc not in accounts:
+                    accounts[acc] = {
+                        'account_code': acc,
+                        'account_name': acc_name,
+                        'debit': 0.0,
+                        'credit': 0.0,
+                        'pending_cutoff': 0.0,
+                        'paid_after_cutoff': 0.0,
+                        'saldo': 0.0,
+                        'count': 0
+                    }
+                accounts[acc]['debit'] += debit
+                accounts[acc]['credit'] += credit
+                accounts[acc]['pending_cutoff'] += pending
+                accounts[acc]['paid_after_cutoff'] += paid_after
+                accounts[acc]['count'] += 1
+            
+            # Calcular saldo (Debe - Haber) por cuenta y global
+            # En Odoo el "Saldo" de análisis/mayor corresponde al balance = debit - credit.
+            # Para cuentas de pasivo (42), normalmente será negativo (saldo acreedor).
+            for acc_code, data_acc in accounts.items():
+                data_acc['saldo'] = data_acc['debit'] - data_acc['credit']
+            overall['saldo'] = overall['debit'] - overall['credit']
+
+            by_account = list(accounts.values())
+            by_account.sort(key=lambda x: x['account_code'])
+            
+            # Log para debug
+            print(f"[DEBUG RESUMEN] Total registros: {overall['count']}")
+            print(f"[DEBUG RESUMEN] Débito: {overall['debit']:.2f}")
+            print(f"[DEBUG RESUMEN] Haber: {overall['credit']:.2f}")
+            print(f"[DEBUG RESUMEN] Saldo: {overall['saldo']:.2f}")
+            print(f"[DEBUG RESUMEN] Pendiente al corte: {overall['pending_cutoff']:.2f}")
+            print(f"[DEBUG RESUMEN] Pagado después corte: {overall['paid_after_cutoff']:.2f}")
+            print("[DEBUG RESUMEN] Cuentas encontradas: " + ', '.join([f"{a['account_code']} ({a['count']})" for a in by_account]))
+            
+            return {
+                'overall': overall,
+                'by_account': by_account
+            }
+        
+        summary = _summarize(data)
         
         # Preparar filtros aplicados para la respuesta
         filters_applied = {
             'date_from': date_from,
             'date_to': date_to,
+            'date_cutoff': date_cutoff,
             'supplier': supplier,
             'account_codes': account_codes,
             'payment_state': payment_state,
             'doc_type_id': doc_type_id,
+            'reference': reference,
+            'has_retention': has_retention,
+            'has_origin': has_origin,
+            'include_reconciled': include_reconciled,
             'limit': limit
         }
         
@@ -85,6 +172,7 @@ def report_account42():
             'success': True,
             'data': data,
             'count': len(data),
+            'summary': summary,
             'filters': filters_applied,
             'message': f'Reporte de CxP generado exitosamente con {len(data)} registros'
         }), 200
@@ -99,6 +187,43 @@ def report_account42():
         return jsonify({
             'success': False,
             'message': f'Error al generar reporte de CxP: {str(e)}',
+            'data': []
+        }), 500
+
+
+@treasury_bp.route('/report/supplier-banks', methods=['GET'])
+def report_supplier_banks():
+    """
+    Endpoint para reporte de cuentas bancarias de proveedores.
+    
+    Query Parameters:
+        - supplier (str, optional): Nombre del proveedor a filtrar
+    
+    Response (JSON):
+        {
+            "success": true,
+            "data": [...]
+        }
+    """
+    try:
+        supplier = request.args.get('supplier')
+        
+        odoo_repo = _get_odoo_repository()
+        treasury_service = TreasuryService(odoo_repo)
+        
+        data = treasury_service.get_supplier_bank_accounts(supplier_name=supplier)
+        
+        return jsonify({
+            'success': True,
+            'data': data,
+            'count': len(data),
+            'message': f'Se encontraron {len(data)} cuentas bancarias'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error al obtener cuentas bancarias: {str(e)}',
             'data': []
         }), 500
 

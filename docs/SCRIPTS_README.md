@@ -50,5 +50,5 @@ mkdocs gh-deploy --force --clean
 
 ## 📚 Documentación Completa
 
-Ver [Guía de GitHub Pages](docs/github-pages-setup.md) para instrucciones detalladas.
+Ver [Guía de GitHub Pages](github-pages-setup.md) para instrucciones detalladas.
 

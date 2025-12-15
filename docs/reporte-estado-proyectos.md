@@ -154,7 +154,7 @@ Este documento detalla:
 
 ---
 
-## 5. Historial de Reuniones Relevantes
+## 5. Historial de Reuniones
 
 ### 📅 Cronología de Levante de Información
 

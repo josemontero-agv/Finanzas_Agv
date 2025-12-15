@@ -168,9 +168,9 @@ print(invoice)
 
 - [ADR-002: Plataforma Externa para Reportería](../adrs/0002-plataforma-externa-reporteria.md)
 - [RB-101: Conexión Odoo](rb-101-odoo-connection.md)
-- [Código Fuente - Servicio de Cobranzas](../../app/collections/services.py)
-- [Código Fuente - Servicio de Tesorería](../../app/treasury/services.py)
 - [Reporte de Estado de Proyectos](../reporte-estado-proyectos.md)
+
+> **Nota:** El código fuente se encuentra en `app/collections/services.py` y `app/treasury/services.py` del repositorio principal.
 
 ## 📞 Contacto
 

@@ -25,9 +25,13 @@
     <!-- 11. Total Moneda Origen -->
     <td class="px-3 py-2 text-sm text-right whitespace-nowrap">{{ "{:,.2f}".format(row.amount_currency or 0) }}</td>
     <!-- 12. Adeudado -->
-    <td class="px-3 py-2 text-sm text-right whitespace-nowrap">{{ "{:,.2f}".format(row.amount_residual_with_retention or 0) }}</td>
+    <td class="px-3 py-2 text-sm text-right whitespace-nowrap">{{ "{:,.2f}".format(row.amount_residual_with_retention or row.amount_residual_currency or 0) }}</td>
     <!-- 13. Adeudado S/. -->
-    <td class="px-3 py-2 text-sm text-right whitespace-nowrap">{{ "{:,.2f}".format(row.amount_residual_signed or 0) }}</td>
+    <td class="px-3 py-2 text-sm text-right whitespace-nowrap">{{ "{:,.2f}".format(row.amount_residual_historical if row.amount_residual_historical is not none else row.amount_residual_signed or 0) }}</td>
+    <!-- 14. Pendiente al corte -->
+    <td class="px-3 py-2 text-sm text-right whitespace-nowrap">{{ "{:,.2f}".format(row.amount_residual_historical or 0) }}</td>
+    <!-- 15. Pagado después corte -->
+    <td class="px-3 py-2 text-sm text-right whitespace-nowrap">{{ "{:,.2f}".format(row.paid_after_cutoff or 0) }}</td>
     <!-- 14. Fecha Vencimiento -->
     <td class="px-3 py-2 text-sm text-left whitespace-nowrap">{{ row.date_maturity }}</td>
     <!-- 14. Días Vencido -->

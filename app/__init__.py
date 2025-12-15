@@ -11,6 +11,7 @@ from flask_caching import Cache
 from flask_compress import Compress
 from flask_mail import Mail
 from config import config
+from app.core.celery_utils import celery_init_app
 
 # Inicializar extensiones
 cache = Cache()
@@ -36,8 +37,23 @@ def create_app(config_name='development'):
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
     
+    # Inicializar Celery
+    celery_init_app(app)
+
+    # Importar tareas de Celery para que sean registradas
+    with app.app_context():
+        try:
+            from app import tasks
+        except ImportError:
+            pass
+    
     # Configurar Flask-Caching
-    app.config['CACHE_TYPE'] = 'simple'  # 'redis' para producción
+    # Si está configurado Redis en producción, usarlo
+    if app.config.get('CACHE_TYPE') == 'RedisCache':
+        app.config['CACHE_REDIS_URL'] = app.config.get('REDIS_URL')
+    else:
+        app.config['CACHE_TYPE'] = 'simple'
+        
     app.config['CACHE_DEFAULT_TIMEOUT'] = 300  # 5 minutos
     cache.init_app(app)
     

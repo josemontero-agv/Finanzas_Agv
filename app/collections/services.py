@@ -141,7 +141,8 @@ class CollectionsService:
         return internacional_lines
     
     def _build_report_domain(self, start_date=None, end_date=None, customer=None,
-                            account_codes=None, sales_channel_id=None, doc_type_id=None):
+                            account_codes=None, sales_channel_id=None, doc_type_id=None,
+                            cutoff_date=None, include_reconciled=False):
         """
         Construye el domain de Odoo para filtrar líneas de movimiento.
         Método auxiliar para evitar duplicación de código.
@@ -161,12 +162,11 @@ class CollectionsService:
         if account_codes:
             codes = [c.strip() for c in account_codes.split(',') if c.strip()]
         else:
-            codes = ['122', '1212', '123', '1312', '132']
+            codes = ['122', '1212', '123', '1312', '132', '13']
         
         # Construir dominio base
         domain = [
             ('parent_state', '=', 'posted'),
-            ('reconciled', '=', False),
             ('move_id.move_type', 'in', ['out_invoice', 'out_refund', 'out_bill', 'entry']),
         ]
         
@@ -175,25 +175,43 @@ class CollectionsService:
             or_operators = ['|'] * (len(codes) - 1)
             code_conditions = []
             for code in codes:
-                code_conditions.append(('account_id.code', '=like', f'{code}%'))
+                # Si el usuario pasa un código "completo" (ej: 1312001), hacemos match exacto.
+                # Si pasa un prefijo (ej: 13, 1312), usamos prefijo.
+                is_exact = code.isdigit() and len(code) >= 6
+                if is_exact:
+                    code_conditions.append(('account_id.code', '=', code))
+                else:
+                    code_conditions.append(('account_id.code', '=like', f'{code}%'))
             domain = or_operators + code_conditions + domain
         else:
-            domain.insert(0, ('account_id.code', '=like', f'{codes[0]}%'))
+            code0 = codes[0]
+            is_exact = code0.isdigit() and len(code0) >= 6
+            if is_exact:
+                domain.insert(0, ('account_id.code', '=', code0))
+            else:
+                domain.insert(0, ('account_id.code', '=like', f'{code0}%'))
         
         # Excluir cuenta específica de letras
         domain.append(('account_id.code', '!=', '1239001'))
         
-        # Filtros adicionales
-        if start_date:
-            domain.append(('date', '>=', start_date))
-        if end_date:
-            domain.append(('date', '<=', end_date))
+        # Filtros adicionales / histórico
+        if cutoff_date:
+            domain.append(('date', '<=', cutoff_date))
+        else:
+            if start_date:
+                domain.append(('date', '>=', start_date))
+            if end_date:
+                domain.append(('date', '<=', end_date))
+            if not include_reconciled:
+                domain.append(('reconciled', '=', False))
         if customer:
             domain.append(('partner_id.name', 'ilike', customer))
         if sales_channel_id:
             domain.append(('move_id.sales_channel_id', '=', sales_channel_id))
             if doc_type_id:
                 domain.append(('move_id.l10n_latam_document_type_id', '=', doc_type_id))
+        elif doc_type_id:
+            domain.append(('move_id.l10n_latam_document_type_id', '=', doc_type_id))
             
             # Filtro inteligente por Canal de Venta (validar consistencia con país)
             if sales_channel_id:
@@ -254,7 +272,8 @@ class CollectionsService:
         return nacional_lines
     
     def get_report_lines(self, start_date=None, end_date=None, customer=None, limit=0,
-                         account_codes=None, sales_channel_id=None, doc_type_id=None):
+                         account_codes=None, sales_channel_id=None, doc_type_id=None,
+                         cutoff_date=None, include_reconciled=False):
         """
         Obtener líneas de reporte de CxC siguiendo la cadena de relaciones.
         
@@ -277,50 +296,22 @@ class CollectionsService:
                 print("[ERROR] No hay conexión a Odoo disponible")
                 return []
             
-            # Códigos de cuenta a buscar - Específicamente para CxC General
-            if account_codes:
-                codes = [c.strip() for c in account_codes.split(',') if c.strip()]
-            else:
-                codes = ['122', '1212', '123', '1312', '132']  # Cuentas específicas CxC por defecto
-            
-            # Construir dominio base
-            line_domain = [
-                ('parent_state', '=', 'posted'),
-                ('reconciled', '=', False),  # False = pendientes por cobrar
-                # Incluir facturas, notas de crédito y letras de cambio
-                ('move_id.move_type', 'in', ['out_invoice', 'out_refund', 'out_bill', 'entry']),
-            ]
-            
-            # Construir OR para códigos de cuenta
-            if len(codes) > 1:
-                or_operators = ['|'] * (len(codes) - 1)
-                code_conditions = []
-                for code in codes:
-                    code_conditions.append(('account_id.code', '=like', f'{code}%'))
-                line_domain = or_operators + code_conditions + line_domain
-            else:
-                line_domain.insert(0, ('account_id.code', '=like', f'{codes[0]}%'))
-
-            # Excluir cuenta específica de letras
-            line_domain.append(('account_id.code', '!=', '1239001'))
-            
-            # Filtros adicionales
-            if start_date:
-                line_domain.append(('date', '>=', start_date))
-            if end_date:
-                line_domain.append(('date', '<=', end_date))
-            if customer:
-                line_domain.append(('partner_id.name', 'ilike', customer))
-            if sales_channel_id:
-                line_domain.append(('move_id.sales_channel_id', '=', sales_channel_id))
-            if doc_type_id:
-                line_domain.append(('move_id.l10n_latam_document_type_id', '=', doc_type_id))
+            line_domain = self._build_report_domain(
+                start_date=start_date,
+                end_date=end_date,
+                customer=customer,
+                account_codes=account_codes,
+                sales_channel_id=sales_channel_id,
+                doc_type_id=doc_type_id,
+                cutoff_date=cutoff_date,
+                include_reconciled=include_reconciled
+            )
             
             # Campos a extraer
             line_fields = [
                 'id', 'move_id', 'partner_id', 'account_id', 'name', 'date',
                 'date_maturity', 'amount_currency', 'amount_residual', 'currency_id',
-                'debit', 'credit',
+                'debit', 'credit', 'matched_debit_ids', 'matched_credit_ids',
             ]
             
             effective_limit = limit if limit and limit > 0 else 10000
@@ -408,6 +399,11 @@ class CollectionsService:
                 except Exception as e:
                     print(f"[WARN] No se pudo obtener agr.credit.customer: {e}")
 
+            # Obtener conciliaciones para histórico
+            reconciliation_map = {}
+            if cutoff_date:
+                reconciliation_map = self._get_reconciliation_amounts(lines, cutoff_date)
+            
             # Combinar datos
             rows = []
             today = datetime.today().date()
@@ -453,6 +449,23 @@ class CollectionsService:
                 
                 # Estado de deuda
                 estado_deuda = 'VENCIDO' if dias_vencido > 0 else 'VIGENTE'
+
+                # Conciliaciones / histórico
+                rec_info = reconciliation_map.get(line['id'], {})
+                reconcile_date = rec_info.get('max_date')
+                paid_after_cutoff = float(rec_info.get('paid_after', 0.0) or 0.0)
+                paid_before_cutoff = float(rec_info.get('paid_before', 0.0) or 0.0)
+
+                if cutoff_date and reconcile_date and reconcile_date <= cutoff_date and not include_reconciled:
+                    # Estaba pagado antes del corte y no queremos mostrar conciliados
+                    continue
+
+                current_residual = abs(line.get('amount_residual', 0.0) or 0.0)
+                amount_residual_historical = current_residual
+                if cutoff_date:
+                    amount_residual_historical = current_residual + paid_after_cutoff
+                    if reconcile_date and reconcile_date <= cutoff_date and include_reconciled:
+                        amount_residual_historical = 0.0
                 
                 row = {
                     'payment_state': move.get('payment_state', ''),
@@ -475,6 +488,8 @@ class CollectionsService:
                     'amount_residual_signed': move.get('amount_residual_signed', 0.0),
                     'amount_currency': line.get('amount_currency', 0.0),
                     'amount_residual_currency': line.get('amount_residual', 0.0),
+                    'amount_residual_historical': amount_residual_historical,
+                    'paid_after_cutoff': paid_after_cutoff,
                     'date': line.get('date', ''),
                     'date_maturity': date_maturity,
                     'invoice_date_due': move.get('invoice_date_due', ''),
@@ -491,6 +506,8 @@ class CollectionsService:
                     'dias_vencido': dias_vencido,
                     'estado_deuda': estado_deuda,
                     'antiguedad': antiguedad,
+                    'reconciliation_date': reconcile_date,
+                    'paid_before_cutoff': paid_before_cutoff,
                 }
                 
                 rows.append(row)
@@ -537,6 +554,8 @@ class CollectionsService:
             account_codes = kwargs.get('account_codes')
             sales_channel_id = kwargs.get('sales_channel_id')
             doc_type_id = kwargs.get('doc_type_id')
+            cutoff_date = kwargs.get('cutoff_date')
+            include_reconciled = kwargs.get('include_reconciled', False)
             
             # Construir domain usando el método auxiliar (ahora incluye filtro inteligente)
             line_domain = self._build_report_domain(
@@ -545,7 +564,9 @@ class CollectionsService:
                 customer=customer,
                 account_codes=account_codes,
                 sales_channel_id=sales_channel_id,
-                doc_type_id=doc_type_id
+                doc_type_id=doc_type_id,
+                cutoff_date=cutoff_date,
+                include_reconciled=include_reconciled
             )
             
             # 1. Obtener TOTAL de registros (sin traer datos)
@@ -567,6 +588,7 @@ class CollectionsService:
             line_fields = [
                 'id', 'move_id', 'partner_id', 'account_id', 'name', 'date',
                 'date_maturity', 'amount_currency', 'amount_residual', 'currency_id',
+                'debit', 'credit', 'matched_debit_ids', 'matched_credit_ids'
             ]
             
             lines = self.repository.search_read(
@@ -668,6 +690,11 @@ class CollectionsService:
                 except Exception as e:
                     print(f"[WARN] No se pudo obtener sub_channel_id: {e}")
             
+            # Obtener conciliaciones para histórico
+            reconciliation_map = {}
+            if cutoff_date:
+                reconciliation_map = self._get_reconciliation_amounts(lines, cutoff_date)
+            
             # Procesar líneas
             rows = []
             
@@ -711,6 +738,21 @@ class CollectionsService:
                 
                 # Estado de deuda
                 estado_deuda = 'VENCIDO' if dias_vencido > 0 else 'VIGENTE'
+
+                rec_info = reconciliation_map.get(line['id'], {})
+                reconcile_date = rec_info.get('max_date')
+                paid_after_cutoff = float(rec_info.get('paid_after', 0.0) or 0.0)
+                paid_before_cutoff = float(rec_info.get('paid_before', 0.0) or 0.0)
+
+                if cutoff_date and reconcile_date and reconcile_date <= cutoff_date and not include_reconciled:
+                    continue
+
+                current_residual = abs(line.get('amount_residual', 0.0) or 0.0)
+                amount_residual_historical = current_residual
+                if cutoff_date:
+                    amount_residual_historical = current_residual + paid_after_cutoff
+                    if reconcile_date and reconcile_date <= cutoff_date and include_reconciled:
+                        amount_residual_historical = 0.0
                 
                 row = {
                     'payment_state': move.get('payment_state', ''),
@@ -733,6 +775,11 @@ class CollectionsService:
                     'amount_residual_signed': move.get('amount_residual_signed', 0.0),
                     'amount_currency': line.get('amount_currency', 0.0),
                     'amount_residual_currency': line.get('amount_residual', 0.0),
+                    'amount_residual_historical': amount_residual_historical,
+                    'paid_after_cutoff': paid_after_cutoff,
+                    'paid_before_cutoff': paid_before_cutoff,
+                    'debit': line.get('debit', 0.0) or 0.0,
+                    'credit': line.get('credit', 0.0) or 0.0,
                     'date': line.get('date', ''),
                     'date_maturity': date_maturity,
                     'invoice_date_due': move.get('invoice_date_due', ''),
@@ -748,6 +795,7 @@ class CollectionsService:
                     'dias_vencido': dias_vencido,
                     'estado_deuda': estado_deuda,
                     'antiguedad': antiguedad,
+                    'reconciliation_date': reconcile_date,
                 }
                 
                 rows.append(row)
@@ -770,6 +818,63 @@ class CollectionsService:
             import traceback
             traceback.print_exc()
             raise
+    
+    def _get_reconciliation_amounts(self, lines, cutoff_date=None):
+        """
+        Obtiene montos conciliados por línea y separa pagos antes/después del corte.
+        Retorna dict:
+        {
+            line_id: {
+                'max_date': 'YYYY-MM-DD' | None,
+                'paid_before': float,
+                'paid_after': float
+            }
+        }
+        """
+        reconcile_ids = set()
+        line_to_reconcile_map = {}  # line_id -> [partial_ids]
+        
+        for line in lines:
+            partials = (line.get('matched_debit_ids') or []) + (line.get('matched_credit_ids') or [])
+            if partials:
+                reconcile_ids.update(partials)
+                line_to_reconcile_map[line['id']] = partials
+        
+        if not reconcile_ids:
+            return {}
+        
+        fields = ['max_date', 'amount']
+        partials_data = self.repository.read('account.partial.reconcile', list(reconcile_ids), fields)
+        partial_map = {p['id']: p for p in partials_data}
+        
+        line_map = {}
+        for line_id, partials in line_to_reconcile_map.items():
+            max_date = None
+            paid_before = 0.0
+            paid_after = 0.0
+            for pid in partials:
+                pdata = partial_map.get(pid)
+                if not pdata:
+                    continue
+                pdate = pdata.get('max_date')
+                amount = float(pdata.get('amount', 0.0) or 0.0)
+                if pdate:
+                    if not max_date or pdate > max_date:
+                        max_date = pdate
+                    if cutoff_date:
+                        if pdate > cutoff_date:
+                            paid_after += amount
+                        else:
+                            paid_before += amount
+                else:
+                    paid_before += amount
+            line_map[line_id] = {
+                'max_date': max_date,
+                'paid_before': paid_before,
+                'paid_after': paid_after
+            }
+        
+        return line_map
     
     # KPI Method - Disabled as per user request due to data inconsistency
     # def get_aggregated_stats(self, **kwargs):
