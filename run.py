@@ -20,7 +20,7 @@ from app import create_app
 if len(sys.argv) > 1:
     environment = sys.argv[1]
 else:
-    environment = 'development'  # Por defecto
+    environment = 'production'  # Por defecto
 
 # Validar entorno
 valid_environments = ['development', 'production', 'testing']
@@ -49,6 +49,8 @@ if __name__ == '__main__':
         print("  FINANZAS AGV - API REST")
         print("  Entorno: PRODUCCIÓN")
         print("  ADVERTENCIA: Usa gunicorn o uWSGI en producción real")
+        print("  Ejemplo (Gunicorn): gunicorn --bind 0.0.0.0:5000 run:app")
+        print("  Ejemplo (uWSGI):    uwsgi --http :5000 --module run:app")
         print("="*60 + "\n")
         app.run(
             host='0.0.0.0',

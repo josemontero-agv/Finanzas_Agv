@@ -119,6 +119,29 @@
             border-color: rgba(255,255,255,0.18) !important;
         }
 
+        /* Select nativo (Windows): el menú de opciones no siempre hereda el tema.
+           Forzamos paleta oscura para que no quede texto claro sobre fondo blanco. */
+        [data-bs-theme="dark"] select,
+        [data-bs-theme="dark"] .form-select {
+            color-scheme: dark;
+        }
+
+        [data-bs-theme="dark"] select option,
+        [data-bs-theme="dark"] select optgroup {
+            background-color: #111827; /* gray-900 */
+            color: #e5e7eb;
+        }
+
+        [data-bs-theme="dark"] select option:disabled {
+            color: rgba(229,231,235,0.45);
+        }
+
+        /* Mejor contraste en la opción seleccionada (si el navegador lo soporta) */
+        [data-bs-theme="dark"] select option:checked {
+            background-color: rgba(113, 75, 103, 0.70);
+            color: #ffffff;
+        }
+
         [data-bs-theme="dark"] .form-control::placeholder {
             color: rgba(229,231,235,0.65) !important;
         }

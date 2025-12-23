@@ -63,7 +63,16 @@ python run.py
 
 ## 🔧 Variables de Entorno
 
-Crea un archivo `.env.desarrollo` con:
+El proyecto usa `.env.desarrollo` (en la raíz) para desarrollo. Por seguridad está en `.gitignore`.
+
+Puedes generarlo desde la plantilla:
+
+```powershell
+.\scripts\setup_env_dev.ps1
+notepad .env.desarrollo
+```
+
+Contenido esperado de `.env.desarrollo`:
 
 ```ini
 # Flask
