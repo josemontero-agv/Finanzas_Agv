@@ -12,8 +12,8 @@ services:
     networks:
       - app_network
 
-  # 2. WEB: Tu aplicación Flask
-  web:
+  # 2. BACKEND: Flask API REST
+  backend:
     build: .
     command: gunicorn --bind 0.0.0.0:5000 run:app --reload
     volumes:
@@ -21,47 +21,66 @@ services:
     ports:
       - "5000:5000"
     env_file:
-      - .env.desarrollo
+      - .env.produccion
     environment:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - FLASK_ENV=development
     depends_on:
       - redis
     networks:
       - app_network
 
-  # 3. WORKER: El proceso de Celery que corre los ETLs
+  # 3. FRONTEND: Next.js
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    command: npm run dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - backend
+    networks:
+      - app_network
+
+  # 4. WORKER: El proceso de Celery que corre los ETLs
   worker:
     build: .
     command: celery -A celery_worker.celery worker --loglevel=info
     volumes:
       - .:/app
     env_file:
-      - .env.desarrollo
+      - .env.produccion
     environment:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
       - redis
-      - web
+      - backend
     networks:
       - app_network
 
-  # 4. DWH LOCAL: PostgreSQL para analítica (Reemplazo local de Supabase)
-  dwh:
-    image: postgres:15-alpine
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=agv_admin
-      - POSTGRES_PASSWORD=agv_password
-      - POSTGRES_DB=finanzas_dwh
-    volumes:
-      - dwh_data:/var/lib/postgresql/data
-    networks:
-      - app_network
+  # 5. DWH LOCAL (Opcional): PostgreSQL para analítica local
+  # Comentado porque usamos Supabase cloud
+  # dwh:
+  #   image: postgres:15-alpine
+  #   ports:
+  #     - "5432:5432"
+  #   environment:
+  #     - POSTGRES_USER=agv_admin
+  #     - POSTGRES_PASSWORD=agv_password
+  #     - POSTGRES_DB=finanzas_dwh
+  #   volumes:
+  #     - dwh_data:/var/lib/postgresql/data
+  #   networks:
+  #     - app_network
 
 networks:
   app_network:

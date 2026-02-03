@@ -78,6 +78,7 @@ class ExcelExportService:
             ('patner_id/l10n_pe_district', 'Distrito'),
             ('patner_id/country_code', 'Código País'),
             ('patner_id/country_id', 'País'),
+            ('team_id', 'Equipo de Ventas'),
             ('partner_groups', 'Grupos'),
             ('sub_channel_id', 'Sub Canal'),
             ('move_id/sales_channel_id', 'Canal de Venta'),
@@ -163,10 +164,11 @@ class ExcelExportService:
             23: 18, # Distrito
             24: 12, # Código País
             25: 18, # País
-            26: 25, # Grupos
-            27: 18, # Sub Canal
-            28: 20, # Canal de Venta
-            29: 18, # Tipo de Venta
+            26: 20, # Equipo de Ventas
+            27: 25, # Grupos
+            28: 18, # Sub Canal
+            29: 20, # Canal de Venta
+            30: 18, # Tipo de Venta
         }
         
         for col_num, width in column_widths.items():

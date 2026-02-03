@@ -26,26 +26,10 @@ def _get_odoo_repository():
 
 
 @collections_bp.route('/report/account12', methods=['GET'])
+@cache.cached(timeout=300, query_string=True)
 def report_account12():
     """
     Endpoint para reporte general de cuentas por cobrar (Cuenta 12).
-    
-    Query Parameters:
-        - date_from (str, optional): Fecha inicial (formato: YYYY-MM-DD)
-        - date_to (str, optional): Fecha final (formato: YYYY-MM-DD)
-        - customer (str, optional): Nombre del cliente a filtrar
-        - account_codes (str, optional): Códigos de cuenta separados por coma
-        - sales_channel_id (int, optional): ID del canal de ventas
-        - doc_type_id (int, optional): ID del tipo de documento
-        - limit (int, optional): Límite de registros (default: 10000)
-    
-    Response (JSON):
-        {
-            "success": true,
-            "data": [...],
-            "count": 123,
-            "filters": {...}
-        }
     """
     try:
         # Obtener parámetros de query
@@ -59,15 +43,47 @@ def report_account12():
         include_reconciled = request.args.get('include_reconciled') == 'true'
         summary_only = request.args.get('summary_only') == 'true'
         if cutoff_date:
-            # En modo histórico incluimos conciliados para cuadrar con el mayor
             include_reconciled = True
         limit = request.args.get('limit', type=int, default=10000)
         
         # Crear repositorio y servicio
         odoo_repo = _get_odoo_repository()
         collections_service = CollectionsService(odoo_repo)
+
+        # OPTIMIZACIÓN: Si es solo resumen y no hay fecha de corte, usar read_group
+        if summary_only and not cutoff_date:
+            summary = collections_service.get_report_summary(
+                start_date=date_from,
+                end_date=date_to,
+                customer=customer,
+                account_codes=account_codes,
+                sales_channel_id=sales_channel_id,
+                doc_type_id=doc_type_id,
+                include_reconciled=include_reconciled
+            )
+            if summary:
+                filters_applied = {
+                    'date_from': date_from,
+                    'date_to': date_to,
+                    'customer': customer,
+                    'account_codes': account_codes,
+                    'sales_channel_id': sales_channel_id,
+                    'doc_type_id': doc_type_id,
+                    'date_cutoff': cutoff_date,
+                    'include_reconciled': include_reconciled,
+                    'summary_only': summary_only,
+                    'limit': limit
+                }
+                return jsonify({
+                    'success': True,
+                    'data': [],
+                    'count': 0,
+                    'summary': summary,
+                    'filters': filters_applied,
+                    'message': 'Resumen optimizado generado exitosamente'
+                }), 200
         
-        # Obtener datos
+        # Obtener datos (método tradicional si es necesario)
         data = collections_service.get_report_lines(
             start_date=date_from,
             end_date=date_to,
@@ -87,6 +103,7 @@ def report_account12():
                 'pending_cutoff': 0.0,
                 'paid_after_cutoff': 0.0,
                 'saldo': 0.0,
+                'overdue_amount': 0.0,
                 'count': 0
             }
             accounts = {}
@@ -95,14 +112,22 @@ def report_account12():
                 acc_name = row.get('account_id/name') or ''
                 debit = float(row.get('debit', 0.0) or 0.0)
                 credit = float(row.get('credit', 0.0) or 0.0)
-                pending = float(row.get('amount_residual_historical', row.get('amount_residual_currency', 0.0)) or 0.0)
+                # Saldo es amount_residual_with_retention (en soles)
+                pending = float(row.get('amount_residual_with_retention', 0.0) or 0.0)
+                # O si es histórico, usar amount_residual_historical
+                if cutoff_date:
+                    pending = float(row.get('amount_residual_historical', 0.0) or 0.0)
+                
                 paid_after = float(row.get('paid_after_cutoff', 0.0) or 0.0)
+                dias_vencido = int(row.get('dias_vencido', 0) or 0)
 
                 overall['debit'] += debit
                 overall['credit'] += credit
                 overall['pending_cutoff'] += pending
                 overall['paid_after_cutoff'] += paid_after
                 overall['count'] += 1
+                if dias_vencido > 0:
+                    overall['overdue_amount'] += pending
 
                 if acc not in accounts:
                     accounts[acc] = {
@@ -113,6 +138,7 @@ def report_account12():
                         'pending_cutoff': 0.0,
                         'paid_after_cutoff': 0.0,
                         'saldo': 0.0,
+                        'overdue_amount': 0.0,
                         'count': 0
                     }
                 accounts[acc]['debit'] += debit
@@ -120,6 +146,8 @@ def report_account12():
                 accounts[acc]['pending_cutoff'] += pending
                 accounts[acc]['paid_after_cutoff'] += paid_after
                 accounts[acc]['count'] += 1
+                if dias_vencido > 0:
+                    accounts[acc]['overdue_amount'] += pending
 
             for acc_code, acc_data in accounts.items():
                 acc_data['saldo'] = acc_data['debit'] - acc_data['credit']
@@ -483,27 +511,6 @@ def report_account12_rows():
 def report_account12_stats():
     """
     Endpoint para obtener KPIs agregados sin traer filas.
-    Deshabilitado: se retornan ceros para evitar errores, según solicitud.
-    
-    Query Parameters:
-        - date_from (str, optional): Fecha inicial (formato: YYYY-MM-DD)
-        - date_to (str, optional): Fecha final (formato: YYYY-MM-DD)
-        - customer (str, optional): Nombre del cliente a filtrar
-        - account_codes (str, optional): Códigos de cuenta separados por coma
-        - sales_channel_id (int, optional): ID del canal de ventas
-        - doc_type_id (int, optional): ID del tipo de documento
-    
-    Response (JSON):
-        {
-            "success": true,
-            "data": {
-                "total_count": 1234,
-                "total_amount": 500000.00,
-                "pending_amount": 250000.00,
-                "overdue_amount": 50000.00,
-                "paid_amount": 250000.00
-            }
-        }
     """
     try:
         print(f"[DEBUG] report_account12_stats llamado")
@@ -512,28 +519,65 @@ def report_account12_stats():
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
         customer = request.args.get('customer')
-        account_codes = request.args.get('account_codes', '122,1212,123,1312,132')
+        account_codes = request.args.get('account_codes', '122,1212,123,1312,132,13')
         sales_channel_id = request.args.get('sales_channel_id', type=int)
         doc_type_id = request.args.get('doc_type_id', type=int)
+        cutoff_date = request.args.get('date_cutoff')
+        include_reconciled = request.args.get('include_reconciled') == 'true'
+        if cutoff_date:
+            include_reconciled = True
         
-        print(f"[DEBUG] Filtros recibidos: date_from={date_from}, date_to={date_to}, customer={customer}, account_codes={account_codes}, sales_channel_id={sales_channel_id}, doc_type_id={doc_type_id}")
+        # Crear servicio
+        odoo_repo = _get_odoo_repository()
+        collections_service = CollectionsService(odoo_repo)
         
-        # KPIs deshabilitados: devolver ceros para evitar fallos en frontend
+        # Obtener datos (método tradicional para asegurar exactitud)
+        data = collections_service.get_report_lines(
+            start_date=date_from,
+            end_date=date_to,
+            customer=customer,
+            limit=50000, # Límite alto para stats
+            account_codes=account_codes,
+            sales_channel_id=sales_channel_id,
+            doc_type_id=doc_type_id,
+            cutoff_date=cutoff_date,
+            include_reconciled=include_reconciled
+        )
+
+        total_amount = 0.0
+        pending_amount = 0.0
+        overdue_amount = 0.0
+        
+        for row in data:
+            debit = float(row.get('debit', 0.0) or 0.0)
+            credit = float(row.get('credit', 0.0) or 0.0)
+            total_amount += (debit - credit)
+            
+            pending = float(row.get('amount_residual_with_retention', 0.0) or 0.0)
+            if cutoff_date:
+                pending = float(row.get('amount_residual_historical', 0.0) or 0.0)
+            
+            pending_amount += pending
+            if int(row.get('dias_vencido', 0) or 0) > 0:
+                overdue_amount += pending
+
         stats = {
-            'total_count': 0,
-            'total_amount': 0.0,
-            'pending_amount': 0.0,
-            'overdue_amount': 0.0,
-            'paid_amount': 0.0
+            'total_count': len(data),
+            'total_amount': round(total_amount, 2),
+            'pending_amount': round(pending_amount, 2),
+            'overdue_amount': round(overdue_amount, 2),
+            'paid_amount': round(total_amount - pending_amount, 2)
         }
+        
         return jsonify({
             'success': True,
             'data': stats,
-            'message': 'KPIs deshabilitados; se devuelven ceros.'
+            'message': 'Stats calculados exitosamente'
         }), 200
         
     except Exception as e:
-        # Incluso ante error, devolver formato estable
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'success': False,
             'message': f'Error calculando stats: {str(e)}',

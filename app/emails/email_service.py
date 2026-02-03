@@ -159,6 +159,10 @@ class EmailService:
             'errors': []
         }
         
+        # Verificar si estamos en modo desarrollo
+        dev_mode = current_app.config.get('DEV_EMAIL_MODE', False)
+        dev_email = current_app.config.get('DEV_EMAIL_RECIPIENT', 'josemontero2415@gmail.com')
+        
         for recipient in recipients_data:
             try:
                 # Construir lista de letras en HTML
@@ -194,20 +198,32 @@ class EmailService:
                 # Obtener IDs de letras para logging
                 letter_ids = [l.get('id') for l in recipient['letters'] if l.get('id')]
                 
+                # Determinar destinatario real (modo desarrollo o producción)
+                original_email = recipient['email']
+                actual_recipient = dev_email if dev_mode else original_email
+                
+                # Agregar nota en el asunto si estamos en modo desarrollo
+                if dev_mode:
+                    subject = f"[DEV - Original: {original_email}] {subject}"
+                
                 # Enviar correo
                 if self.mail:
                     msg = Message(
                         subject=subject,
-                        recipients=[recipient['email']],
+                        recipients=[actual_recipient],
                         html=body_html,
                         sender=current_app.config.get('MAIL_DEFAULT_SENDER', 'jose.montero@agrovetmarket.com')
                     )
                     self.mail.send(msg)
-                    print(f"[OK] Email de aceptación enviado a {recipient['email']}")
+                    
+                    if dev_mode:
+                        print(f"[DEV MODE] Email redirigido de {original_email} a {actual_recipient}")
+                    else:
+                        print(f"[OK] Email de aceptación enviado a {original_email}")
                     
                     # Log exitoso
                     self.logger.log_email_sent(
-                        recipient_email=recipient['email'],
+                        recipient_email=original_email,
                         recipient_name=recipient['name'],
                         subject=subject,
                         letter_count=len(recipient['letters']),
@@ -215,13 +231,15 @@ class EmailService:
                     )
                 else:
                     # MOCK SEND (para desarrollo sin configuración SMTP)
-                    print(f"--- SIMULATING EMAIL SEND TO {recipient['email']} ---")
+                    print(f"--- SIMULATING EMAIL SEND TO {actual_recipient} ---")
+                    if dev_mode:
+                        print(f"[DEV MODE] Original destinatario: {original_email}")
                     print(f"Subject: {subject}")
                     print("------------------------------------------------")
                     
                     # Log como enviado incluso en modo mock
                     self.logger.log_email_sent(
-                        recipient_email=recipient['email'],
+                        recipient_email=original_email,
                         recipient_name=recipient['name'],
                         subject=subject,
                         letter_count=len(recipient['letters']),

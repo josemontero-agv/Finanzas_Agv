@@ -10,6 +10,7 @@ from flask import Flask, jsonify
 from flask_caching import Cache
 from flask_compress import Compress
 from flask_mail import Mail
+from flask_cors import CORS
 from config import config
 from app.core.celery_utils import celery_init_app
 
@@ -36,6 +37,16 @@ def create_app(config_name='development'):
     # Cargar configuración
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
+    
+    # Configurar CORS para Next.js frontend
+    CORS(app, resources={
+        r"/api/*": {
+            "origins": ["http://localhost:3000", "http://localhost:5000"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True
+        }
+    })
     
     # Inicializar Celery
     celery_init_app(app)

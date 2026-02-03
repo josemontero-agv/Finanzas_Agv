@@ -14,7 +14,7 @@ build/
 
 # Entornos virtuales
 venv/
-env/
+
 ENV/
 
 # Dependencias de Node (si hay)
@@ -43,8 +43,8 @@ Thumbs.db
 *.tmp
 
 # Archivos de configuración no críticos
-.env.produccion
-.env.staging
+!.env.produccion
+
 *.bak
 *.log
 

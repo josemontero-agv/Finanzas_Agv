@@ -36,6 +36,7 @@ def report_account42():
         - supplier (str, optional): Nombre del proveedor a filtrar
         - account_codes (str, optional): Códigos de cuenta separados por coma
         - payment_state (str, optional): Estado de pago
+        - only_vouchers (bool, optional): Solo mostrar comprobantes (excluir asientos manuales)
         - limit (int, optional): Límite de registros (default: 10000)
     
     Response (JSON):
@@ -58,6 +59,7 @@ def report_account42():
         reference = request.args.get('reference')
         has_retention = request.args.get('has_retention') == 'true' # Checkbox param
         has_origin = request.args.get('has_origin') == 'true' # Checkbox param
+        only_vouchers = request.args.get('only_vouchers') == 'true' # Checkbox param: Solo Comprobantes
         include_reconciled = request.args.get('include_reconciled') == 'true' # Checkbox param
         if date_cutoff:
             # En corte histórico incluir conciliados para cuadrar con el mayor
@@ -81,6 +83,7 @@ def report_account42():
             reference=reference,
             has_retention=has_retention,
             has_origin=has_origin,
+            only_vouchers=only_vouchers,
             include_reconciled=include_reconciled
         )
         
@@ -164,6 +167,7 @@ def report_account42():
             'reference': reference,
             'has_retention': has_retention,
             'has_origin': has_origin,
+            'only_vouchers': only_vouchers,
             'include_reconciled': include_reconciled,
             'limit': limit
         }
@@ -187,6 +191,53 @@ def report_account42():
         return jsonify({
             'success': False,
             'message': f'Error al generar reporte de CxP: {str(e)}',
+            'data': []
+        }), 500
+
+
+@treasury_bp.route('/report/account42-netted', methods=['GET'])
+def report_account42_netted():
+    """
+    Endpoint para reporte de cuentas por pagar neteado (desde Supabase).
+    
+    Query Parameters:
+        - supplier (str, optional): Nombre del proveedor a filtrar
+    
+    Response (JSON):
+        {
+            "success": true,
+            "data": [...],
+            "count": 123
+        }
+    """
+    try:
+        supplier = request.args.get('supplier')
+        
+        # Para este endpoint no necesitamos conectarnos a Odoo, solo a Supabase
+        treasury_service = TreasuryService(None)
+        data = treasury_service.get_netted_report_from_supabase(supplier=supplier)
+        
+        # Calcular resumen simple para compatibilidad con el frontend
+        summary = {
+            'overall': {
+                'actual_balance': sum(float(row.get('actual_balance', 0)) for row in data),
+                'original_amount': sum(float(row.get('original_amount', 0)) for row in data),
+                'count': len(data)
+            }
+        }
+        
+        return jsonify({
+            'success': True,
+            'data': data,
+            'count': len(data),
+            'summary': summary,
+            'message': f'Reporte neteado generado con {len(data)} registros desde Supabase'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error al generar reporte neteado: {str(e)}',
             'data': []
         }), 500
 

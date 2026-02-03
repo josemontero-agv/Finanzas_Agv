@@ -38,12 +38,34 @@ class OdooRepository:
         if not all([self.url, self.db, self.username, self.password]):
             raise ValueError("Faltan credenciales de Odoo. Se requieren: url, db, username, password")
         
+        # Intentar obtener UID de caché global/clase si existe para evitar re-autenticación
+        if not hasattr(OdooRepository, '_cached_uids'):
+            OdooRepository._cached_uids = {}
+            
+        cache_key = f"{self.url}|{self.db}|{self.username}"
+        self.uid = OdooRepository._cached_uids.get(cache_key)
+        
         # Establecer conexión
         self._connect()
+        
+        # Guardar en caché si se obtuvo nuevo UID
+        if self.uid and not OdooRepository._cached_uids.get(cache_key):
+            OdooRepository._cached_uids[cache_key] = self.uid
     
     def _connect(self):
         """Establece la conexión con Odoo."""
         try:
+            # Si ya tenemos UID, solo conectamos al endpoint de modelos
+            if self.uid:
+                self.models = xmlrpc.client.ServerProxy(f'{self.url}/xmlrpc/2/object')
+                # Verificar si el UID sigue siendo válido con una llamada rápida
+                try:
+                    self.models.execute_kw(self.db, self.uid, self.password, 'res.users', 'read', [[self.uid]], {'fields': ['id']})
+                    return # Conexión exitosa y verificada
+                except Exception:
+                    print("[INFO] UID de caché expirado o inválido. Re-autenticando...")
+                    self.uid = None
+
             # Conectar al endpoint común de autenticación
             common = xmlrpc.client.ServerProxy(f'{self.url}/xmlrpc/2/common')
             

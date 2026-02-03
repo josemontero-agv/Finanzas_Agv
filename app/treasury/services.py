@@ -8,6 +8,7 @@ Implementa reportes para cuentas contables 42 y 43.
 
 from datetime import datetime
 from app.core.calculators import calcular_dias_vencido, clasificar_antiguedad
+from app.core.supabase import SupabaseClient
 
 
 class TreasuryService:
@@ -98,6 +99,7 @@ class TreasuryService:
             reference = kwargs.get('reference')
             has_retention = kwargs.get('has_retention') # NUEVO: Filtro retención
             has_origin = kwargs.get('has_origin') # NUEVO: Filtro origen
+            only_vouchers = kwargs.get('only_vouchers', False) # NUEVO: Solo comprobantes
             include_reconciled = kwargs.get('include_reconciled', False) # NUEVO: Incluir conciliados
             
             # Construir dominio
@@ -108,10 +110,17 @@ class TreasuryService:
                 codes = ['42', '421', '422', '423', '43', '431', '432','433']
             
             # Construir dominio base
-            # Incluir move_types para facturas, notas y letras de cambio
+            # Definir tipos de movimientos según filtro "Solo Comprobantes"
+            if only_vouchers:
+                # Solo comprobantes: facturas, notas de crédito, recibos, pagos
+                move_types = ['in_invoice', 'in_refund', 'in_receipt', 'in_payment']
+            else:
+                # Todos los movimientos: incluir también asientos manuales (entry)
+                move_types = ['in_invoice', 'in_refund', 'entry', 'in_receipt', 'in_payment']
+
             line_domain = [
                 ('parent_state', '=', 'posted'),  # Solo facturas contabilizadas
-                ('move_id.move_type', 'in', ['in_invoice', 'in_refund', 'entry', 'in_receipt', 'in_payment']),
+                ('move_id.move_type', 'in', move_types),
             ]
             
             # Lógica de Fecha de Corte (Historical) vs Reporte Actual
@@ -261,10 +270,26 @@ class TreasuryService:
     def get_accounts_payable_report(self, start_date=None, end_date=None, cutoff_date=None,
                                     supplier=None, limit=0, account_codes=None,
                                     payment_state=None, doc_type_id=None, reference=None,
-                                    has_retention=None, has_origin=None, include_reconciled=False):
+                                    has_retention=None, has_origin=None, only_vouchers=False,
+                                    include_reconciled=False):
         """
         DEPRECATED: Usar get_report_lines_paginated para mejor rendimiento.
         Mantenido por compatibilidad temporal.
+
+        Args:
+            start_date: Fecha inicial
+            end_date: Fecha final
+            cutoff_date: Fecha de corte para reporte histórico
+            supplier: Filtro por proveedor
+            limit: Límite de registros
+            account_codes: Códigos de cuenta
+            payment_state: Estado de pago
+            doc_type_id: Tipo de documento
+            reference: Referencia
+            has_retention: Solo con retención
+            has_origin: Solo con origen
+            only_vouchers: Solo comprobantes (excluir asientos manuales)
+            include_reconciled: Incluir conciliados
         """
         # Redirigir a la versión paginada solicitando "todas" (o muchas) líneas si limit=0
         limit_val = limit if limit and limit > 0 else 10000
@@ -276,6 +301,7 @@ class TreasuryService:
             payment_state=payment_state, doc_type_id=doc_type_id,
             reference=reference,
             has_retention=has_retention, has_origin=has_origin,
+            only_vouchers=only_vouchers,
             include_reconciled=include_reconciled
         )
         return result['data']
@@ -639,3 +665,47 @@ class TreasuryService:
         if isinstance(value, list) and len(value) >= 2:
             return value[1]
         return ''
+
+    def get_netted_report_from_supabase(self, supplier=None):
+        """
+        Consulta la vista de reporte neteado en Supabase.
+        
+        Args:
+            supplier (str, optional): Filtro por nombre de proveedor
+            
+        Returns:
+            list: Datos del reporte neteado
+        """
+        try:
+            supabase = SupabaseClient.get_client()
+            if not supabase:
+                print("[ERROR] No se pudo obtener el cliente de Supabase")
+                return []
+
+            # Consultar la vista que creamos en el dashboard
+            # Usamos select("*") para traer todas las columnas definidas en view_treasury_netted_report
+            query = supabase.table('view_treasury_netted_report').select("*")
+            
+            if supplier:
+                query = query.ilike('supplier_name', f'%{supplier}%')
+                
+            # Ordenar por fecha de emisión descendente
+            query = query.order('date_emitted', desc=True)
+            
+            response = query.execute()
+            
+            # Formatear los datos para que coincidan con lo que el frontend espera
+            # (opcional, pero útil para mantener compatibilidad)
+            formatted_data = []
+            for row in response.data:
+                # Re-clasificar antigüedad y días vencido si es necesario (o usar los de la vista)
+                # Por ahora devolvemos tal cual viene de la vista
+                formatted_data.append(row)
+                
+            return formatted_data
+            
+        except Exception as e:
+            print(f"[ERROR] Error al consultar reporte neteado en Supabase: {e}")
+            import traceback
+            traceback.print_exc()
+            return []

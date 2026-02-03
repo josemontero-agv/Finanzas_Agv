@@ -14,18 +14,28 @@ from dotenv import load_dotenv
 from supabase import create_client
 
 # Cargar entorno
-# Ajustar path para encontrar .env.desarrollo desde scripts/etl/
-env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../.env.desarrollo'))
-load_dotenv(env_path)
+env_prod = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../.env.produccion'))
+env_dev = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../.env.desarrollo'))
 
-# Configuración
-ODOO_URL = os.getenv('ODOO_URL')
-ODOO_DB = os.getenv('ODOO_DB')
-ODOO_USER = os.getenv('ODOO_USER')
-ODOO_PASSWORD = os.getenv('ODOO_PASSWORD')
+if os.path.exists(env_prod):
+    load_dotenv(env_prod)
+    print(f"[INIT] Cargando configuración desde: .env.produccion")
+else:
+    load_dotenv(env_dev)
+    print(f"[INIT] Cargando configuración desde: .env.desarrollo")
 
-SUPABASE_URL = os.getenv('SUPABASE_URL')
-SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+# Configuración (limpiar comillas si existen)
+def get_env_clean(key):
+    val = os.getenv(key)
+    return val.replace('"', '').replace("'", "") if val else None
+
+ODOO_URL = get_env_clean('ODOO_URL')
+ODOO_DB = get_env_clean('ODOO_DB')
+ODOO_USER = get_env_clean('ODOO_USER')
+ODOO_PASSWORD = get_env_clean('ODOO_PASSWORD')
+
+SUPABASE_URL = get_env_clean('SUPABASE_URL')
+SUPABASE_KEY = get_env_clean('SUPABASE_KEY')
 
 class OdooSync:
     def __init__(self):

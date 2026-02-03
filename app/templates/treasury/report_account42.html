@@ -93,12 +93,26 @@
                     <option value="10000">Todos</option>
                 </select>
             </div>
-            <div class="flex items-end pb-2">
+            <div class="flex items-end pb-2 gap-4">
                 <label class="inline-flex items-center cursor-pointer">
-                    <input type="checkbox" 
-                           x-model="filters.include_reconciled" 
+                    <input type="checkbox"
+                           x-model="filters.use_supabase"
                            class="form-checkbox h-5 w-5 text-primary border-gray-300 rounded focus:ring-primary">
-                    <span class="ml-2 text-sm text-gray-700">Incluir Pagados</span>
+                    <span class="ml-2 text-sm font-bold text-blue-700">Usar Supabase (Neteado)</span>
+                </label>
+                <label class="inline-flex items-center cursor-pointer">
+                    <input type="checkbox"
+                           x-model="filters.only_vouchers"
+                           class="form-checkbox h-5 w-5 text-primary border-gray-300 rounded focus:ring-primary"
+                           :disabled="filters.use_supabase">
+                    <span class="ml-2 text-sm text-gray-700" :class="{'text-gray-400': filters.use_supabase}">Solo Comprobantes</span>
+                </label>
+                <label class="inline-flex items-center cursor-pointer">
+                    <input type="checkbox"
+                           x-model="filters.include_reconciled"
+                           class="form-checkbox h-5 w-5 text-primary border-gray-300 rounded focus:ring-primary"
+                           :disabled="filters.use_supabase">
+                    <span class="ml-2 text-sm text-gray-700" :class="{'text-gray-400': filters.use_supabase}">Incluir Pagados</span>
                 </label>
             </div>
         </div>
@@ -256,7 +270,9 @@ function reportController() {
             account_codes_text: '421,422,423,424',
             limit: '1000',
             doc_type_id: '',
-            include_reconciled: false
+            only_vouchers: true, // Por defecto activado
+            include_reconciled: false,
+            use_supabase: true // NUEVO: Por defecto usar Supabase (Neteado)
         },
         allData: [], // Almacena TODOS los datos
         pageSize: 50, // Renderizar de 50 en 50
@@ -330,7 +346,11 @@ function reportController() {
                 
                 console.log('[DEBUG] Parámetros de consulta:', Object.fromEntries(params));
                 
-                const response = await axios.get(`/api/v1/treasury/report/account42?${params}`);
+                const endpoint = this.filters.use_supabase 
+                    ? `/api/v1/treasury/report/account42-netted?${params}` 
+                    : `/api/v1/treasury/report/account42?${params}`;
+                
+                const response = await axios.get(endpoint);
                 
                 console.log('[DEBUG] Respuesta del servidor:', response.data);
                 
@@ -384,36 +404,49 @@ function reportController() {
         appendRows(data) {
             const tbody = document.getElementById('table-body');
             const html = data.map(row => {
+                // Normalización para datos de Supabase vs Odoo
+                const isNetted = this.filters.use_supabase;
+                
+                const invoice_date = isNetted ? row.date_emitted : (row.invoice_date || '');
+                const move_name = isNetted ? row.invoice_name : (row.move_name || '');
+                const ref = isNetted ? row.invoice_ref : (row.ref || '');
+                const supplier_name = row.supplier_name || '';
+                const supplier_vat = row.supplier_vat || '';
+                const amount_total = isNetted ? row.original_amount : (row.amount_total_signed || 0);
+                const actual_balance = isNetted ? row.actual_balance : (row.amount_residual_historical ?? row.amount_residual ?? 0);
+                const payment_state = isNetted ? row.odoo_payment_state : (row.payment_state || '');
+                const date_due = isNetted ? row.date_due : (row.invoice_date_due || '');
+                
                 const diasClass = (row.dias_vencido || 0) > 0 ? 'text-red-600 font-bold' : '';
                 const estadoBadge = row.estado_deuda === 'VENCIDO' 
                     ? 'bg-red-100 text-red-800' 
                     : 'bg-green-100 text-green-800';
                 
                 return `
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.invoice_date || ''}</td>
-                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.date || ''}</td>
-                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.l10n_latam_document_type_id || '(00)'}</td>
-                        <td class="px-3 py-2 text-sm text-left truncate-cell" title="${row.move_name || ''}">${row.move_name || ''}</td>
+                    <tr class="hover:bg-gray-50 transition-colors ${isNetted ? 'bg-blue-50/30' : ''}">
+                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${invoice_date}</td>
+                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${isNetted ? '-' : (row.date || '')}</td>
+                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${isNetted ? 'Factura' : (row.l10n_latam_document_type_id || '(00)')}</td>
+                        <td class="px-3 py-2 text-sm text-left truncate-cell" title="${move_name}">${move_name}</td>
                         <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.l10n_latam_boe_number || ''}</td>
-                        <td class="px-3 py-2 text-sm text-left truncate-cell" title="${row.ref || ''}">${row.ref || ''}</td>
+                        <td class="px-3 py-2 text-sm text-left truncate-cell" title="${ref}">${ref}</td>
                         <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.invoice_origin || ''}</td>
                         <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.account_code || ''}</td>
                         <td class="px-3 py-2 text-sm text-left truncate-cell" title="${row.account_name || ''}">${row.account_name || ''}</td>
-                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.supplier_vat || ''}</td>
-                        <td class="px-3 py-2 text-sm text-left truncate-cell" title="${row.supplier_name || ''}">${row.supplier_name || ''}</td>
+                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${supplier_vat}</td>
+                        <td class="px-3 py-2 text-sm text-left truncate-cell" title="${supplier_name}">${supplier_name}</td>
                         <td class="px-3 py-2 text-sm text-left truncate-cell" title="${row.narration || ''}">${row.narration || ''}</td>
                         <td class="px-3 py-2 text-sm text-left truncate-cell" title="${row.supplier_email || ''}">${row.supplier_email || ''}</td>
                         
                         <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.currency_id || ''}</td>
-                        <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${this.formatNumberWithCommas(row.amount_total_in_currency_signed)}</td>
-                        <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${this.formatNumberWithCommas(row.amount_residual_with_retention)}</td>
-                        <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${this.formatNumberWithCommas(row.amount_total_signed)}</td>
-                        <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${this.formatNumberWithCommas(row.debit)}</td>
-                        <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${this.formatNumberWithCommas(row.credit)}</td>
-                        <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${this.formatNumberWithCommas(row.amount_residual_historical ?? row.amount_residual)}</td>
-                        <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${this.formatNumberWithCommas(row.paid_after_cutoff)}</td>
-                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.invoice_date_due || ''}</td>
+                        <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${isNetted ? '-' : this.formatNumberWithCommas(row.amount_total_in_currency_signed)}</td>
+                        <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${isNetted ? '-' : this.formatNumberWithCommas(row.amount_residual_with_retention)}</td>
+                        <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${this.formatNumberWithCommas(amount_total)}</td>
+                        <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${isNetted ? '-' : this.formatNumberWithCommas(row.debit)}</td>
+                        <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${isNetted ? '-' : this.formatNumberWithCommas(row.credit)}</td>
+                        <td class="px-3 py-2 text-sm text-right whitespace-nowrap font-bold text-blue-800">${this.formatNumberWithCommas(actual_balance)}</td>
+                        <td class="px-3 py-2 text-sm text-right whitespace-nowrap">${isNetted ? '-' : this.formatNumberWithCommas(row.paid_after_cutoff)}</td>
+                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${date_due}</td>
                         <td class="px-3 py-2 text-sm text-center whitespace-nowrap ${diasClass}">${row.dias_vencido || 0}</td>
                         <td class="px-3 py-2 text-sm text-center whitespace-nowrap">
                             <span class="px-2 py-1 rounded text-xs ${estadoBadge}">${row.estado_deuda || ''}</span>
@@ -421,7 +454,7 @@ function reportController() {
                         <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.antiguedad || ''}</td>
                         
                         <!-- Eliminado Condición Pago -->
-                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${row.payment_state || ''}</td>
+                        <td class="px-3 py-2 text-sm text-left whitespace-nowrap">${payment_state}</td>
                         <!-- Eliminado Usuario Responsable -->
                     </tr>
                 `;
@@ -459,6 +492,7 @@ function reportController() {
                 limit: '1000',
                 doc_type_id: '',
                 reference: '',
+                only_vouchers: true, // Por defecto activado
                 include_reconciled: false
             };
             this.applyFilters();

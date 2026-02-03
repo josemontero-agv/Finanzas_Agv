@@ -14,13 +14,18 @@ Uso:
 """
 
 import sys
+import os
 from app import create_app
 
-# Determinar el entorno desde argumentos de línea de comandos
-if len(sys.argv) > 1:
-    environment = sys.argv[1]
-else:
-    environment = 'production'  # Por defecto
+# Determinar el entorno desde argumentos o variable de entorno
+env_from_args = sys.argv[1] if len(sys.argv) > 1 else None
+env_from_vars = (
+    os.getenv('APP_ENV') or
+    os.getenv('FLASK_ENV') or
+    os.getenv('ENV')
+)
+
+environment = (env_from_args or env_from_vars or 'development').lower()
 
 # Validar entorno
 valid_environments = ['development', 'production', 'testing']
@@ -55,7 +60,7 @@ if __name__ == '__main__':
         app.run(
             host='0.0.0.0',
             port=5000,
-            debug=False
+            debug=True
         )
     else:
         # Testing mode

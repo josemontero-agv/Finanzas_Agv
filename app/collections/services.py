@@ -6,7 +6,9 @@ Lógica de negocio para reportes de cuentas por cobrar.
 Migrado desde dashboard-Cobranzas/services/report_service.py
 """
 
+import os
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
 from app.core.calculators import calcular_mora, calcular_dias_vencido, clasificar_antiguedad
 
 
@@ -330,36 +332,81 @@ class CollectionsService:
             partner_ids = list(set([l['partner_id'][0] for l in lines if l.get('partner_id')]))
             account_ids = list(set([l['account_id'][0] for l in lines if l.get('account_id')]))
             
-            # Obtener datos de facturas
+            # 3. Obtener datos relacionados en PARALELO para reducir latencia
             move_map = {}
-            if move_ids:
-                move_fields = [
-                    'id', 'name', 'payment_state', 'invoice_date', 'invoice_date_due',
-                    'invoice_origin', 'l10n_latam_document_type_id', 'amount_total',
-                    'amount_residual', 'amount_residual_with_retention', 'amount_residual_signed', 'currency_id',
-                    'l10n_latam_boe_number',
-                    'ref', 'invoice_payment_term_id', 'invoice_user_id',
-                    'sales_channel_id', 'sale_type_id',
-                ]
-                moves = self.repository.read('account.move', move_ids, move_fields)
-                move_map = {m['id']: m for m in moves}
-            
-            # Obtener datos de clientes
             partner_map = {}
+            account_map = {}
+            credit_map = {}
+            reconciliation_map = {}
+            
+            def fetch_moves():
+                if move_ids:
+                    move_fields = [
+                        'id', 'name', 'payment_state', 'invoice_date', 'invoice_date_due',
+                        'invoice_origin', 'l10n_latam_document_type_id', 'amount_total',
+                        'amount_residual', 'amount_residual_with_retention', 'amount_residual_signed', 'currency_id',
+                        'l10n_latam_boe_number',
+                        'ref', 'invoice_payment_term_id', 'invoice_user_id',
+                        'sales_channel_id', 'sale_type_id', 'team_id',
+                    ]
+                    moves = self.repository.read('account.move', move_ids, move_fields)
+                    return {m['id']: m for m in moves}
+                return {}
+
+            def fetch_partners():
+                if partner_ids:
+                    partner_fields = [
+                        'id', 'name', 'vat', 'state_id', 'l10n_pe_district',
+                        'country_code', 'country_id', 'groups_ids'
+                    ]
+                    partners = self.repository.read('res.partner', partner_ids, partner_fields)
+                    return {p['id']: p for p in partners}
+                return {}
+
+            def fetch_accounts():
+                if account_ids:
+                    accounts = self.repository.read('account.account', account_ids, ['id', 'code', 'name'])
+                    return {a['id']: a for a in accounts}
+                return {}
+
+            def fetch_credit():
+                if partner_ids:
+                    try:
+                        credit_customers = self.repository.search_read(
+                            'agr.credit.customer',
+                            [('partner_id', 'in', partner_ids)],
+                            ['partner_id', 'sub_channel_id']
+                        )
+                        return {cc['partner_id'][0]: cc for cc in credit_customers}
+                    except Exception as e:
+                        print(f"[WARN] No se pudo obtener agr.credit.customer: {e}")
+                return {}
+
+            def fetch_reconciliations():
+                if cutoff_date:
+                    return self._get_reconciliation_amounts(lines, cutoff_date)
+                return {}
+
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                f_moves = executor.submit(fetch_moves)
+                f_partners = executor.submit(fetch_partners)
+                f_accounts = executor.submit(fetch_accounts)
+                f_credit = executor.submit(fetch_credit)
+                f_reconcile = executor.submit(fetch_reconciliations)
+                
+                move_map = f_moves.result()
+                partner_map = f_partners.result()
+                account_map = f_accounts.result()
+                credit_map = f_credit.result()
+                reconciliation_map = f_reconcile.result()
+
+            # Obtener nombres de grupos de cliente (segundo nivel de datos)
             partner_groups_map = {}
             partner_group_ids = set()
-            if partner_ids:
-                partner_fields = [
-                    'id', 'name', 'vat', 'state_id', 'l10n_pe_district',
-                    'country_code', 'country_id', 'groups_ids'
-                ]
-                partners = self.repository.read('res.partner', partner_ids, partner_fields)
-                for partner in partners:
-                    partner_map[partner['id']] = partner
-                    for gid in partner.get('groups_ids') or []:
-                        partner_group_ids.add(gid)
+            for p in partner_map.values():
+                for gid in p.get('groups_ids') or []:
+                    partner_group_ids.add(gid)
 
-            group_name_map = {}
             if partner_group_ids:
                 try:
                     group_records = self.repository.read(
@@ -368,41 +415,11 @@ class CollectionsService:
                         ['id', 'name']
                     )
                     group_name_map = {g['id']: g.get('name', '') for g in group_records}
+                    for partner_id_key, partner_data in partner_map.items():
+                        names = [group_name_map[gid] for gid in partner_data.get('groups_ids') or [] if gid in group_name_map]
+                        partner_groups_map[partner_id_key] = ', '.join(names)
                 except Exception as e:
                     print(f"[WARN] No se pudieron obtener los nombres de grupos de cliente: {e}")
-
-            if partner_map:
-                for partner_id_key, partner_data in partner_map.items():
-                    names = []
-                    for gid in partner_data.get('groups_ids') or []:
-                        group_name = group_name_map.get(gid)
-                        if group_name:
-                            names.append(group_name)
-                    partner_groups_map[partner_id_key] = ', '.join(names)
-            
-            # Obtener datos de cuentas
-            account_map = {}
-            if account_ids:
-                accounts = self.repository.read('account.account', account_ids, ['id', 'code', 'name'])
-                account_map = {a['id']: a for a in accounts}
-            
-            # Obtener información de crédito (para Sub Canal)
-            credit_map = {}
-            if partner_ids:
-                try:
-                    credit_customers = self.repository.search_read(
-                        'agr.credit.customer',
-                        [('partner_id', 'in', partner_ids)],
-                        ['partner_id', 'sub_channel_id']
-                    )
-                    credit_map = {cc['partner_id'][0]: cc for cc in credit_customers}
-                except Exception as e:
-                    print(f"[WARN] No se pudo obtener agr.credit.customer: {e}")
-
-            # Obtener conciliaciones para histórico
-            reconciliation_map = {}
-            if cutoff_date:
-                reconciliation_map = self._get_reconciliation_amounts(lines, cutoff_date)
             
             # Combinar datos
             rows = []
@@ -476,12 +493,15 @@ class CollectionsService:
                     'invoice_origin': move.get('invoice_origin', ''),
                     'account_id/code': account.get('code', ''),
                     'account_id/name': account.get('name', ''),
-                    'patner_id/vat': partner.get('vat', ''),
-                    'patner_id': partner.get('name', ''),
-                    'patner_id/state_id': m2o_name(partner.get('state_id')),
-                    'patner_id/l10n_pe_district': partner.get('l10n_pe_district', ''),
-                    'patner_id/country_code': country_code,
-                    'patner_id/country_id': m2o_name(partner.get('country_id')),
+                    'partner_vat': partner.get('vat', ''),
+                    'partner_name': partner.get('name', ''),
+                    'partner_id': partner.get('name', ''), # Alias para compatibilidad
+                    'patner_id/vat': partner.get('vat', ''), # Alias con typo para compatibilidad
+                    'patner_id': partner.get('name', ''), # Alias con typo para compatibilidad
+                    'partner_state': m2o_name(partner.get('state_id')),
+                    'partner_district': partner.get('l10n_pe_district', ''),
+                    'partner_country_code': country_code,
+                    'partner_country_name': m2o_name(partner.get('country_id')),
                     'currency_id': m2o_name(line.get('currency_id') or move.get('currency_id')),
                     'amount_total': move.get('amount_total', 0.0),
                     'amount_residual_with_retention': move.get('amount_residual_with_retention', 0.0),
@@ -496,10 +516,10 @@ class CollectionsService:
                     'ref': move.get('ref', ''),
                     'invoice_payment_term_id': m2o_name(move.get('invoice_payment_term_id')),
                     'name': line.get('name', ''),
-                    'move_id/invoice_user_id': m2o_name(move.get('invoice_user_id')),
-                    'move_id/sales_channel_id': m2o_name(move.get('sales_channel_id')),
-                    'move_id/sales_type_id': m2o_name(move.get('sale_type_id')),
-                    'move_id/payment_state': move.get('payment_state', ''),
+                    'invoice_user_name': m2o_name(move.get('invoice_user_id')),
+                    'sales_channel_name': m2o_name(move.get('sales_channel_id')),
+                    'sales_type_name': m2o_name(move.get('sale_type_id')),
+                    'team_name': m2o_name(move.get('team_id')),
                     'partner_groups': partner_groups_display,
                     'sub_channel_id': sub_channel_final,
                     # Campos calculados
@@ -612,43 +632,84 @@ class CollectionsService:
                     'has_more': False
                 }
             
-            # 4. Procesar líneas (igual que get_report_lines)
-            today = datetime.today().date()
-            
-            move_ids = list(set([l['move_id'][0] for l in lines if l.get('move_id')]))
-            partner_ids = list(set([l['partner_id'][0] for l in lines if l.get('partner_id')]))
-            account_ids = list(set([l['account_id'][0] for l in lines if l.get('account_id')]))
-            
-            # Obtener datos de facturas
+            # 4. Procesar líneas con datos relacionados en PARALELO
             move_map = {}
-            if move_ids:
-                move_fields = [
-                    'id', 'name', 'payment_state', 'invoice_date', 'invoice_date_due',
-                    'invoice_origin', 'l10n_latam_document_type_id', 'amount_total',
-                    'amount_residual', 'amount_residual_with_retention', 'amount_residual_signed', 'currency_id',
-                    'l10n_latam_boe_number', 'ref', 'invoice_payment_term_id', 'invoice_user_id',
-                    'sales_channel_id', 'sale_type_id',
-                ]
-                moves = self.repository.read('account.move', move_ids, move_fields)
-                move_map = {m['id']: m for m in moves}
-            
-            # Obtener datos de clientes
             partner_map = {}
+            account_map = {}
+            credit_map = {}
+            reconciliation_map = {}
+
+            def fetch_moves():
+                if move_ids:
+                    move_fields = [
+                        'id', 'name', 'payment_state', 'invoice_date', 'invoice_date_due',
+                        'invoice_origin', 'l10n_latam_document_type_id', 'amount_total',
+                        'amount_residual', 'amount_residual_with_retention', 'amount_residual_signed', 'currency_id',
+                        'l10n_latam_boe_number', 'ref', 'invoice_payment_term_id', 'invoice_user_id',
+                        'sales_channel_id', 'sale_type_id', 'team_id',
+                    ]
+                    moves = self.repository.read('account.move', move_ids, move_fields)
+                    return {m['id']: m for m in moves}
+                return {}
+
+            def fetch_partners():
+                if partner_ids:
+                    partner_fields = [
+                        'id', 'name', 'vat', 'state_id', 'l10n_pe_district',
+                        'country_code', 'country_id', 'groups_ids'
+                    ]
+                    partners = self.repository.read('res.partner', partner_ids, partner_fields)
+                    return {p['id']: p for p in partners}
+                return {}
+
+            def fetch_accounts():
+                if account_ids:
+                    accounts = self.repository.read('account.account', account_ids, ['id', 'code', 'name'])
+                    return {a['id']: a for a in accounts}
+                return {}
+
+            def fetch_credit():
+                if partner_ids:
+                    try:
+                        credit_customers = self.repository.search_read(
+                            'agr.credit.customer',
+                            [('partner_id', 'in', partner_ids)],
+                            ['partner_id', 'sub_channel_id']
+                        )
+                        result_map = {}
+                        for cred in credit_customers:
+                            pid = cred['partner_id'][0] if isinstance(cred.get('partner_id'), list) else cred.get('partner_id')
+                            result_map[pid] = cred
+                        return result_map
+                    except Exception as e:
+                        print(f"[WARN] No se pudo obtener sub_channel_id: {e}")
+                return {}
+
+            def fetch_reconciliations():
+                if cutoff_date:
+                    return self._get_reconciliation_amounts(lines, cutoff_date)
+                return {}
+
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                f_moves = executor.submit(fetch_moves)
+                f_partners = executor.submit(fetch_partners)
+                f_accounts = executor.submit(fetch_accounts)
+                f_credit = executor.submit(fetch_credit)
+                f_reconcile = executor.submit(fetch_reconciliations)
+                
+                move_map = f_moves.result()
+                partner_map = f_partners.result()
+                account_map = f_accounts.result()
+                credit_map = f_credit.result()
+                reconciliation_map = f_reconcile.result()
+
+            # Obtener nombres de grupos de cliente (segundo nivel)
             partner_groups_map = {}
             partner_group_ids = set()
-            if partner_ids:
-                partner_fields = [
-                    'id', 'name', 'vat', 'state_id', 'l10n_pe_district',
-                    'country_code', 'country_id', 'groups_ids'
-                ]
-                partners = self.repository.read('res.partner', partner_ids, partner_fields)
-                for partner in partners:
-                    partner_map[partner['id']] = partner
-                    for gid in partner.get('groups_ids') or []:
-                        partner_group_ids.add(gid)
-            
-            # Obtener nombres de grupos
-            group_name_map = {}
+            for p in partner_map.values():
+                for gid in p.get('groups_ids') or []:
+                    partner_group_ids.add(gid)
+
             if partner_group_ids:
                 try:
                     group_records = self.repository.read(
@@ -657,43 +718,11 @@ class CollectionsService:
                         ['id', 'name']
                     )
                     group_name_map = {g['id']: g.get('name', '') for g in group_records}
+                    for partner_id_key, partner_data in partner_map.items():
+                        names = [group_name_map[gid] for gid in partner_data.get('groups_ids') or [] if gid in group_name_map]
+                        partner_groups_map[partner_id_key] = ', '.join(names)
                 except Exception as e:
                     print(f"[WARN] No se pudieron obtener nombres de grupos: {e}")
-            
-            if partner_map:
-                for partner_id_key, partner_data in partner_map.items():
-                    names = []
-                    for gid in partner_data.get('groups_ids') or []:
-                        group_name = group_name_map.get(gid)
-                        if group_name:
-                            names.append(group_name)
-                    partner_groups_map[partner_id_key] = ', '.join(names)
-            
-            # Obtener datos de cuentas
-            account_map = {}
-            if account_ids:
-                accounts = self.repository.read('account.account', account_ids, ['id', 'code', 'name'])
-                account_map = {a['id']: a for a in accounts}
-            
-            # Obtener Sub Canal
-            credit_map = {}
-            if partner_ids:
-                try:
-                    credit_customers = self.repository.search_read(
-                        'agr.credit.customer',
-                        [('partner_id', 'in', partner_ids)],
-                        ['partner_id', 'sub_channel_id']
-                    )
-                    for cred in credit_customers:
-                        pid = cred['partner_id'][0] if isinstance(cred.get('partner_id'), list) else cred.get('partner_id')
-                        credit_map[pid] = cred
-                except Exception as e:
-                    print(f"[WARN] No se pudo obtener sub_channel_id: {e}")
-            
-            # Obtener conciliaciones para histórico
-            reconciliation_map = {}
-            if cutoff_date:
-                reconciliation_map = self._get_reconciliation_amounts(lines, cutoff_date)
             
             # Procesar líneas
             rows = []
@@ -790,6 +819,7 @@ class CollectionsService:
                     'move_id/sales_channel_id': m2o_name(move.get('sales_channel_id')),
                     'move_id/sales_type_id': m2o_name(move.get('sale_type_id')),
                     'move_id/payment_state': move.get('payment_state', ''),
+                    'team_id': m2o_name(move.get('team_id')),
                     'partner_groups': partner_groups_display,
                     'sub_channel_id': sub_channel_final,
                     'dias_vencido': dias_vencido,
@@ -819,6 +849,111 @@ class CollectionsService:
             traceback.print_exc()
             raise
     
+    def get_report_summary(self, **kwargs):
+        """
+        Obtiene resumen agregado directamente de Odoo usando read_group.
+        Mucho más rápido que descargar todas las líneas.
+        
+        Args:
+            **kwargs: Filtros (start_date, end_date, customer, account_codes, sales_channel_id, doc_type_id)
+            
+        Returns:
+            dict: Resumen por cuenta y total general
+        """
+        try:
+            print("[INFO] Obteniendo resumen de reporte CxC via read_group...")
+            
+            if not self.repository.is_connected():
+                return None
+                
+            # Extraer filtros
+            start_date = kwargs.get('start_date')
+            end_date = kwargs.get('end_date')
+            customer = kwargs.get('customer')
+            account_codes = kwargs.get('account_codes')
+            sales_channel_id = kwargs.get('sales_channel_id')
+            doc_type_id = kwargs.get('doc_type_id')
+            cutoff_date = kwargs.get('cutoff_date')
+            include_reconciled = kwargs.get('include_reconciled', False)
+
+            if cutoff_date:
+                # Si hay fecha de corte, read_group no es suficiente para calcular paid_after_cutoff
+                # Retornamos None para indicar que debe usarse el método tradicional
+                return None
+
+            line_domain = self._build_report_domain(
+                start_date=start_date,
+                end_date=end_date,
+                customer=customer,
+                account_codes=account_codes,
+                sales_channel_id=sales_channel_id,
+                doc_type_id=doc_type_id,
+                include_reconciled=include_reconciled
+            )
+            
+            # Campos a agregar
+            fields = ['debit', 'credit', 'amount_residual']
+            groupby = ['account_id']
+            
+            groups = self.repository.read_group('account.move.line', line_domain, fields, groupby)
+            
+            overall = {
+                'debit': 0.0,
+                'credit': 0.0,
+                'pending_cutoff': 0.0,
+                'paid_after_cutoff': 0.0,
+                'saldo': 0.0,
+                'count': 0
+            }
+            
+            by_account = []
+            for g in groups:
+                acc_info = g.get('account_id')
+                acc_code = ''
+                acc_name = ''
+                if isinstance(acc_info, list) and len(acc_info) >= 2:
+                    # En read_group, Odoo a veces no devuelve el código en el nombre
+                    # Necesitamos el código exacto
+                    acc_id = acc_info[0]
+                    acc_name_full = acc_info[1]
+                    # Intentar extraer código del nombre "CODE NAME"
+                    parts = acc_name_full.split(' ', 1)
+                    acc_code = parts[0]
+                    acc_name = parts[1] if len(parts) > 1 else acc_name_full
+                
+                debit = float(g.get('debit', 0.0) or 0.0)
+                credit = float(g.get('credit', 0.0) or 0.0)
+                residual = abs(float(g.get('amount_residual', 0.0) or 0.0))
+                count = int(g.get('__count', 0))
+                
+                overall['debit'] += debit
+                overall['credit'] += credit
+                overall['pending_cutoff'] += residual
+                overall['count'] += count
+                
+                by_account.append({
+                    'account_code': acc_code,
+                    'account_name': acc_name,
+                    'debit': debit,
+                    'credit': credit,
+                    'pending_cutoff': residual,
+                    'paid_after_cutoff': 0.0,
+                    'saldo': debit - credit,
+                    'count': count
+                })
+            
+            overall['saldo'] = overall['debit'] - overall['credit']
+            by_account.sort(key=lambda x: x['account_code'])
+            
+            return {
+                'overall': overall,
+                'by_account': by_account
+            }
+            
+        except Exception as e:
+            print(f"[ERROR] Error en get_report_summary: {e}")
+            return None
+
     def _get_reconciliation_amounts(self, lines, cutoff_date=None):
         """
         Obtiene montos conciliados por línea y separa pagos antes/después del corte.
@@ -1033,28 +1168,40 @@ class CollectionsService:
             move_ids = list(set([l['move_id'][0] for l in lines if l.get('move_id')]))
             partner_ids = list(set([l['partner_id'][0] for l in lines if l.get('partner_id')]))
             
-            # Obtener facturas
+            # Obtener datos relacionados en PARALELO
             move_map = {}
-            if move_ids:
-                move_fields = [
-                    'id', 'name', 'payment_state', 'invoice_date', 'invoice_date_due',
-                    'invoice_origin', 'l10n_latam_document_type_id', 'amount_total',
-                    'amount_residual', 'currency_id', 'invoice_payment_term_id',
-                    'invoice_user_id', 'amount_total_signed', 'amount_residual_with_retention',
-                ]
-                moves = self.repository.read('account.move', move_ids, move_fields)
-                move_map = {m['id']: m for m in moves}
-                
-                # Filtrar por payment_state si se especificó
-                if payment_state:
-                    move_map = {k: v for k, v in move_map.items() if v.get('payment_state') == payment_state}
-            
-            # Obtener clientes
             partner_map = {}
-            if partner_ids:
-                partner_fields = ['id', 'name', 'vat', 'country_code', 'country_id']
-                partners = self.repository.read('res.partner', partner_ids, partner_fields)
-                partner_map = {p['id']: p for p in partners}
+
+            def fetch_moves():
+                if move_ids:
+                    move_fields = [
+                        'id', 'name', 'payment_state', 'invoice_date', 'invoice_date_due',
+                        'invoice_origin', 'l10n_latam_document_type_id', 'amount_total',
+                        'amount_residual', 'currency_id', 'invoice_payment_term_id',
+                        'invoice_user_id', 'amount_total_signed', 'amount_residual_with_retention',
+                        'team_id',
+                    ]
+                    moves = self.repository.read('account.move', move_ids, move_fields)
+                    res = {m['id']: m for m in moves}
+                    # Filtrar por payment_state si se especificó
+                    if payment_state:
+                        res = {k: v for k, v in res.items() if v.get('payment_state') == payment_state}
+                    return res
+                return {}
+
+            def fetch_partners():
+                if partner_ids:
+                    partner_fields = ['id', 'name', 'vat', 'country_code', 'country_id']
+                    partners = self.repository.read('res.partner', partner_ids, partner_fields)
+                    return {p['id']: p for p in partners}
+                return {}
+
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                f_moves = executor.submit(fetch_moves)
+                f_partners = executor.submit(fetch_partners)
+                
+                move_map = f_moves.result()
+                partner_map = f_partners.result()
             
             # Procesar y calcular campos
             rows = []
@@ -1117,6 +1264,7 @@ class CollectionsService:
                     'estado_deuda': estado_deuda,
                     'antiguedad': antiguedad,
                     'invoice_user_id': m2o_name(move.get('invoice_user_id')),
+                    'team_id': m2o_name(move.get('team_id')),
                     'country_code': partner.get('country_code', ''),
                     'country_id': m2o_name(partner.get('country_id')),
                 }

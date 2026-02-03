@@ -33,14 +33,14 @@ class Config:
     
     # Configuración Redis & Cache
     # Si no hay REDIS_URL, usa memoria simple (para dev sin docker)
-    REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
-    CACHE_TYPE = os.getenv('CACHE_TYPE', 'SimpleCache') # 'RedisCache' en prod
+    REDIS_URL = os.getenv('REDIS_URL')
+    CACHE_TYPE = os.getenv('CACHE_TYPE', 'simple') 
     CACHE_REDIS_URL = REDIS_URL
     CACHE_DEFAULT_TIMEOUT = 300
     
     # Configuración Celery
-    CELERY_BROKER_URL = REDIS_URL
-    CELERY_RESULT_BACKEND = REDIS_URL
+    CELERY_BROKER_URL = REDIS_URL if REDIS_URL else 'memory://'
+    CELERY_RESULT_BACKEND = REDIS_URL if REDIS_URL else 'memory://'
     
     # Configuración Gmail SMTP
     MAIL_SERVER = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
@@ -49,6 +49,10 @@ class Config:
     MAIL_USERNAME = os.getenv('MAIL_USERNAME')
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER', 'jose.montero@agrovetmarket.com')
+    
+    # Modo de desarrollo para correos (redirige todos los correos a un email de prueba)
+    DEV_EMAIL_MODE = os.getenv('DEV_EMAIL_MODE', 'False').lower() == 'true'
+    DEV_EMAIL_RECIPIENT = os.getenv('DEV_EMAIL_RECIPIENT', 'josemontero2415@gmail.com')
     
     @staticmethod
     def init_app(app):
@@ -64,13 +68,19 @@ class DevelopmentConfig(Config):
     
     @classmethod
     def init_app(cls, app):
-        """Carga variables de entorno desde .env.desarrollo."""
-        env_path = os.path.join(os.path.dirname(__file__), '.env.desarrollo')
-        if os.path.exists(env_path):
-            load_dotenv(env_path, override=True)
-            print(f"[INFO] Cargando configuración de desarrollo desde: {env_path}")
-        else:
-            print(f"[WARN] No se encontró archivo .env.desarrollo en: {env_path}")
+        """Carga variables de entorno desde .env.desarrollo y .env.supabase.desarrollo."""
+        base_path = os.path.dirname(__file__)
+        env_files = [
+            os.path.join(base_path, '.env.desarrollo'),           # Odoo
+            os.path.join(base_path, '.env.supabase.desarrollo')   # Supabase
+        ]
+        
+        for env_path in env_files:
+            if os.path.exists(env_path):
+                load_dotenv(env_path, override=True)
+                print(f"[INFO] Cargando configuración desde: {env_path}")
+            else:
+                print(f"[WARN] No se encontró archivo: {env_path}")
         
         # Recargar variables después de load_dotenv
         app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
@@ -83,9 +93,18 @@ class DevelopmentConfig(Config):
         app.config['SUPABASE_URL'] = os.getenv('SUPABASE_URL')
         app.config['SUPABASE_KEY'] = os.getenv('SUPABASE_KEY')
         app.config['SUPABASE_DB_URI'] = os.getenv('SUPABASE_DB_URI')
-        app.config['REDIS_URL'] = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
-        app.config['CELERY_BROKER_URL'] = app.config['REDIS_URL']
-        app.config['CELERY_RESULT_BACKEND'] = app.config['REDIS_URL']
+        
+        # Redis es opcional en desarrollo
+        app.config['REDIS_URL'] = os.getenv('REDIS_URL')
+        
+        if app.config['REDIS_URL']:
+            app.config['CACHE_TYPE'] = 'RedisCache'
+            app.config['CELERY_BROKER_URL'] = app.config['REDIS_URL']
+            app.config['CELERY_RESULT_BACKEND'] = app.config['REDIS_URL']
+        else:
+            app.config['CACHE_TYPE'] = 'simple'
+            app.config['CELERY_BROKER_URL'] = 'memory://'
+            app.config['CELERY_RESULT_BACKEND'] = 'memory://'
         
         app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
         app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
@@ -93,6 +112,10 @@ class DevelopmentConfig(Config):
         app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
         app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
         app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'jose.montero@agrovetmarket.com')
+        
+        # Modo de desarrollo para correos (activado por defecto en desarrollo)
+        app.config['DEV_EMAIL_MODE'] = os.getenv('DEV_EMAIL_MODE', 'True').lower() == 'true'
+        app.config['DEV_EMAIL_RECIPIENT'] = os.getenv('DEV_EMAIL_RECIPIENT', 'josemontero2415@gmail.com')
 
         # Configuración Celery Dict
         app.config['CELERY'] = {
@@ -110,13 +133,19 @@ class ProductionConfig(Config):
     
     @classmethod
     def init_app(cls, app):
-        """Carga variables de entorno desde .env.produccion."""
-        env_path = os.path.join(os.path.dirname(__file__), '.env.produccion')
-        if os.path.exists(env_path):
-            load_dotenv(env_path, override=True)
-            print(f"[INFO] Cargando configuración de producción desde: {env_path}")
-        else:
-            print(f"[WARN] No se encontró archivo .env.produccion en: {env_path}")
+        """Carga variables de entorno desde .env.produccion y .env.supabase.produccion."""
+        base_path = os.path.dirname(__file__)
+        env_files = [
+            os.path.join(base_path, '.env.produccion'),           # Odoo
+            os.path.join(base_path, '.env.supabase.produccion')   # Supabase
+        ]
+        
+        for env_path in env_files:
+            if os.path.exists(env_path):
+                load_dotenv(env_path, override=True)
+                print(f"[INFO] Cargando configuración desde: {env_path}")
+            else:
+                print(f"[WARN] No se encontró archivo: {env_path}")
         
         # Recargar variables después de load_dotenv
         app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'production-secret-key')
@@ -129,10 +158,19 @@ class ProductionConfig(Config):
         app.config['SUPABASE_URL'] = os.getenv('SUPABASE_URL')
         app.config['SUPABASE_KEY'] = os.getenv('SUPABASE_KEY')
         app.config['SUPABASE_DB_URI'] = os.getenv('SUPABASE_DB_URI')
-        app.config['REDIS_URL'] = os.getenv('REDIS_URL') # En prod debe existir
-        app.config['CACHE_TYPE'] = 'RedisCache'
-        app.config['CELERY_BROKER_URL'] = app.config['REDIS_URL']
-        app.config['CELERY_RESULT_BACKEND'] = app.config['REDIS_URL']
+        
+        # Redis es opcional en producción si se prefiere usar caché simple
+        app.config['REDIS_URL'] = os.getenv('REDIS_URL')
+        
+        if app.config['REDIS_URL']:
+            app.config['CACHE_TYPE'] = 'RedisCache'
+            app.config['CELERY_BROKER_URL'] = app.config['REDIS_URL']
+            app.config['CELERY_RESULT_BACKEND'] = app.config['REDIS_URL']
+        else:
+            app.config['CACHE_TYPE'] = 'simple'
+            # Fallback para Celery si no hay Redis (usar memoria para evitar errores de conexión)
+            app.config['CELERY_BROKER_URL'] = 'memory://'
+            app.config['CELERY_RESULT_BACKEND'] = 'memory://'
         
         app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
         app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
@@ -140,6 +178,10 @@ class ProductionConfig(Config):
         app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
         app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
         app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'jose.montero@agrovetmarket.com')
+        
+        # Modo de desarrollo para correos (desactivado en producción)
+        app.config['DEV_EMAIL_MODE'] = os.getenv('DEV_EMAIL_MODE', 'False').lower() == 'true'
+        app.config['DEV_EMAIL_RECIPIENT'] = os.getenv('DEV_EMAIL_RECIPIENT', 'josemontero2415@gmail.com')
 
         # Configuración Celery Dict
         app.config['CELERY'] = {

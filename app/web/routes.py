@@ -5,8 +5,52 @@ Rutas Web (Frontend).
 Sirve las páginas HTML del sistema.
 """
 
-from flask import render_template, request, redirect, url_for, session, flash
+from flask import render_template, request, redirect, url_for, session, flash, jsonify
 from app.web import web_bp
+from app.core.supabase import SupabaseClient
+from app.core.odoo import OdooRepository
+from flask import current_app
+
+
+# =============================================================================
+# HEALTH CHECK (para Next.js)
+# =============================================================================
+
+@web_bp.route('/api/health', methods=['GET'])
+def health_check():
+    """
+    Health check endpoint para verificar estado de los servicios.
+    """
+    try:
+        # Verificar Odoo
+        odoo_status = "disconnected"
+        try:
+            odoo_repo = OdooRepository(
+                url=current_app.config.get('ODOO_URL'),
+                db=current_app.config.get('ODOO_DB'),
+                username=current_app.config.get('ODOO_USER'),
+                password=current_app.config.get('ODOO_PASSWORD')
+            )
+            odoo_status = "connected" if odoo_repo.is_connected() else "disconnected"
+        except:
+            odoo_status = "error"
+        
+        # Verificar Supabase
+        supabase_status = "connected" if SupabaseClient.get_client() else "disconnected"
+        
+        return jsonify({
+            "status": "healthy",
+            "version": "2.0.0",
+            "services": {
+                "odoo": odoo_status,
+                "supabase": supabase_status
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "unhealthy",
+            "error": str(e)
+        }), 500
 
 
 # =============================================================================

@@ -93,6 +93,38 @@ SUPABASE_DB_URI=postgresql://...
 # Redis & Celery (Docker internos)
 REDIS_URL=redis://redis:6379/0
 CELERY_BROKER_URL=redis://redis:6379/0
+
+# Email (Gmail SMTP)
+MAIL_SERVER=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USE_TLS=True
+MAIL_USERNAME=tu-email@gmail.com
+MAIL_PASSWORD=tu-app-password
+MAIL_DEFAULT_SENDER=jose.montero@agrovetmarket.com
+
+# Modo Desarrollo para Correos (Recomendado para Testing)
+DEV_EMAIL_MODE=True
+DEV_EMAIL_RECIPIENT=josemontero2415@gmail.com
+```
+
+### 🔧 Modo Desarrollo de Correos
+
+El proyecto incluye un **Modo Desarrollo** que redirige todos los correos a un email de prueba, evitando envíos accidentales a clientes reales.
+
+**Características:**
+- ✅ Redirige automáticamente todos los correos a `josemontero2415@gmail.com`
+- ✅ Banner visual en la interfaz indicando el modo activo
+- ✅ Confirmación antes de enviar correos
+- ✅ Logs detallados con destinatario original
+- ✅ Activado por defecto en desarrollo
+
+**Para probar:**
+```bash
+# Verificar configuración
+python test_dev_email_mode.py
+
+# Ver documentación completa
+docs/MODO_DESARROLLO_CORREOS.md
 ```
 
 ## 📚 Documentación Completa

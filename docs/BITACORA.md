@@ -1,6 +1,6 @@
 # 📋 BITÁCORA DE CAMBIOS - SISTEMA FINANCIERO AGV
 
-> **Última Actualización:** Diciembre 2024  
+> **Última Actualización:** Diciembre 2024
 > **Proyecto:** Finanzas_Agv - Sistema de Gestión Financiera
 
 ---
@@ -8,6 +8,7 @@
 ## 📅 Diciembre 2024 - Análisis Arquitectónico y Recomendaciones de Stack
 
 ### 🎯 Objetivo
+
 Realizar análisis arquitectónico completo del sistema actual y proporcionar recomendaciones técnicas fundamentadas para mejoras de stack, base de datos y escalabilidad.
 
 ### ✅ Cambios Implementados
@@ -15,9 +16,11 @@ Realizar análisis arquitectónico completo del sistema actual y proporcionar re
 #### 1. **Análisis Arquitectónico Completo** 🏗️
 
 **Archivo Creado:**
+
 - `docs/mejoras-stack-arquitectura/analisis-arquitectonico-completo.md`
 
 **Contenido:**
+
 - ✅ Análisis de arquitectura actual (XML-RPC, sin DB local)
 - ✅ Refutación/validación de recomendaciones previas
 - ✅ Recomendación crítica: PostgreSQL read replica (50-100x más rápido)
@@ -27,12 +30,14 @@ Realizar análisis arquitectónico completo del sistema actual y proporcionar re
 - ✅ Stack tecnológico recomendado (mínimo y escalable)
 
 **Hallazgos Clave:**
+
 1. **XML-RPC es el cuello de botella principal** - Consultas 50-100x más lentas que SQL directo
 2. **Base de datos local es crítica** - PostgreSQL read replica recomendado
 3. **Celery + Redis necesarios** - Para ETL, exportaciones asíncronas y reportes programados
 4. **Monolito modular es suficiente** - No requiere microservicios aún
 
 **Recomendaciones Prioritarias:**
+
 - **Fase 1 (Crítico):** Implementar PostgreSQL read replica
 - **Fase 2 (Importante):** Implementar Celery + Redis
 - **Fase 3 (Mejoras):** Optimizaciones y monitoreo
@@ -40,6 +45,7 @@ Realizar análisis arquitectónico completo del sistema actual y proporcionar re
 #### 2. **Reorganización de Documentación** 📚
 
 **Archivos Movidos:**
+
 - `CAMBIOS_VERSION_HIBRIDA.md` → `docs/CAMBIOS_VERSION_HIBRIDA.md`
 - `DIAGNOSTICO_CARGA.md` → `docs/DIAGNOSTICO_CARGA.md`
 - `DIAGNOSTICO_KPIS.md` → `docs/DIAGNOSTICO_KPIS.md`
@@ -47,11 +53,13 @@ Realizar análisis arquitectónico completo del sistema actual y proporcionar re
 - `SCRIPTS_README.md` → `docs/SCRIPTS_README.md`
 
 **Actualizaciones:**
+
 - ✅ `mkdocs.yml` actualizado con nueva estructura
 - ✅ `ESTRUCTURA_PROYECTO.md` actualizado con estructura completa
 - ✅ Referencias actualizadas en documentación
 
 **Impacto:**
+
 - Documentación centralizada en `docs/`
 - Mejor organización y navegación
 - Facilita mantenimiento y actualización
@@ -61,6 +69,7 @@ Realizar análisis arquitectónico completo del sistema actual y proporcionar re
 ## 📅 Noviembre 14, 2025 - Mejoras en Reportes de Cuentas por Cobrar y Pagar
 
 ### 🎯 Objetivo
+
 Estandarizar la interfaz de usuario y funcionalidad entre los reportes de Cuenta 12 (CxC) y Cuenta 42 (CxP), mejorando la experiencia del usuario y agregando campos calculados.
 
 ### ✅ Cambios Implementados
@@ -68,11 +77,14 @@ Estandarizar la interfaz de usuario y funcionalidad entre los reportes de Cuenta
 #### 1. **Reporte Cuenta 12 - Interfaz Simplificada** 🔄
 
 **Archivos Modificados:**
+
 - `app/templates/collections/report_account12.html`
 - `app/collections/services.py`
 
 **Cambios Realizados:**
+
 - ✅ **Tabla simplificada**: Reducida a 11 columnas principales (anteriormente 25)
+
   - Factura
   - Cliente
   - RUC/DNI
@@ -84,30 +96,31 @@ Estandarizar la interfaz de usuario y funcionalidad entre los reportes de Cuenta
   - Días Vencido
   - Estado
   - Antigüedad
-
 - ✅ **Integración de DataTables**: Tabla interactiva con:
+
   - Paginación automática (25 registros por página)
   - Ordenamiento por columnas
   - Búsqueda integrada
   - Idioma en español
-
 - ✅ **Estadísticas mejoradas**:
+
   - Total Registros
   - Monto Total
   - Saldo Pendiente
   - **Deuda Vencida** (nuevo)
-
 - ✅ **Campos calculados agregados al backend**:
+
   - `dias_vencido`: Días transcurridos desde vencimiento
   - `estado_deuda`: VIGENTE o VENCIDO
   - `antiguedad`: Clasificación por rangos (Vigente, Atraso Corto, Medio, Prolongado, Cobranza Judicial)
-
 - ✅ **Estilos visuales mejorados**:
+
   - Días vencidos en rojo y negrita cuando > 0
   - Badges de colores para estados (verde: VIGENTE, rojo: VENCIDO)
   - Formato de moneda consistente
 
 **Código Clave - Cálculo de Campos:**
+
 ```python
 # En collections/services.py
 dias_vencido = calcular_dias_vencido(date_maturity, today)
@@ -120,9 +133,11 @@ estado_deuda = 'VENCIDO' if dias_vencido > 0 else 'VIGENTE'
 #### 2. **Resaltado de Usuario en Header** ⭐
 
 **Archivo Modificado:**
+
 - `app/templates/base.html`
 
 **Cambios Realizados:**
+
 - ✅ Clase CSS `.user-highlight` creada con:
   - Degradado dorado (`#ffd700` → `#ffed4e`)
   - Bordes redondeados (20px)
@@ -131,6 +146,7 @@ estado_deuda = 'VENCIDO' if dias_vencido > 0 else 'VIGENTE'
   - Efecto de elevación en hover
 
 **Código Clave - CSS:**
+
 ```css
 .user-highlight {
     background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
@@ -144,6 +160,7 @@ estado_deuda = 'VENCIDO' if dias_vencido > 0 else 'VIGENTE'
 ```
 
 **Impacto:**
+
 - El nombre de usuario ahora es claramente visible y destacado
 - Mejora la experiencia de usuario al identificar quién está logueado
 - Diseño elegante y profesional
@@ -153,20 +170,24 @@ estado_deuda = 'VENCIDO' if dias_vencido > 0 else 'VIGENTE'
 #### 3. **Filtros Dinámicos en Cuenta 12** 🔍
 
 **Archivos Involucrados:**
+
 - `app/templates/collections/report_account12.html`
 - `app/collections/routes.py`
 - `app/collections/services.py`
 
 **Nuevos Filtros Agregados:**
+
 - ✅ **Canal de Venta** (dropdown dinámico desde Odoo)
 - ✅ **Tipo de Documento** (dropdown dinámico desde Odoo)
 
 **Endpoint Nuevo:**
+
 ```
 GET /api/v1/collections/filter-options
 ```
 
 **Funcionalidad:**
+
 - Carga automática de opciones desde Odoo al iniciar la página
 - Filtros aplicados en tiempo real
 - Integración con exportación a Excel
@@ -176,10 +197,12 @@ GET /api/v1/collections/filter-options
 #### 4. **Exportación a Excel Mejorada** 📊
 
 **Archivos Modificados:**
+
 - `app/exports/routes.py`
 - `app/exports/excel_service.py`
 
 **Mejoras:**
+
 - ✅ Incluye TODOS los 25 campos del reporte
 - ✅ Formato profesional con:
   - Colores de encabezado (azul oscuro)
@@ -191,6 +214,7 @@ GET /api/v1/collections/filter-options
   - Congelación de encabezados
 
 **Nombre de Archivo:**
+
 ```
 reporte_cxc_general_[fecha_desde]_[fecha_hasta]_[timestamp].xlsx
 ```
@@ -199,34 +223,36 @@ reporte_cxc_general_[fecha_desde]_[fecha_hasta]_[timestamp].xlsx
 
 ### 📊 Estadísticas de Cambios
 
-| Métrica | Valor |
-|---------|-------|
-| Archivos modificados | 6 |
-| Líneas de código agregadas | ~250 |
-| Nuevos endpoints API | 1 |
-| Nuevos campos calculados | 3 |
-| Mejoras visuales | 5 |
+| Métrica                     | Valor |
+| ---------------------------- | ----- |
+| Archivos modificados         | 6     |
+| Líneas de código agregadas | ~250  |
+| Nuevos endpoints API         | 1     |
+| Nuevos campos calculados     | 3     |
+| Mejoras visuales             | 5     |
 
 ---
 
 ### 🧪 Pruebas Realizadas
 
 #### ✅ Pruebas de Funcionalidad
-- [x] Carga de reporte Cuenta 12
-- [x] Aplicación de filtros (fecha, cliente, canal, tipo doc)
-- [x] Cálculo correcto de días vencidos
-- [x] Clasificación de antigüedad
-- [x] Exportación a Excel con todos los filtros
-- [x] Visualización de estadísticas
-- [x] Ordenamiento de tabla
-- [x] Paginación de DataTables
+
+- [X] Carga de reporte Cuenta 12
+- [X] Aplicación de filtros (fecha, cliente, canal, tipo doc)
+- [X] Cálculo correcto de días vencidos
+- [X] Clasificación de antigüedad
+- [X] Exportación a Excel con todos los filtros
+- [X] Visualización de estadísticas
+- [X] Ordenamiento de tabla
+- [X] Paginación de DataTables
 
 #### ✅ Pruebas de Interfaz
-- [x] Resaltado de usuario visible
-- [x] Badges de estado con colores correctos
-- [x] Días vencidos en rojo cuando > 0
-- [x] Tabla responsive
-- [x] Dropdowns de filtros poblados
+
+- [X] Resaltado de usuario visible
+- [X] Badges de estado con colores correctos
+- [X] Días vencidos en rojo cuando > 0
+- [X] Tabla responsive
+- [X] Dropdowns de filtros poblados
 
 ---
 
@@ -235,6 +261,7 @@ reporte_cxc_general_[fecha_desde]_[fecha_hasta]_[timestamp].xlsx
 #### Estructura de Datos - Reporte CxC
 
 **Campos Principales (11 visibles en tabla):**
+
 ```python
 {
     'move_name': str,           # Número de factura
@@ -252,11 +279,13 @@ reporte_cxc_general_[fecha_desde]_[fecha_hasta]_[timestamp].xlsx
 ```
 
 **Campos Completos (25 para exportación):**
+
 - Incluye además: Tipo documento, Origen, Cuenta, Nombre cuenta, Referencia, Condición pago, Descripción, Vendedor, Provincia, Distrito, País, Grupos, Sub Canal, Canal de Venta, Tipo de Venta
 
 #### Cálculo de Antigüedad
 
 **Rangos Definidos:**
+
 ```python
 - Vigente: días_vencido <= 0
 - Atraso Corto (1-30): 1 <= días_vencido <= 30
@@ -270,6 +299,7 @@ reporte_cxc_general_[fecha_desde]_[fecha_hasta]_[timestamp].xlsx
 ### 🔧 Configuración Técnica
 
 #### Dependencias JavaScript
+
 ```html
 <!-- DataTables -->
 <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
@@ -277,6 +307,7 @@ reporte_cxc_general_[fecha_desde]_[fecha_hasta]_[timestamp].xlsx
 ```
 
 #### Configuración DataTables
+
 ```javascript
 $('#reportTable').DataTable({
     pageLength: 25,
@@ -296,6 +327,7 @@ $('#reportTable').DataTable({
 ## 📅 Noviembre 14, 2025 (Tarde) - Expansión de Cuenta 42 y Mejoras Excel
 
 ### 🎯 Objetivo
+
 Expandir el reporte de Cuenta 42 (CxP) con más campos de Odoo y mejorar el formato de exportación a Excel con formatos condicionales.
 
 ### ✅ Cambios Implementados
@@ -303,10 +335,12 @@ Expandir el reporte de Cuenta 42 (CxP) con más campos de Odoo y mejorar el form
 #### 5. **Reporte Cuenta 42 - Campos Expandidos** 📈
 
 **Archivos Modificados:**
+
 - `app/treasury/services.py`
 - `app/exports/excel_service.py`
 
 **Campos Agregados (de 11 a 28):**
+
 - `move_type`: Tipo de movimiento
 - `state`: Estado de la factura
 - `l10n_latam_document_type_id`: Tipo de documento LATAM
@@ -320,9 +354,11 @@ Expandir el reporte de Cuenta 42 (CxP) con más campos de Odoo y mejorar el form
 - `full_reconcile_id`: ID de conciliación completa
 
 **Campos Expandidos en Proveedor:**
+
 - Ciudad, teléfono, email (además de los existentes)
 
 **Exportación Excel Mejorada:**
+
 - ✅ **28 columnas** en lugar de 11
 - ✅ Formato condicional para días vencidos (rojo si > 0)
 - ✅ Color de fondo para estados (rojo: VENCIDO, verde: VIGENTE)
@@ -334,6 +370,7 @@ Expandir el reporte de Cuenta 42 (CxP) con más campos de Odoo y mejorar el form
 **Formatos Implementados:**
 
 **Para Cuenta 12 (CxC):**
+
 ```python
 # Días vencidos > 0: rojo y negrita
 if dias_vencido > 0:
@@ -348,6 +385,7 @@ else:
 ```
 
 **Aplicado También a Cuenta 42 (CxP):**
+
 - Mismos formatos condicionales
 - Resalta visualmente las deudas vencidas
 - Facilita identificación rápida de problemas
@@ -357,18 +395,21 @@ else:
 ### 🚀 Próximas Mejoras Sugeridas
 
 #### Cuenta 12 (CxC)
+
 - [ ] Gráficos de pastel por antigüedad
 - [ ] Exportación a PDF
 - [ ] Filtro por vendedor específico
 - [ ] Dashboard resumen con KPIs
 
 #### Cuenta 42 (CxP)
-- [x] Expandir campos como en Cuenta 12 (28 campos) ✅
+
+- [X] Expandir campos como en Cuenta 12 (28 campos) ✅
 - [ ] Agregar filtros dinámicos (tipo documento, etc.)
 - [ ] Cálculo de mora e intereses
 - [ ] Proyección de flujo de caja
 
 #### General
+
 - [ ] Sistema de notificaciones para facturas próximas a vencer
 - [ ] Alertas automáticas para deudas vencidas
 - [ ] Integración con email para envío de reportes
@@ -379,20 +420,22 @@ else:
 
 ### 📞 Contacto y Soporte
 
-**Desarrollado por:** Equipo Finanzas AGV  
-**Repositorio:** `GitHub Proyectos_AGV/Finanzas_Agv`  
-**Versión:** 1.2.0  
+**Desarrollado por:** Equipo Finanzas AGV
+**Repositorio:** `GitHub Proyectos_AGV/Finanzas_Agv`
+**Versión:** 1.2.0
 
 ---
 
 ### 📝 Notas de Desarrollo
 
 #### Lecciones Aprendidas
+
 1. **DataTables mejora significativamente la UX**: La paginación y búsqueda integrada facilitan el trabajo con grandes volúmenes de datos.
 2. **Campos calculados en backend son preferibles**: Evita lógica duplicada en frontend y exportación.
 3. **Estilos consistentes crean cohesión visual**: El uso del mismo diseño entre reportes mejora la adopción del usuario.
 
 #### Decisiones Técnicas
+
 - **Por qué 11 columnas en lugar de 25**: Facilita la visualización sin scroll horizontal excesivo. Los 25 campos se mantienen para exportación.
 - **Por qué DataTables**: Librería madura, bien documentada, y con excelente soporte para español.
 - **Por qué campos calculados en backend**: Garantiza consistencia entre vista y exportación, reduce carga del cliente.
@@ -402,6 +445,7 @@ else:
 ## 📜 Historial de Versiones
 
 ### v1.2.0 - Noviembre 14, 2025
+
 - Interfaz simplificada para Cuenta 12
 - Resaltado de usuario
 - Campos calculados (días vencido, antigüedad, estado)
@@ -409,12 +453,14 @@ else:
 - Filtros dinámicos
 
 ### v1.1.0 - Noviembre 13, 2025
+
 - Implementación inicial de Cuenta 12
 - 25 campos completos
 - Exportación a Excel
 - Filtros básicos
 
 ### v1.0.0 - Octubre 2025
+
 - Sistema base
 - Login y autenticación
 - Módulos de Cobranzas y Tesorería
@@ -425,6 +471,7 @@ else:
 ## 📅 Noviembre 14, 2025 (Noche) - Correcciones UX y Errores Críticos
 
 ### 🎯 Objetivo
+
 Resolver problemas de UX en la interfaz (sidebar separado, scroll excesivo) y corregir error crítico en exportación a Excel.
 
 ### 🐛 **Problemas Identificados**
@@ -441,6 +488,7 @@ Resolver problemas de UX en la interfaz (sidebar separado, scroll excesivo) y co
 **Archivo Modificado:** `app/templates/base.html`
 
 **Cambios Aplicados:**
+
 ```css
 .sidebar {
     position: fixed;
@@ -463,6 +511,7 @@ body {
 ```
 
 **Responsive:**
+
 ```css
 @media (max-width: 768px) {
     .sidebar {
@@ -479,6 +528,7 @@ body {
 #### 8. **Página Optimizada - Sin Scroll Excesivo** 📏
 
 **Cambios Aplicados:**
+
 ```css
 .main-content-with-sidebar {
     margin-left: 60px;
@@ -494,12 +544,14 @@ body {
 ```
 
 **Tabla Compacta:**
+
 - Fuente reducida: `0.85rem` (antes 13px)
 - Padding optimizado: `6px 8px` (antes 10px 8px)
 - Scroll vertical contenido: `max-height: 65vh`
 - DataTables con `scrollX: true` para mejor manejo
 
 **Filtros Mejorados:**
+
 - Display flex con `flex-wrap`
 - Gap de 10px entre elementos
 - Min-width: 150px por filtro
@@ -512,12 +564,14 @@ body {
 **Archivo Modificado:** `app/exports/excel_service.py`
 
 **Problema:**
+
 ```python
 # Odoo retorna campos Many2One como: [1322, 'Villa el Salvador']
 # Excel no puede escribir listas directamente
 ```
 
 **Solución Implementada:**
+
 ```python
 # Convertir valores Many2One (listas) a string
 if isinstance(value, (list, tuple)) and len(value) >= 2:
@@ -531,10 +585,12 @@ if value is None:
 ```
 
 **Aplicado a:**
+
 - ✅ `export_collections_report()` (Cuenta 12)
 - ✅ `export_treasury_report()` (Cuenta 42)
 
 **Resultado:**
+
 - Ya no falla con campos Many2One
 - Extrae automáticamente el nombre legible
 - Maneja casos edge (None, listas vacías)
@@ -544,6 +600,7 @@ if value is None:
 #### 10. **DataTables Mejorado** 📊
 
 **Configuración Avanzada:**
+
 ```javascript
 $('#reportTable').DataTable({
     pageLength: 25,
@@ -561,6 +618,7 @@ $('#reportTable').DataTable({
 ```
 
 **Mejoras:**
+
 - Header fijo al hacer scroll
 - Scroll horizontal suave
 - Columnas colapsables en móvil
@@ -570,25 +628,25 @@ $('#reportTable').DataTable({
 
 ### 📊 **Estadísticas de Correcciones**
 
-| Problema | Estado | Impacto |
-|----------|--------|---------|
-| Sidebar separado | ✅ Corregido | Alto - Afectaba navegación |
-| Scroll excesivo | ✅ Corregido | Alto - UX pobre |
-| Error Excel | ✅ Corregido | Crítico - Bloqueaba exportación |
-| Navegación móvil | ✅ Mejorado | Medio - Responsive completo |
+| Problema           | Estado       | Impacto                           |
+| ------------------ | ------------ | --------------------------------- |
+| Sidebar separado   | ✅ Corregido | Alto - Afectaba navegación       |
+| Scroll excesivo    | ✅ Corregido | Alto - UX pobre                   |
+| Error Excel        | ✅ Corregido | Crítico - Bloqueaba exportación |
+| Navegación móvil | ✅ Mejorado  | Medio - Responsive completo       |
 
 ---
 
 ### 🧪 **Pruebas Realizadas**
 
-- [x] Sidebar no se separa del navbar
-- [x] Navbar fijo al hacer scroll
-- [x] Página no requiere scroll horizontal excesivo
-- [x] Exportación Excel funciona sin errores
-- [x] Campos Many2One se convierten correctamente
-- [x] DataTables scrollable horizontalmente
-- [x] Responsive en móviles (< 768px)
-- [x] Filtros se adaptan a pantallas pequeñas
+- [X] Sidebar no se separa del navbar
+- [X] Navbar fijo al hacer scroll
+- [X] Página no requiere scroll horizontal excesivo
+- [X] Exportación Excel funciona sin errores
+- [X] Campos Many2One se convierten correctamente
+- [X] DataTables scrollable horizontalmente
+- [X] Responsive en móviles (< 768px)
+- [X] Filtros se adaptan a pantallas pequeñas
 
 ---
 
@@ -616,6 +674,7 @@ $('#reportTable').DataTable({
 ### 🔧 **Código Clave**
 
 **Conversión Many2One Segura:**
+
 ```python
 def safe_convert_m2o(value):
     """Convierte campos Many2One a string de forma segura."""
@@ -631,11 +690,13 @@ def safe_convert_m2o(value):
 ## 📅 Noviembre 14, 2025 (Final) - Mejora Visual del Usuario
 
 ### 🎯 Objetivo
+
 Mejorar la visualización del usuario en el navbar para que sea más elegante, combine con la paleta de colores y no genere ruido visual.
 
 ### 🐛 **Problema Identificado**
 
 El usuario destacado con degradado dorado generaba **ruido visual** excesivo:
+
 - ❌ Colores muy llamativos (dorado brillante)
 - ❌ No seguía la paleta corporativa (#714B67)
 - ❌ Distraía del contenido principal
@@ -647,12 +708,14 @@ El usuario destacado con degradado dorado generaba **ruido visual** excesivo:
 #### 11. **Usuario Elegante y Discreto** 🎨
 
 **Archivos Modificados:**
+
 - `app/templates/base.html`
 - `app/web/routes.py`
 
 **Cambios en Diseño:**
 
 **Antes (Dorado llamativo):**
+
 ```css
 .user-highlight {
     background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
@@ -662,6 +725,7 @@ El usuario destacado con degradado dorado generaba **ruido visual** excesivo:
 ```
 
 **Después (Sutil y elegante):**
+
 ```css
 .user-highlight {
     background: rgba(255, 255, 255, 0.15);  /* Translúcido */
@@ -672,6 +736,7 @@ El usuario destacado con degradado dorado generaba **ruido visual** excesivo:
 ```
 
 **Características:**
+
 - ✅ **Translúcido**: Se integra con el navbar
 - ✅ **Glassmorphism**: Efecto moderno de vidrio esmerilado
 - ✅ **Hover suave**: Transición elegante
@@ -684,6 +749,7 @@ El usuario destacado con degradado dorado generaba **ruido visual** excesivo:
 **Nuevo Diseño del Dropdown:**
 
 **Header del Dropdown:**
+
 ```css
 .user-dropdown .dropdown-header {
     background: linear-gradient(135deg, #714B67 0%, #875A7B 100%);
@@ -692,6 +758,7 @@ El usuario destacado con degradado dorado generaba **ruido visual** excesivo:
 ```
 
 **Contenido:**
+
 - ✅ Ícono grande del usuario (2.5rem)
 - ✅ Nombre en negrita
 - ✅ **Email del usuario** (nuevo)
@@ -699,6 +766,7 @@ El usuario destacado con degradado dorado generaba **ruido visual** excesivo:
 - ✅ Botón "Cerrar Sesión" con hover effect
 
 **Estructura HTML:**
+
 ```html
 <div class="user-info-dropdown">
     <i class="bi bi-person-circle"></i>
@@ -710,6 +778,7 @@ El usuario destacado con degradado dorado generaba **ruido visual** excesivo:
 ```
 
 **Estilos Clave:**
+
 - Min-width: 280px
 - Border-radius: 12px (esquinas redondeadas)
 - Box-shadow: Sombra suave
@@ -720,16 +789,19 @@ El usuario destacado con degradado dorado generaba **ruido visual** excesivo:
 #### 13. **Email del Usuario Implementado** 📧
 
 **Backend Update:**
+
 ```python
 # En app/web/routes.py
 session['email'] = f"{username.lower().replace(' ', '.')}@agrovet.com.pe"
 ```
 
 **Formato de Email Generado:**
+
 - Usuario: "Juan Pérez" → Email: "juan.pérez@agrovet.com.pe"
 - Usuario: "admin" → Email: "admin@agrovet.com.pe"
 
 **Ubicación en UI:**
+
 - Visible solo en el dropdown (al hacer clic)
 - Color gris suave (text-muted)
 - Tamaño pequeño (0.85rem)
@@ -740,11 +812,13 @@ session['email'] = f"{username.lower().replace(' ', '.')}@agrovet.com.pe"
 ### 🎨 **Comparación Visual**
 
 #### Antes:
+
 ```
 [🟡 USUARIO DORADO BRILLANTE 🟡] ← Muy llamativo
 ```
 
 #### Después:
+
 ```
 👤 [ Usuario ] ← Sutil y elegante
     ↓ (click)
@@ -761,11 +835,13 @@ session['email'] = f"{username.lower().replace(' ', '.')}@agrovet.com.pe"
 ### 📊 **Mejoras en Paleta de Colores**
 
 **Navbar:**
+
 - Color principal: `#714B67` (Púrpura corporativo)
 - Usuario: `rgba(255, 255, 255, 0.15)` (Translúcido)
 - Texto: `#ffffff` (Blanco)
 
 **Dropdown:**
+
 - Header: `linear-gradient(135deg, #714B67, #875A7B)`
 - Fondo: `#ffffff`
 - Hover: `#f8f9fa` → `#714B67`
@@ -779,29 +855,30 @@ session['email'] = f"{username.lower().replace(' ', '.')}@agrovet.com.pe"
 
 ### 🧪 **Pruebas UX**
 
-- [x] Usuario visible pero no distractivo ✅
-- [x] Dropdown se abre correctamente ✅
-- [x] Email se muestra en formato elegante ✅
-- [x] Hover effects funcionan suavemente ✅
-- [x] Responsive en móviles ✅
-- [x] Paleta de colores coherente ✅
-- [x] Glassmorphism funciona en navegadores modernos ✅
+- [X] Usuario visible pero no distractivo ✅
+- [X] Dropdown se abre correctamente ✅
+- [X] Email se muestra en formato elegante ✅
+- [X] Hover effects funcionan suavemente ✅
+- [X] Responsive en móviles ✅
+- [X] Paleta de colores coherente ✅
+- [X] Glassmorphism funciona en navegadores modernos ✅
 
 ---
 
 ### 💡 **Decisiones de Diseño**
 
 1. **Por qué glassmorphism:**
+
    - Tendencia moderna de diseño
    - Se integra naturalmente con el navbar
    - Efecto premium sin ser intrusivo
-
 2. **Por qué el email solo en dropdown:**
+
    - Evita cluttering en navbar
    - Disponible cuando se necesita
    - No genera ruido visual constante
-
 3. **Por qué translúcido en lugar de dorado:**
+
    - Dorado es muy llamativo para uso corporativo
    - Translúcido es elegante y profesional
    - Mejor para uso prolongado (menos cansancio visual)
@@ -811,6 +888,7 @@ session['email'] = f"{username.lower().replace(' ', '.')}@agrovet.com.pe"
 ### 🔧 **Código Destacado**
 
 **Efecto Glassmorphism:**
+
 ```css
 .user-highlight {
     background: rgba(255, 255, 255, 0.15);
@@ -820,6 +898,7 @@ session['email'] = f"{username.lower().replace(' ', '.')}@agrovet.com.pe"
 ```
 
 **Hover Animado en Dropdown:**
+
 ```css
 .user-dropdown .dropdown-item:hover {
     background-color: #f8f9fa;
@@ -833,11 +912,13 @@ session['email'] = f"{username.lower().replace(' ', '.')}@agrovet.com.pe"
 ### 📈 **Impacto en UX**
 
 **Antes:**
+
 - ⚠️ Usuario muy visible (distracción)
 - ⚠️ Colores no corporativos
 - ⚠️ Sin información de contacto
 
 **Después:**
+
 - ✅ Usuario discreto pero accesible
 - ✅ 100% paleta corporativa
 - ✅ Email disponible cuando se necesita
@@ -849,6 +930,7 @@ session['email'] = f"{username.lower().replace(' ', '.')}@agrovet.com.pe"
 ### 🎯 **Resultado Final**
 
 **Interface del Usuario:**
+
 1. ✅ **Navbar**: Usuario translúcido con efecto glassmorphism
 2. ✅ **Dropdown**: Card elegante con degradado corporativo
 3. ✅ **Email**: Visible en dropdown, formato profesional
@@ -856,6 +938,7 @@ session['email'] = f"{username.lower().replace(' ', '.')}@agrovet.com.pe"
 5. ✅ **Paleta**: 100% coherente con colores corporativos
 
 **Sin Ruido Visual:**
+
 - Elementos discretos pero accesibles
 - Jerarquía visual clara
 - Colores armoniosos
@@ -866,10 +949,10 @@ session['email'] = f"{username.lower().replace(' ', '.')}@agrovet.com.pe"
 **FIN DE BITÁCORA - Noviembre 14, 2025**
 
 **Resumen Total del Día:**
+
 - ✅ 13 mejoras implementadas
 - ✅ 4 errores críticos corregidos
 - ✅ UX completamente optimizada
 - ✅ Paleta de colores coherente
 - ✅ Sistema responsive completo
 - ✅ Documentación exhaustiva
-

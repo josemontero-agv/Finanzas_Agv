@@ -3,6 +3,7 @@ requests==2.31.0
 # Framework Web
 Flask==3.0.0
 Werkzeug==3.0.1
+Flask-CORS==4.0.0
 
 # Configuración
 python-dotenv==1.0.0

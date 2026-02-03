@@ -138,7 +138,8 @@ def send_acceptance_emails():
     """
     try:
         data = request.get_json()
-        letter_ids = data.get('letter_ids', [])
+        # Aceptar tanto letter_ids como letterIds (compatibilidad)
+        letter_ids = data.get('letter_ids', data.get('letterIds', []))
         
         if not letter_ids:
             return jsonify({'success': False, 'message': 'No se seleccionaron letras'}), 400
@@ -152,12 +153,26 @@ def send_acceptance_emails():
             return jsonify({'success': False, 'message': 'No se encontraron letras seleccionadas'}), 404
         
         # 2. Agrupar por email del cliente (puede haber múltiples letras por cliente)
+        dev_mode = current_app.config.get('DEV_EMAIL_MODE', False)
+        dev_recipient = current_app.config.get('DEV_EMAIL_RECIPIENT', '')
         grouped_by_email = {}
+        skipped_letters = []
+
         for letter in selected_letters:
             email = letter.get('customer_email', '')
             customer_name = letter.get('customer_name', letter.get('acceptor_id', 'Cliente'))
+
+            # En modo desarrollo, enviar todo al destinatario de prueba
+            if dev_mode and dev_recipient:
+                email = dev_recipient
             
             if not email:
+                skipped_letters.append({
+                    'id': letter.get('id'),
+                    'number': letter.get('number', 'N/A'),
+                    'acceptor_id': letter.get('acceptor_id', ''),
+                    'reason': 'Sin email de cliente'
+                })
                 print(f"[WARN] Letra {letter.get('number', 'N/A')} no tiene email de cliente, se omite")
                 continue
             
@@ -170,7 +185,11 @@ def send_acceptance_emails():
             grouped_by_email[email]['letters'].append(letter)
         
         if not grouped_by_email:
-            return jsonify({'success': False, 'message': 'Ninguna letra seleccionada tiene email de cliente'}), 400
+            return jsonify({
+                'success': False,
+                'message': 'Ninguna letra seleccionada tiene email de cliente',
+                'skipped': skipped_letters
+            }), 400
         
         # 3. Enviar correos usando el método de aceptación
         email_service = get_email_service()
@@ -180,7 +199,10 @@ def send_acceptance_emails():
         return jsonify({
             'success': True,
             'message': 'Proceso de envío completado',
-            'details': result
+            'details': result,
+            'skipped': skipped_letters,
+            'dev_mode': dev_mode,
+            'dev_recipient': dev_recipient if dev_mode else None
         })
         
     except Exception as e:
@@ -202,7 +224,8 @@ def send_recover_emails():
     """
     try:
         data = request.get_json()
-        letter_ids = data.get('letter_ids', [])
+        # Aceptar tanto letter_ids como letterIds (compatibilidad)
+        letter_ids = data.get('letter_ids', data.get('letterIds', []))
         
         if not letter_ids:
             return jsonify({'success': False, 'message': 'No se seleccionaron letras'}), 400
@@ -256,7 +279,8 @@ def send_bank_emails():
     """
     try:
         data = request.get_json()
-        letter_ids = data.get('letter_ids', [])
+        # Aceptar tanto letter_ids como letterIds (compatibilidad)
+        letter_ids = data.get('letter_ids', data.get('letterIds', []))
         
         if not letter_ids:
             return jsonify({'success': False, 'message': 'No se seleccionaron letras'}), 400
