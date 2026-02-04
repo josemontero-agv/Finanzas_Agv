@@ -19,7 +19,7 @@
         <thead>
             <tr>
                 <th>Banco</th>
-                <th>N° de Pago (Recaudo)</th>
+                <th>N° Único</th>
                 <th>N° Letra</th>
                 <th>Fecha Vencimiento</th>
                 <th>Importe</th>
@@ -29,7 +29,7 @@
             {% for letter in letters %}
             <tr>
                 <td>{{ letter.bank }}</td>
-                <td class="highlight">{{ letter.payment_number }}</td>
+                <td class="highlight">{{ letter.unique_number }}</td>
                 <td>{{ letter.number }}</td>
                 <td>{{ letter.due_date }}</td>
                 <td>{{ letter.currency }} {{ letter.amount }}</td>
@@ -38,7 +38,7 @@
         </tbody>
     </table>
     
-    <p>Por favor, utilice el <strong>Número de Pago</strong> indicado para cancelar sus letras antes de la fecha de vencimiento.</p>
+    <p>Por favor, utilice el <strong>Número Único</strong> indicado para cancelar sus letras antes de la fecha de vencimiento.</p>
     
     <div class="footer">
         <p>Atentamente,<br>

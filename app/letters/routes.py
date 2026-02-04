@@ -144,13 +144,12 @@ def send_acceptance_emails():
         if not letter_ids:
             return jsonify({'success': False, 'message': 'No se seleccionaron letras'}), 400
         
-        # 1. Obtener todas las letras to_accept
+        # 1. Obtener detalles solo de las letras seleccionadas
         service = get_letters_service()
-        all_letters = service.get_letters_to_accept()
-        selected_letters = [l for l in all_letters if str(l['id']) in letter_ids]
+        selected_letters = service.get_letters_to_accept(letter_ids=letter_ids)
         
         if not selected_letters:
-            return jsonify({'success': False, 'message': 'No se encontraron letras seleccionadas'}), 404
+            return jsonify({'success': False, 'message': 'No se encontraron las letras seleccionadas en el sistema'}), 404
         
         # 2. Agrupar por email del cliente (puede haber múltiples letras por cliente)
         dev_mode = current_app.config.get('DEV_EMAIL_MODE', False)
@@ -233,9 +232,13 @@ def send_recover_emails():
         # 1. Obtener detalles completos de las letras
         service = get_letters_service()
         all_letters = service.get_letters_to_recover()
-        selected_letters = [l for l in all_letters if str(l['id']) in letter_ids]
         
-        # 2. Agrupar por cliente para enviar un solo correo por cliente
+        # Convertir IDs a strings para comparación segura
+        letter_ids_str = [str(lid) for lid in letter_ids]
+        selected_letters = [l for l in all_letters if str(l['id']) in letter_ids_str]
+        
+        if not selected_letters:
+            return jsonify({'success': False, 'message': 'No se encontraron letras seleccionadas'}), 404
         grouped_by_customer = {}
         for letter in selected_letters:
             # Usamos nombre del cliente como key temporal. Idealmente usar ID cliente o Email.
@@ -288,9 +291,13 @@ def send_bank_emails():
         # 1. Obtener detalles
         service = get_letters_service()
         all_letters = service.get_letters_in_bank()
-        selected_letters = [l for l in all_letters if str(l['id']) in letter_ids]
         
-        # 2. Agrupar por cliente
+        # Convertir IDs a strings para comparación segura
+        letter_ids_str = [str(lid) for lid in letter_ids]
+        selected_letters = [l for l in all_letters if str(l['id']) in letter_ids_str]
+        
+        if not selected_letters:
+            return jsonify({'success': False, 'message': 'No se encontraron letras seleccionadas'}), 404
         grouped_by_customer = {}
         for letter in selected_letters:
             customer_name = letter['customer']

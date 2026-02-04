@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Finanzas AGV</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav id="toc">
+        <div class="nav-logo">
+            <img src="assets/logo-agrovet.png" alt="Agrovet Market Logo">
+        </div>
+        <h2><i class="bi bi-folder2-open"></i> Documentación</h2>
+        <ul>
+            <li><a href="index.html"><i class="bi bi-house"></i> Inicio</a></li>
+            <li><a href="manual_usuario.html" class="active"><i class="bi bi-person-workspace"></i> Manual Usuario</a></li>
+            <li><a href="manual_desarrollador.html"><i class="bi bi-code-slash"></i> Manual Dev</a></li>
+            <li class="nav-submenu">
+                <a href="arquitectura.html"><i class="bi bi-diagram-3"></i> Arquitectura</a>
+                <ul>
+                    <li><a href="arquitectura/c4model.html">Vista C4</a></li>
+                    <li><a href="arquitectura/analisis_arquitectonico.html">Análisis Stack</a></li>
+                </ul>
+            </li>
+            <li><a href="adrs/index.html"><i class="bi bi-diagram-2"></i> Decisiones (ADRs)</a></li>
+            <li><a href="runbooks/index.html"><i class="bi bi-tools"></i> Runbooks</a></li>
+            <li><a href="bitacora.html"><i class="bi bi-journal-text"></i> Bitácora</a></li>
+            <li><a href="guia_git_main.html"><i class="bi bi-git"></i> Guía Git</a></li>
+        </ul>
+    </nav>
+    <main>
+        <h1><i class="bi bi-person-workspace"></i> Manual de Usuario y Guía Funcional</h1>
+        
+        <section>
+            <h2>1. Introducción</h2>
+            <p>Finanzas AGV es una plataforma de reporting y gestión que consume datos directamente de Odoo ERP para optimizar los procesos de Créditos y Cobranzas.</p>
+            <div class="note">
+                <strong>Objetivo:</strong> Facilitar la trazabilidad entre Facturas y Letras, permitiendo un control preciso de los documentos pendientes de firma.
+            </div>
+        </section>
+
+        <section>
+            <h2>2. Gestión de Letras por Firmar</h2>
+            <p>El módulo principal permite visualizar las letras que aún no han sido aceptadas por los clientes.</p>
+            
+            <h3>Funcionalidades Clave:</h3>
+            <ul>
+                <li><strong>Filtros Avanzados:</strong> Búsqueda por Cliente, RUC, Número de Letra y Estado (Vigente / Por Recuperar).</li>
+                <li><strong>Previsualización:</strong> Permite ver el diseño final del correo antes de enviarlo.</li>
+                <li><strong>Prevención de Duplicados:</strong> El sistema alerta si se intenta reenviar una letra en la misma sesión.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>3. Envío de Correos</h2>
+            <p>Los correos se envían de forma consolidada. Si un cliente tiene varias letras, recibirá un único correo profesional con el detalle completo.</p>
+            
+            <h3>Pasos para el envío:</h3>
+            <ol>
+                <li>Filtrar y seleccionar las letras deseadas.</li>
+                <li>Hacer clic en "Previsualizar" para validar los datos.</li>
+                <li>Hacer clic en "Enviar Correos".</li>
+                <li>Confirmar en el modal de validación.</li>
+            </ol>
+        </section>
+
+        <section>
+            <h2>4. Integración con Odoo (Cuenta 42)</h2>
+            <p>El sistema utiliza la relación a través de <code>account.bill.form</code> (Planillas) para vincular de forma sólida las Facturas originales con las Letras generadas.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Campo</th>
+                        <th>Origen Odoo</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Factura</td>
+                        <td>account.move (name)</td>
+                        <td>Documento de venta original.</td>
+                    </tr>
+                    <tr>
+                        <td>Letra</td>
+                        <td>account.move (ref)</td>
+                        <td>Documento de crédito aceptado.</td>
+                    </tr>
+                    <tr>
+                        <td>Planilla</td>
+                        <td>account.bill.form</td>
+                        <td>Vínculo entre factura y letra.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+</body>
+</html>

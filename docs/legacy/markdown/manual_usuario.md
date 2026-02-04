@@ -1,4 +1,4 @@
-# Guía Odoo + Finanzas AGV (enfoque Cuenta 42): estructura, lógica y cómo unir Letras con Facturas
+# Manual de Usuario y Guía Funcional Odoo - Finanzas AGV
 
 ## 1) ¿Qué es este proyecto y qué busca?
 

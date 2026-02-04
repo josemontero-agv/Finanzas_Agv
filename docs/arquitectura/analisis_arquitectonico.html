@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis Arquitectónico - Finanzas AGV</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <nav id="toc">
+        <div class="nav-logo">
+            <img src="../assets/logo-agrovet.png" alt="Agrovet Market Logo">
+        </div>
+        <h2><i class="bi bi-folder2-open"></i> Documentación</h2>
+        <ul>
+            <li><a href="../index.html"><i class="bi bi-house"></i> Inicio</a></li>
+            <li><a href="../manual_usuario.html"><i class="bi bi-person-workspace"></i> Manual Usuario</a></li>
+            <li><a href="../manual_desarrollador.html"><i class="bi bi-code-slash"></i> Manual Dev</a></li>
+            <li class="nav-submenu">
+                <a href="../arquitectura.html" class="active"><i class="bi bi-diagram-3"></i> Arquitectura</a>
+                <ul>
+                    <li><a href="../arquitectura/c4model.html">Vista C4</a></li>
+                    <li><a href="../arquitectura/analisis_arquitectonico.html" class="active">Análisis Stack</a></li>
+                </ul>
+            </li>
+            <li><a href="../adrs/index.html"><i class="bi bi-diagram-2"></i> Decisiones (ADRs)</a></li>
+            <li><a href="../runbooks/index.html"><i class="bi bi-tools"></i> Runbooks</a></li>
+            <li><a href="../bitacora.html"><i class="bi bi-journal-text"></i> Bitácora</a></li>
+            <li><a href="../guia_git_main.html"><i class="bi bi-git"></i> Guía Git</a></li>
+        </ul>
+    </nav>
+    <main>
+        <h1><i class="bi bi-diagram-3"></i> Análisis Arquitectónico Completo</h1>
+        
+        <section>
+            <p><strong>Fecha:</strong> Diciembre 2024</p>
+            <p><strong>Autor:</strong> Equipo de Arquitectura</p>
+            <p><strong>Objetivo:</strong> Evaluación técnica del stack actual y recomendaciones de mejora.</p>
+        </section>
+
+        <section>
+            <h2>1. Situación Actual Detectada</h2>
+            <h3>Arquitectura Actual</h3>
+            <ul>
+                <li>Monolito Flask sin base de datos local.</li>
+                <li>Conexión a Odoo vía XML-RPC.</li>
+                <li>Consultas en tiempo real (sin cache persistente).</li>
+                <li>Exportaciones Excel en memoria.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>2. Recomendaciones Críticas</h2>
+            <div class="note">
+                <strong>Prioridad Máxima:</strong> Implementar una base de datos local (Read Replica) de PostgreSQL.
+            </div>
+            <p>El uso de XML-RPC es ineficiente para reportes masivos debido al overhead de serialización y la latencia de red. PostgreSQL directo permite consultas hasta 100 veces más rápidas.</p>
+        </section>
+
+        <section>
+            <h2>3. Stack Tecnológico Propuesto (Dream Stack)</h2>
+            <ul>
+                <li><strong>Backend:</strong> Flask + SQLAlchemy + PostgreSQL.</li>
+                <li><strong>Procesamiento:</strong> Celery + Redis para tareas asíncronas y ETL.</li>
+                <li><strong>Frontend:</strong> Mantener Next.js 14.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>4. Plan de Implementación</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fase</th>
+                        <th>Descripción</th>
+                        <th>Prioridad</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Fase 1</td>
+                        <td>Migración a PostgreSQL Directo (Read Replica)</td>
+                        <td>🔴 Crítico</td>
+                    </tr>
+                    <tr>
+                        <td>Fase 2</td>
+                        <td>Celery + Redis para ETL y Exportaciones</td>
+                        <td>🟡 Importante</td>
+                    </tr>
+                    <tr>
+                        <td>Fase 3</td>
+                        <td>Optimización de Consultas y Cache</td>
+                        <td>🟢 Mejora</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+</body>
+</html>

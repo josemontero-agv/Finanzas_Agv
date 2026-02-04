@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADRs - Finanzas AGV</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <nav id="toc">
+        <div class="nav-logo">
+            <img src="../assets/logo-agrovet.png" alt="Agrovet Market Logo">
+        </div>
+        <h2><i class="bi bi-folder2-open"></i> Documentación</h2>
+        <ul>
+            <li><a href="../index.html"><i class="bi bi-house"></i> Inicio</a></li>
+            <li><a href="../manual_usuario.html"><i class="bi bi-person-workspace"></i> Manual Usuario</a></li>
+            <li><a href="../manual_desarrollador.html"><i class="bi bi-code-slash"></i> Manual Dev</a></li>
+            <li class="nav-submenu">
+                <a href="../arquitectura.html"><i class="bi bi-diagram-3"></i> Arquitectura</a>
+                <ul>
+                    <li><a href="../arquitectura/c4model.html">Vista C4</a></li>
+                    <li><a href="../arquitectura/analisis_arquitectonico.html">Análisis Stack</a></li>
+                </ul>
+            </li>
+            <li><a href="../adrs/index.html" class="active"><i class="bi bi-diagram-2"></i> Decisiones (ADRs)</a></li>
+            <li><a href="../runbooks/index.html"><i class="bi bi-tools"></i> Runbooks</a></li>
+            <li><a href="../bitacora.html"><i class="bi bi-journal-text"></i> Bitácora</a></li>
+            <li><a href="../guia_git_main.html"><i class="bi bi-git"></i> Guía Git</a></li>
+        </ul>
+    </nav>
+    <main>
+        <h1><i class="bi bi-diagram-2"></i> Decisiones Arquitectónicas (ADRs)</h1>
+        
+        <p>Los ADRs documentan las decisiones importantes que afectan la estructura, tecnologías y patrones del sistema.</p>
+
+        <section>
+            <h2>📚 Índice de ADRs</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Estado</th>
+                        <th>Título</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>ADR-001</td>
+                        <td>✅ Aceptado</td>
+                        <td><a href="0001-uso-mkdocs.html">Uso de MkDocs para Documentación</a></td>
+                        <td>2025-11-20</td>
+                    </tr>
+                    <tr>
+                        <td>ADR-002</td>
+                        <td>✅ Aceptado</td>
+                        <td><a href="0002-plataforma-externa-reporteria.html">Plataforma Externa para Reportería</a></td>
+                        <td>2025-11-14</td>
+                    </tr>
+                    <tr>
+                        <td>ADR-003</td>
+                        <td>🟡 Propuesto</td>
+                        <td><a href="0003-estrategia-envio-correos.html">Estrategia de Envío Masivo de Correos</a></td>
+                        <td>2025-10-13</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>Estados de un ADR</h2>
+            <ul>
+                <li><strong>Propuesto:</strong> En discusión, pendiente de aprobación.</li>
+                <li><strong>Aceptado:</strong> Decisión aprobada e implementada.</li>
+                <li><strong>Rechazado:</strong> Descartado sin implementar.</li>
+                <li><strong>Reemplazado:</strong> Superseded por un ADR más reciente.</li>
+            </ul>
+        </section>
+    </main>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Runbooks - Finanzas AGV</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <nav id="toc">
+        <div class="nav-logo">
+            <img src="../assets/logo-agrovet.png" alt="Agrovet Market Logo">
+        </div>
+        <h2><i class="bi bi-folder2-open"></i> Documentación</h2>
+        <ul>
+            <li><a href="../index.html"><i class="bi bi-house"></i> Inicio</a></li>
+            <li><a href="../manual_usuario.html"><i class="bi bi-person-workspace"></i> Manual Usuario</a></li>
+            <li><a href="../manual_desarrollador.html"><i class="bi bi-code-slash"></i> Manual Dev</a></li>
+            <li class="nav-submenu">
+                <a href="../arquitectura.html"><i class="bi bi-diagram-3"></i> Arquitectura</a>
+                <ul>
+                    <li><a href="../arquitectura/c4model.html">Vista C4</a></li>
+                    <li><a href="../arquitectura/analisis_arquitectonico.html">Análisis Stack</a></li>
+                </ul>
+            </li>
+            <li><a href="../adrs/index.html"><i class="bi bi-diagram-2"></i> Decisiones (ADRs)</a></li>
+            <li><a href="../runbooks/index.html" class="active"><i class="bi bi-tools"></i> Runbooks</a></li>
+            <li><a href="../bitacora.html"><i class="bi bi-journal-text"></i> Bitácora</a></li>
+            <li><a href="../guia_git_main.html"><i class="bi bi-git"></i> Guía Git</a></li>
+        </ul>
+    </nav>
+    <main>
+        <h1><i class="bi bi-tools"></i> Runbooks Operacionales</h1>
+        
+        <p>Esta sección contiene procedimientos operacionales estándar para el mantenimiento y resolución de problemas del sistema.</p>
+
+        <section>
+            <h2>🚀 Despliegue y Mantenimiento</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Título</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>RB-001</td>
+                        <td><a href="rb-001-deploy-prod.html">Despliegue en Producción</a></td>
+                        <td>Pasos para actualizar el sistema en el servidor productivo.</td>
+                    </tr>
+                    <tr>
+                        <td>RB-002</td>
+                        <td><a href="rb-002-db-management.html">Gestión de Base de Datos</a></td>
+                        <td>Backup, restore y migraciones.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>🔧 Troubleshooting</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Título</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>RB-101</td>
+                        <td><a href="rb-101-odoo-connection.html">Error de Conexión Odoo</a></td>
+                        <td>Qué hacer si falla la sincronización con el ERP.</td>
+                    </tr>
+                    <tr>
+                        <td>RB-102</td>
+                        <td><a href="rb-102-email-failure.html">Fallo en Envío de Correos</a></td>
+                        <td>Diagnóstico de problemas SMTP.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+</body>
+</html>

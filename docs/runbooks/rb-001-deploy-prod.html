@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RB-001 - Finanzas AGV</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <nav id="toc">
+        <div class="nav-logo">
+            <img src="../assets/logo-agrovet.png" alt="Agrovet Market Logo">
+        </div>
+        <h2><i class="bi bi-folder2-open"></i> Documentación</h2>
+        <ul>
+            <li><a href="../index.html"><i class="bi bi-house"></i> Inicio</a></li>
+            <li><a href="index.html" class="active"><i class="bi bi-tools"></i> Runbooks</a></li>
+        </ul>
+    </nav>
+    <main>
+        <h1>RB-001: Despliegue en Producción</h1>
+        <section>
+            <p><strong>ID:</strong> RB-001</p>
+            <p><strong>Responsable:</strong> DevOps / Tech Lead</p>
+        </section>
+
+        <section>
+            <h2>🎯 Objetivo</h2>
+            <p>Desplegar una nueva versión del backend y frontend en el servidor de producción minimizando el tiempo de inactividad.</p>
+        </section>
+
+        <section>
+            <h2>📋 Prerrequisitos</h2>
+            <ul>
+                <li>Acceso SSH al servidor de producción.</li>
+                <li>La rama <code>main</code> debe haber pasado todos los tests.</li>
+                <li>Backup reciente de la base de datos.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>👣 Pasos de Ejecución</h2>
+            <pre><code># 1. Acceder al Servidor
+ssh user@produccion-server
+cd /opt/finanzas-agv
+
+# 2. Actualizar Código
+git pull origin main
+
+# 3. Reiniciar Servicios
+sudo systemctl restart finanzas-agv</code></pre>
+        </section>
+    </main>
+</body>
+</html>

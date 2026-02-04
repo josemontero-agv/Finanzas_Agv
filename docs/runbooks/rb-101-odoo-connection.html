@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RB-101 - Finanzas AGV</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <nav id="toc">
+        <div class="nav-logo">
+            <img src="../assets/logo-agrovet.png" alt="Agrovet Market Logo">
+        </div>
+        <h2><i class="bi bi-folder2-open"></i> Documentación</h2>
+        <ul>
+            <li><a href="../index.html"><i class="bi bi-house"></i> Inicio</a></li>
+            <li><a href="index.html" class="active"><i class="bi bi-tools"></i> Runbooks</a></li>
+        </ul>
+    </nav>
+    <main>
+        <h1>RB-101: Error de Conexión Odoo</h1>
+        <section>
+            <p><strong>ID:</strong> RB-101</p>
+            <p><strong>Responsable:</strong> DevOps / Backend Developer</p>
+        </section>
+
+        <section>
+            <h2>🔍 Diagnóstico</h2>
+            <p>Verificar el estado de las variables de entorno y conectividad de red con el servidor de Odoo.</p>
+            <pre><code># Probar conectividad
+curl -v $ODOO_URL/web/database/selector</code></pre>
+        </section>
+
+        <section>
+            <h2>🛠️ Soluciones Comunes</h2>
+            <ul>
+                <li>Validar credenciales en la interfaz web de Odoo.</li>
+                <li>Actualizar el archivo <code>.env</code> con las credenciales correctas.</li>
+                <li>Verificar que el firewall no esté bloqueando la conexión.</li>
+            </ul>
+        </section>
+    </main>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual del Desarrollador - Finanzas AGV</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav id="toc">
+        <div class="nav-logo">
+            <img src="assets/logo-agrovet.png" alt="Agrovet Market Logo">
+        </div>
+        <h2><i class="bi bi-folder2-open"></i> Documentación</h2>
+        <ul>
+            <li><a href="index.html"><i class="bi bi-house"></i> Inicio</a></li>
+            <li><a href="manual_usuario.html"><i class="bi bi-person-workspace"></i> Manual Usuario</a></li>
+            <li><a href="manual_desarrollador.html" class="active"><i class="bi bi-code-slash"></i> Manual Dev</a></li>
+            <li class="nav-submenu">
+                <a href="arquitectura.html"><i class="bi bi-diagram-3"></i> Arquitectura</a>
+                <ul>
+                    <li><a href="arquitectura/c4model.html">Vista C4</a></li>
+                    <li><a href="arquitectura/analisis_arquitectonico.html">Análisis Stack</a></li>
+                </ul>
+            </li>
+            <li><a href="adrs/index.html"><i class="bi bi-diagram-2"></i> Decisiones (ADRs)</a></li>
+            <li><a href="runbooks/index.html"><i class="bi bi-tools"></i> Runbooks</a></li>
+            <li><a href="bitacora.html"><i class="bi bi-journal-text"></i> Bitácora</a></li>
+            <li><a href="guia_git_main.html"><i class="bi bi-git"></i> Guía Git</a></li>
+        </ul>
+    </nav>
+    <main>
+        <h1><i class="bi bi-code-slash"></i> Manual del Desarrollador</h1>
+
+        <section>
+            <h2>1. Configuración del Entorno</h2>
+            <p>La aplicación utiliza una arquitectura de microservicios con un backend en Flask y un frontend en Next.js.</p>
+            
+            <h3>Variables de Entorno (.env)</h3>
+            <pre><code># Configuración de Odoo
+ODOO_URL=https://amah.odoo.com/
+ODOO_DB=amah-main-xxxx
+ODOO_USER=usuario@agrovetmarket.com
+ODOO_PASSWORD=contraseña
+
+# Configuración de Email
+MAIL_SERVER=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=usuario@agrovetmarket.com
+MAIL_PASSWORD=app_password</code></pre>
+        </section>
+
+        <section>
+            <h2>2. Instalación Backend (Flask)</h2>
+            <ol>
+                <li>Crear entorno virtual: <code>python -m venv venv</code></li>
+                <li>Activar entorno: <code>venv\Scripts\activate</code></li>
+                <li>Instalar dependencias: <code>pip install -r requirements.txt</code></li>
+                <li>Ejecutar: <code>python run.py</code></li>
+            </ol>
+        </section>
+
+        <section>
+            <h2>3. Instalación Frontend (Next.js)</h2>
+            <ol>
+                <li>Navegar a carpeta: <code>cd frontend</code></li>
+                <li>Instalar paquetes: <code>npm install</code></li>
+                <li>Ejecutar en desarrollo: <code>npm run dev</code></li>
+            </ol>
+        </section>
+
+        <section>
+            <h2>4. Modo Desarrollo de Correos</h2>
+            <div class="note">
+                <strong>Importante:</strong> Para evitar envíos accidentales a clientes durante el desarrollo, active <code>DEV_EMAIL_MODE=True</code>.
+            </div>
+            <p>Esto redirigirá todos los correos a la dirección configurada en <code>DEV_EMAIL_RECIPIENT</code> (actualmente <code>josemontero2415@gmail.com</code>).</p>
+        </section>
+    </main>
+</body>
+</html>

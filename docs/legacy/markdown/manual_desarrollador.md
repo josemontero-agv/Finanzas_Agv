@@ -1,4 +1,4 @@
-# 🚀 Inicio Rápido - Finanzas AGV
+# Manual de Desarrollador - Finanzas AGV
 
 ## Pasos para Ejecutar la Aplicación
 

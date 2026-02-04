@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADR-003 - Finanzas AGV</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <nav id="toc">
+        <div class="nav-logo">
+            <img src="../assets/logo-agrovet.png" alt="Agrovet Market Logo">
+        </div>
+        <h2><i class="bi bi-folder2-open"></i> Documentación</h2>
+        <ul>
+            <li><a href="../index.html"><i class="bi bi-house"></i> Inicio</a></li>
+            <li><a href="index.html" class="active"><i class="bi bi-diagram-2"></i> ADRs</a></li>
+        </ul>
+    </nav>
+    <main>
+        <h1>ADR-003: Estrategia de Envío Masivo de Correos</h1>
+        <section>
+            <p><strong>Estado:</strong> Propuesto</p>
+            <p><strong>Fecha:</strong> 2025-10-13</p>
+        </section>
+
+        <section>
+            <h2>Contexto</h2>
+            <p>El envío de correos de cobranza puede ser bloqueado por proveedores de email si se realiza de forma muy rápida o masiva sin control.</p>
+        </section>
+
+        <section>
+            <h2>Decisión</h2>
+            <p>Implementar una cola de tareas (Celery + Redis) con límites de tasa (rate limiting) para asegurar que los envíos sean graduales y no afecten la reputación del dominio.</p>
+        </section>
+
+        <section>
+            <h2>Consecuencias</h2>
+            <ul>
+                <li><strong>Positivas:</strong> Mayor fiabilidad en la entrega, escalabilidad, monitoreo de fallos.</li>
+                <li><strong>Negativas:</strong> Mayor complejidad de infraestructura.</li>
+            </ul>
+        </section>
+    </main>
+</body>
+</html>

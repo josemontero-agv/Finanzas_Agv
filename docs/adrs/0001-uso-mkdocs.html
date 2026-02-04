@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADR-001 - Finanzas AGV</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <nav id="toc">
+        <div class="nav-logo">
+            <img src="../assets/logo-agrovet.png" alt="Agrovet Market Logo">
+        </div>
+        <h2><i class="bi bi-folder2-open"></i> Documentación</h2>
+        <ul>
+            <li><a href="../index.html"><i class="bi bi-house"></i> Inicio</a></li>
+            <li><a href="../manual_usuario.html"><i class="bi bi-person-workspace"></i> Manual Usuario</a></li>
+            <li><a href="../manual_desarrollador.html"><i class="bi bi-code-slash"></i> Manual Dev</a></li>
+            <li class="nav-submenu">
+                <a href="../arquitectura.html"><i class="bi bi-diagram-3"></i> Arquitectura</a>
+                <ul>
+                    <li><a href="../arquitectura/c4model.html">Vista C4</a></li>
+                    <li><a href="../arquitectura/analisis_arquitectonico.html">Análisis Stack</a></li>
+                </ul>
+            </li>
+            <li><a href="../adrs/index.html" class="active"><i class="bi bi-diagram-2"></i> Decisiones (ADRs)</a></li>
+            <li><a href="../runbooks/index.html"><i class="bi bi-tools"></i> Runbooks</a></li>
+            <li><a href="../bitacora.html"><i class="bi bi-journal-text"></i> Bitácora</a></li>
+            <li><a href="../guia_git_main.html"><i class="bi bi-git"></i> Guía Git</a></li>
+        </ul>
+    </nav>
+    <main>
+        <h1>ADR-001: Uso de MkDocs para Documentación</h1>
+        <section>
+            <p><strong>Estado:</strong> Aceptado</p>
+            <p><strong>Fecha:</strong> 2025-11-20</p>
+        </section>
+
+        <section>
+            <h2>Contexto</h2>
+            <p>El proyecto necesita una forma centralizada y accesible de mantener la documentación técnica y funcional. Los documentos Markdown dispersos son difíciles de navegar para usuarios no técnicos.</p>
+        </section>
+
+        <section>
+            <h2>Decisión</h2>
+            <p>Se eligió MkDocs con el tema Material for MkDocs para centralizar la información y permitir una navegación rápida.</p>
+        </section>
+
+        <section>
+            <h2>Consecuencias</h2>
+            <ul>
+                <li><strong>Positivas:</strong> Centralización, búsqueda rápida, separación de contenido y presentación.</li>
+                <li><strong>Negativas:</strong> Requiere un paso de compilación.</li>
+            </ul>
+        </section>
+    </main>
+</body>
+</html>

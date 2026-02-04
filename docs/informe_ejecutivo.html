@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informes Técnicos - Finanzas AGV</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav id="toc">
+        <div class="nav-logo">
+            <img src="assets/logo-agrovet.png" alt="Agrovet Market Logo">
+        </div>
+        <h2><i class="bi bi-folder2-open"></i> Documentación</h2>
+        <ul>
+            <li><a href="index.html"><i class="bi bi-house"></i> Inicio</a></li>
+            <li><a href="manual_usuario.html"><i class="bi bi-person-workspace"></i> Manual Usuario</a></li>
+            <li><a href="manual_desarrollador.html"><i class="bi bi-code-slash"></i> Manual Dev</a></li>
+            <li class="nav-submenu">
+                <a href="arquitectura.html"><i class="bi bi-diagram-3"></i> Arquitectura</a>
+                <ul>
+                    <li><a href="arquitectura/c4model.html">Vista C4</a></li>
+                    <li><a href="arquitectura/analisis_arquitectonico.html">Análisis Stack</a></li>
+                </ul>
+            </li>
+            <li><a href="adrs/index.html"><i class="bi bi-diagram-2"></i> Decisiones (ADRs)</a></li>
+            <li><a href="runbooks/index.html"><i class="bi bi-tools"></i> Runbooks</a></li>
+            <li><a href="bitacora.html"><i class="bi bi-journal-text"></i> Bitácora</a></li>
+            <li><a href="guia_git_main.html"><i class="bi bi-git"></i> Guía Git</a></li>
+        </ul>
+    </nav>
+    <main>
+        <h1><i class="bi bi-file-earmark-bar-graph"></i> Informes de Estado y Rendimiento</h1>
+
+        <section>
+            <h2>Informe Ejecutivo</h2>
+            <p>Resumen de logros y objetivos alcanzados durante el desarrollo de la plataforma.</p>
+            <div class="note">
+                <strong>Logro Principal:</strong> Reducción del tiempo de envío de notificaciones de letras en un 60% mediante el proceso automatizado.
+            </div>
+            <ul>
+                <li>Digitalización del flujo de cobranzas.</li>
+                <li>Reducción de errores por re-envío de documentos.</li>
+                <li>Mejora en la imagen corporativa ante el cliente final.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Diagnóstico de Performance</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Proceso</th>
+                        <th>Estado</th>
+                        <th>Optimización</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Carga inicial de Letras</td>
+                        <td>✅ Óptimo</td>
+                        <td>Uso de caché y filtrado en Odoo.</td>
+                    </tr>
+                    <tr>
+                        <td>Envío Masivo de Emails</td>
+                        <td>✅ Óptimo</td>
+                        <td>Procesamiento asíncrono y timeouts ajustados.</td>
+                    </tr>
+                    <tr>
+                        <td>Generación de Excel</td>
+                        <td>✅ Óptimo</td>
+                        <td>Librería XlsxWriter con streaming.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+</body>
+</html>

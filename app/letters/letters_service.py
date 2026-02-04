@@ -59,24 +59,35 @@ class LettersService:
                 'city': cust['city'],
                 'payment_state': 'no_paid',
                 'ref': f'REF-{i}',
-                'days_overdue': (datetime.now() - due_dt).days if datetime.now() > due_dt else 0
+                'days_overdue': (datetime.now() - due_dt).days if datetime.now() > due_dt else 0,
+                'unique_number': f'U-{1000000+i}'
             })
         return mock_data
     
-    def get_letters_to_accept(self):
+    def get_letters_to_accept(self, letter_ids=None):
         """
         Obtiene letras en estado 'to_accept' (Por aceptar) con OPTIMIZACIÓN POR LOTES (Batch Mode).
         Trae fecha y vendedor de la FACTURA ORIGINAL navegando entre modelos.
+        
+        Args:
+            letter_ids (list, optional): Lista de IDs específicos a consultar.
         """
         if not self.repository or not self.repository.is_connected():
             print("[WARN] No hay conexión a Odoo, usando datos mock")
             return self._get_mock_letters_to_accept()
         
         try:
-            print("[INFO] Iniciando consulta optimizada de letras (Batch Processing)...")
+            print(f"[INFO] Iniciando consulta optimizada de letras ({'Filtered' if letter_ids else 'All'})...")
             
-            # 1. Obtener todas las letras pendientes (Consulta Única)
-            domain = [('move_type', '=', 'out_bill'), ('state', '=', 'to_accept')]
+            # 1. Obtener las letras pendientes (Consulta Única)
+            domain = [('move_type', '=', 'out_bill')]
+            if letter_ids:
+                # Convertir a int si vienen como strings
+                ids = [int(lid) for lid in letter_ids]
+                domain.append(('id', 'in', ids))
+            else:
+                domain.append(('state', '=', 'to_accept'))
+
             move_fields = [
                 'id', 'name', 'partner_id', 'l10n_latam_boe_number',
                 'amount_total_in_currency_signed', 'invoice_origin',
@@ -119,6 +130,7 @@ class LettersService:
                 invoices = self.repository.read('account.move', list(set(all_invoice_ids)), ['id', 'name', 'invoice_date', 'invoice_user_id'])
                 for inv in invoices:
                     invoice_details_map[inv['id']] = {
+                        'name': inv.get('name', ''),
                         'date': inv.get('invoice_date'),
                         'user': inv.get('invoice_user_id')[1] if isinstance(inv.get('invoice_user_id'), (list, tuple)) else ''
                     }
@@ -134,16 +146,27 @@ class LettersService:
                     # Datos base (de la letra)
                     orig_date = move.get('invoice_date')
                     orig_user = move.get('invoice_user_id')[1] if isinstance(move.get('invoice_user_id'), (list, tuple)) else ''
+                    # Por defecto usamos la referencia de la letra si no hay planilla
                     orig_invoice_name = move.get('name', '')
 
-                    # Cruzar con factura original si existe planilla
+                    # Cruzar con factura original si existe planilla (bill_form_id/invoice_ids/name)
                     b_id = move.get('bill_form_id')
                     if b_id and b_id[0] in bill_form_map:
                         inv_ids = bill_form_map[b_id[0]].get('invoice_ids', [])
-                        if inv_ids and inv_ids[0] in invoice_details_map:
-                            det = invoice_details_map[inv_ids[0]]
-                            orig_date = det['date']
-                            orig_user = det['user']
+                        if inv_ids:
+                            # Extraer nombres de todas las facturas asociadas a la planilla
+                            names = []
+                            for iid in inv_ids:
+                                if iid in invoice_details_map:
+                                    inv_det = invoice_details_map[iid]
+                                    names.append(inv_det['name'])
+                                    # Usamos la fecha y usuario de la primera factura como referencia
+                                    if len(names) == 1:
+                                        orig_date = inv_det['date']
+                                        orig_user = inv_det['user']
+                            
+                            if names:
+                                orig_invoice_name = ", ".join(names)
 
                     letters.append({
                         'id': move['id'],
@@ -158,7 +181,8 @@ class LettersService:
                         'status_calc': self._calculate_status(orig_date, client.get('city', '') if client else ''),
                         'salesperson': orig_user,
                         'customer_email': client.get('email', '') if client else '',
-                        'state': move.get('state', '')
+                        'state': move.get('state', ''),
+                        'unique_number': move.get('ref', '') # Usamos ref como placeholder para número único
                     })
                 except Exception as row_error:
                     print(f"[WARN] Error procesando letra {move.get('id')}: {row_error}")
@@ -187,17 +211,48 @@ class LettersService:
         """
         Obtiene letras enviadas al banco.
         """
-        # Mock data por ahora
-        return []
+        # Mock data por ahora para visualización
+        mock_data = []
+        banks = ['BCP', 'BBVA', 'Interbank', 'Scotiabank']
+        customers = [
+            {'name': 'Agrovet S.A.', 'vat': '20123456789', 'city': 'Lima'},
+            {'name': 'Distribuidora Norte', 'vat': '20543219876', 'city': 'Trujillo'}
+        ]
+        
+        for i in range(1, 10):
+            issue_dt = datetime.now() - timedelta(days=random.randint(20, 40))
+            due_dt = issue_dt + timedelta(days=60)
+            cust = random.choice(customers)
+            bank_name = random.choice(banks)
+            
+            mock_data.append({
+                'id': 100 + i,
+                'vat': cust['vat'],
+                'acceptor_id': cust['name'],
+                'number': f'L-BNK-{2024000+i}',
+                'ref_docs': f'F001-{random.randint(5000,9999)}',
+                'amount': round(random.uniform(5000, 20000), 2),
+                'currency': 'PEN',
+                'invoice_date': issue_dt.strftime('%Y-%m-%d'),
+                'due_date': due_dt.strftime('%Y-%m-%d'),
+                'status_calc': 'EN BANCO',
+                'salesperson': 'Vendedor Banco',
+                'city': cust['city'],
+                'bank': bank_name,
+                'unique_number': f'BNK-{random.randint(100000, 999999)}',
+                'customer_email': 'josemontero2415@gmail.com'
+            })
+        return mock_data
 
     def get_letters_summary(self):
         """
         Obtiene resumen estadístico de letras.
         """
+        # Por ahora valores mock basados en la lógica actual
         return {
-            'to_accept': 0,
-            'to_recover': 0,
-            'in_bank': 0
+            'to_accept': 14, # Aproximado de _get_mock_letters_to_accept
+            'to_recover': 24, # Aproximado de get_letters_to_recover
+            'in_bank': 9     # Aproximado de get_letters_in_bank
         }
 
     def _get_mock_letters_to_accept(self):
@@ -224,6 +279,7 @@ class LettersService:
                 'status_calc': self._calculate_status(dt.strftime('%Y-%m-%d'), cust['city']),
                 'salesperson': 'Vendedor Mock',
                 'customer_email': cust['email'],
-                'state': 'to_accept'
+                'state': 'to_accept',
+                'unique_number': f'MOCK-U-{i}'
             })
         return mock_data

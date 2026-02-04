@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centro de Documentación - Finanzas AGV</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav id="toc">
+        <div class="nav-logo">
+            <img src="assets/logo-agrovet.png" alt="Agrovet Market Logo">
+        </div>
+        <h2><i class="bi bi-folder2-open"></i> Documentación</h2>
+        <ul>
+            <li><a href="index.html" class="active"><i class="bi bi-house"></i> Inicio</a></li>
+            <li><a href="manual_usuario.html"><i class="bi bi-person-workspace"></i> Manual Usuario</a></li>
+            <li><a href="manual_desarrollador.html"><i class="bi bi-code-slash"></i> Manual Dev</a></li>
+            <li class="nav-submenu">
+                <a href="arquitectura.html"><i class="bi bi-diagram-3"></i> Arquitectura</a>
+                <ul>
+                    <li><a href="arquitectura/c4model.html">Vista C4</a></li>
+                    <li><a href="arquitectura/analisis_arquitectonico.html">Análisis Stack</a></li>
+                </ul>
+            </li>
+            <li><a href="adrs/index.html"><i class="bi bi-diagram-2"></i> Decisiones (ADRs)</a></li>
+            <li><a href="runbooks/index.html"><i class="bi bi-tools"></i> Runbooks</a></li>
+            <li><a href="bitacora.html"><i class="bi bi-journal-text"></i> Bitácora</a></li>
+            <li><a href="guia_git_main.html"><i class="bi bi-git"></i> Guía Git</a></li>
+        </ul>
+    </nav>
+    <main>
+        <div class="hero">
+            <img src="assets/logo-agrovet.png" alt="Agrovet Market Logo" style="max-width: 350px; margin-bottom: 20px; filter: brightness(0) invert(1);">
+            <h1>Finanzas AGV v1.0</h1>
+            <p>Portal Central de Documentación y Especificaciones Técnicas</p>
+        </div>
+
+        <section id="vision">
+            <h2><i class="bi bi-eye"></i> Visión General</h2>
+            <p>Finanzas AGV es una plataforma diseñada para centralizar y optimizar la gestión financiera, específicamente enfocada en el control de letras y cobranzas vinculadas a Odoo ERP.</p>
+            
+            <div class="card-grid">
+                <a href="manual_usuario.html" class="card">
+                    <i class="bi bi-person-workspace"></i>
+                    <h3>Manual de Usuario</h3>
+                    <p>Guía para el equipo de Créditos y Cobranzas.</p>
+                </a>
+                <a href="manual_desarrollador.html" class="card">
+                    <i class="bi bi-code-slash"></i>
+                    <h3>Manual del Desarrollador</h3>
+                    <p>Instalación, despliegue y mantenimiento técnico.</p>
+                </a>
+                <a href="arquitectura.html" class="card">
+                    <i class="bi bi-diagram-3"></i>
+                    <h3>Arquitectura</h3>
+                    <p>Stack tecnológico y visión general del sistema.</p>
+                    <div class="card-footer">
+                        <span class="badge">Vista C4</span>
+                        <span class="badge">Stack</span>
+                    </div>
+                </a>
+                <a href="adrs/index.html" class="card">
+                    <i class="bi bi-diagram-2"></i>
+                    <h3>Decisiones (ADRs)</h3>
+                    <p>Registro de decisiones arquitectónicas y técnicas.</p>
+                    <div class="card-footer">
+                        <span class="badge">Historial</span>
+                    </div>
+                </a>
+                <a href="runbooks/index.html" class="card">
+                    <i class="bi bi-tools"></i>
+                    <h3>Runbooks</h3>
+                    <p>Procedimientos de mantenimiento y troubleshooting.</p>
+                    <div class="card-footer">
+                        <span class="badge">Soluciones</span>
+                    </div>
+                </a>
+                <a href="informe_ejecutivo.html" class="card">
+                    <i class="bi bi-file-earmark-bar-graph"></i>
+                    <h3>Informes Técnicos</h3>
+                    <p>Análisis de performance y KPIs del sistema.</p>
+                    <div class="card-footer">
+                        <span class="badge">Performance</span>
+                        <span class="badge">KPIs</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <section id="estado-proyecto">
+            <h2><i class="bi bi-activity"></i> Estado del Proyecto</h2>
+            <div class="note">
+                <strong>Estatus: Operativo.</strong> Sistema en fase de despliegue con integración completa a Odoo v17.
+            </div>
+            <ul>
+                <li>✅ <strong>Backend:</strong> Flask API optimizada con soporte para procesos largos.</li>
+                <li>✅ <strong>Frontend:</strong> Next.js 14 con interfaz minimalista y moderna.</li>
+                <li>✅ <strong>Emails:</strong> Plantillas Jinja2 profesionales con adjuntos CID.</li>
+                <li>✅ <strong>Seguridad:</strong> Validación de envíos y prevención de duplicados.</li>
+            </ul>
+        </section>
+
+        <footer style="text-align: center; margin-top: 40px; color: var(--text-secondary); opacity: 0.6;">
+            <p>&copy; 2026 Agrovet Market S.A. | Área de Créditos y Cobranzas</p>
+        </footer>
+    </main>
+
+    <button class="print-button" onclick="window.print()" title="Exportar a PDF">
+        <i class="bi bi-file-earmark-pdf"></i>
+    </button>
+</body>
+</html>

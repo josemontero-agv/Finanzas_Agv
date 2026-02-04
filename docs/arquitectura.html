@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arquitectura del Sistema - Finanzas AGV</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({startOnLoad:true, theme: 'default'});</script>
+</head>
+<body>
+    <nav id="toc">
+        <div class="nav-logo">
+            <img src="assets/logo-agrovet.png" alt="Agrovet Market Logo">
+        </div>
+        <h2><i class="bi bi-folder2-open"></i> Documentación</h2>
+        <ul>
+            <li><a href="index.html"><i class="bi bi-house"></i> Inicio</a></li>
+            <li><a href="manual_usuario.html"><i class="bi bi-person-workspace"></i> Manual Usuario</a></li>
+            <li><a href="manual_desarrollador.html"><i class="bi bi-code-slash"></i> Manual Dev</a></li>
+            <li class="nav-submenu">
+                <a href="arquitectura.html" class="active"><i class="bi bi-diagram-3"></i> Arquitectura</a>
+                <ul>
+                    <li><a href="arquitectura/c4model.html">Vista C4</a></li>
+                    <li><a href="arquitectura/analisis_arquitectonico.html">Análisis Stack</a></li>
+                </ul>
+            </li>
+            <li><a href="adrs/index.html"><i class="bi bi-diagram-2"></i> Decisiones (ADRs)</a></li>
+            <li><a href="runbooks/index.html"><i class="bi bi-tools"></i> Runbooks</a></li>
+            <li><a href="bitacora.html"><i class="bi bi-journal-text"></i> Bitácora</a></li>
+            <li><a href="guia_git_main.html"><i class="bi bi-git"></i> Guía Git</a></li>
+        </ul>
+    </nav>
+    <main>
+        <h1><i class="bi bi-diagram-3"></i> Arquitectura del Sistema</h1>
+
+        <section>
+            <h2>1. Flujo de Datos</h2>
+            <p>La aplicación actúa como una capa de presentación y lógica avanzada sobre Odoo ERP. Para un análisis detallado del stack, consulte el <strong><a href="arquitectura/analisis_arquitectonico.html">Análisis Arquitectónico Completo</a></strong>.</p>
+            <div class="mermaid">
+                graph LR
+                    Client[Browser / Usuario] -->|HTTPS| Frontend[Next.js App]
+                    Frontend -->|API REST| Backend[Flask API]
+                    Backend -->|XML-RPC| Odoo[Odoo ERP v17]
+                    Backend -->|SMTP| SMTP[Google Mail Server]
+            </div>
+        </section>
+
+        <section>
+            <h2>2. Stack Tecnológico</h2>
+            <ul>
+                <li><strong>Frontend:</strong> React 18, Next.js 14, Tailwind CSS, Shadcn UI.</li>
+                <li><strong>Backend:</strong> Python 3.11, Flask, Flask-Mail, Jinja2 Templates.</li>
+                <li><strong>Integración:</strong> OdooRPC (XML-RPC).</li>
+                <li><strong>Despliegue:</strong> Docker / VPS con Gunicorn.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>3. Modelo de Datos de Cobranzas</h2>
+            <p>Relación fundamental para la trazabilidad de documentos financieros.</p>
+            <div class="mermaid">
+                erDiagram
+                    ACCOUNT_MOVE ||--o{ ACCOUNT_BILL_FORM : "origina"
+                    ACCOUNT_BILL_FORM ||--o{ ACCOUNT_MOVE_LETTER : "genera"
+                    ACCOUNT_MOVE {
+                        string name "Número de Factura"
+                        date date "Fecha"
+                    }
+                    ACCOUNT_BILL_FORM {
+                        string name "Planilla de Canje"
+                        list invoice_ids "Facturas origen"
+                    }
+                    ACCOUNT_MOVE_LETTER {
+                        string ref "Número de Letra"
+                        date due_date "Vencimiento"
+                    }
+            </div>
+        </section>
+    </main>
+</body>
+</html>

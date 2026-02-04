@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RB-002 - Finanzas AGV</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <nav id="toc">
+        <div class="nav-logo">
+            <img src="../assets/logo-agrovet.png" alt="Agrovet Market Logo">
+        </div>
+        <h2><i class="bi bi-folder2-open"></i> Documentación</h2>
+        <ul>
+            <li><a href="../index.html"><i class="bi bi-house"></i> Inicio</a></li>
+            <li><a href="index.html" class="active"><i class="bi bi-tools"></i> Runbooks</a></li>
+        </ul>
+    </nav>
+    <main>
+        <h1>RB-002: Gestión de Base de Datos</h1>
+        <section>
+            <p><strong>ID:</strong> RB-002</p>
+            <p><strong>Responsable:</strong> DBA / DevOps</p>
+        </section>
+
+        <section>
+            <h2>🎯 Objetivo</h2>
+            <p>Realizar operaciones seguras de backup, restore y migraciones de la base de datos.</p>
+        </section>
+
+        <section>
+            <h2>🔄 Sección 1: Backup</h2>
+            <pre><code># PostgreSQL
+pg_dump -U finanzas_user -d finanzas_db -F c -f backup_$(date +%Y%m%d_%H%M%S).dump</code></pre>
+        </section>
+
+        <section>
+            <h2>🔙 Sección 2: Restore</h2>
+            <div class="note">
+                <strong>ADVERTENCIA:</strong> Esta operación sobrescribirá los datos existentes.
+            </div>
+            <pre><code># PostgreSQL
+pg_restore -U finanzas_user -d finanzas_db -c backup_20251120.dump</code></pre>
+        </section>
+    </main>
+</body>
+</html>

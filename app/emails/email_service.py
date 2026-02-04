@@ -163,37 +163,47 @@ class EmailService:
         dev_mode = current_app.config.get('DEV_EMAIL_MODE', False)
         dev_email = current_app.config.get('DEV_EMAIL_RECIPIENT', 'josemontero2415@gmail.com')
         
+        from datetime import datetime
+        now = datetime.now()
+        # Formato 3/2/2026 para el cuerpo y 03/02/26 para el asunto
+        today_str = f"{now.day}/{now.month}/{now.year}"
+        subject_date = now.strftime("%d/%m/%y")
+
         for recipient in recipients_data:
             try:
-                # Construir lista de letras en HTML
-                letters_list_html = "<ul style='list-style-type: none; padding-left: 0;'>"
-                for letter in recipient['letters']:
-                    letters_list_html += f"""
-                    <li style='margin-bottom: 10px; padding: 8px; background-color: #f8f9fa; border-left: 3px solid #714B67;'>
-                        <strong>Letra {letter.get('number', 'N/A')}</strong> - 
-                        {letter.get('currency', 'PEN')} {letter.get('amount', 0):,.2f} - 
-                        Vence: {letter.get('due_date', 'N/A')}
-                    </li>
-                    """
-                letters_list_html += "</ul>"
+                # Formatear fechas para el reporte
+                formatted_letters = []
+                for l in recipient['letters']:
+                    # Clonar y formatear fecha de vencimiento y factura
+                    letter_copy = l.copy()
+                    if l.get('due_date'):
+                        try:
+                            date_obj = datetime.strptime(l['due_date'], '%Y-%m-%d')
+                            letter_copy['due_date'] = date_obj.strftime('%d/%m/%Y')
+                        except:
+                            pass
+                    
+                    if l.get('invoice_date'):
+                        try:
+                            # Odoo a veces envía datetime o string YYYY-MM-DD
+                            inv_date = l['invoice_date']
+                            if isinstance(inv_date, str):
+                                date_obj = datetime.strptime(inv_date, '%Y-%m-%d')
+                                letter_copy['invoice_date'] = date_obj.strftime('%d/%m/%Y')
+                        except:
+                            pass
+                    
+                    formatted_letters.append(letter_copy)
+
+                # Renderizar template profesional basado en el diseño del frontend
+                body_html = render_template(
+                    'emails/letters_acceptance.html',
+                    customer_name=recipient['name'],
+                    letters=formatted_letters,
+                    today=today_str
+                )
                 
-                # Plantilla de correo según especificación del usuario
-                body_html = f"""
-                <html>
-                <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
-                    <p>Buenas tardes Estimada/o,</p>
-                    <p>Se adjunta las letras para su pronta firma:</p>
-                    {letters_list_html}
-                    <p>Por favor responder correo cuando se esté enviando las letras firmadas.</p>
-                    <br>
-                    <p>Cordialmente,<br>
-                    <strong>José Montero</strong> | Asistente de Créditos y Cobranzas<br>
-                    (1) 2300 300 Anexo | +51 965 252 063 | jose.montero@agrovetmarket.com</p>
-                </body>
-                </html>
-                """
-                
-                subject = f"Letras Pendientes de Firma - {recipient['name']}"
+                subject = f"Letras Pendientes de Firma - {recipient['name']} al día {subject_date}"
                 
                 # Obtener IDs de letras para logging
                 letter_ids = [l.get('id') for l in recipient['letters'] if l.get('id')]
@@ -214,6 +224,23 @@ class EmailService:
                         html=body_html,
                         sender=current_app.config.get('MAIL_DEFAULT_SENDER', 'jose.montero@agrovetmarket.com')
                     )
+                    
+                    # Adjuntar logo como CID para que se muestre inline
+                    try:
+                        import os
+                        logo_path = os.path.join(current_app.root_path, 'templates', 'emails', 'agrovet-market.png')
+                        if os.path.exists(logo_path):
+                            with open(logo_path, 'rb') as f:
+                                msg.attach(
+                                    "agrovet-market.png",
+                                    "image/png",
+                                    f.read(),
+                                    'inline',
+                                    headers=[['Content-ID', '<logo_agrovet>']]
+                                )
+                    except Exception as img_err:
+                        print(f"[WARN] No se pudo adjuntar el logo: {img_err}")
+
                     self.mail.send(msg)
                     
                     if dev_mode:

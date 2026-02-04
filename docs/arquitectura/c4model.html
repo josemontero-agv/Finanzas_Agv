@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modelo C4 - Finanzas AGV</title>
+    <link rel="stylesheet" href="../style.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({startOnLoad:true, theme: 'default'});</script>
+</head>
+<body>
+    <nav id="toc">
+        <div class="nav-logo">
+            <img src="../assets/logo-agrovet.png" alt="Agrovet Market Logo">
+        </div>
+        <h2><i class="bi bi-folder2-open"></i> Documentación</h2>
+        <ul>
+            <li><a href="../index.html"><i class="bi bi-house"></i> Inicio</a></li>
+            <li><a href="../manual_usuario.html"><i class="bi bi-person-workspace"></i> Manual Usuario</a></li>
+            <li><a href="../manual_desarrollador.html"><i class="bi bi-code-slash"></i> Manual Dev</a></li>
+            <li class="nav-submenu">
+                <a href="../arquitectura.html" class="active"><i class="bi bi-diagram-3"></i> Arquitectura</a>
+                <ul>
+                    <li><a href="../arquitectura/c4model.html" class="active">Vista C4</a></li>
+                    <li><a href="../arquitectura/analisis_arquitectonico.html">Análisis Stack</a></li>
+                </ul>
+            </li>
+            <li><a href="../adrs/index.html"><i class="bi bi-diagram-2"></i> Decisiones (ADRs)</a></li>
+            <li><a href="../runbooks/index.html"><i class="bi bi-tools"></i> Runbooks</a></li>
+            <li><a href="../bitacora.html"><i class="bi bi-journal-text"></i> Bitácora</a></li>
+            <li><a href="../guia_git_main.html"><i class="bi bi-git"></i> Guía Git</a></li>
+        </ul>
+    </nav>
+    <main>
+        <h1><i class="bi bi-diagram-3"></i> Arquitectura del Sistema (Vista C4)</h1>
+        
+        <section>
+            <div class="note">
+                <strong>Para Gerencia y Stakeholders:</strong> Esta página presenta la arquitectura del sistema usando lenguaje no técnico.
+            </div>
+            <h2>1. ¿Qué es el Modelo C4?</h2>
+            <p>El modelo C4 es una forma visual de explicar cómo está construido un software en diferentes niveles de abstracción, desde la visión panorámica hasta el código.</p>
+        </section>
+
+        <section>
+            <h2>2. Nivel 1: Vista de Contexto (C1)</h2>
+            <p>Muestra quiénes usan el sistema y cómo este se relaciona con otras plataformas externas.</p>
+            
+            <div class="mermaid">
+                graph TB
+                    User((Usuario Financiero))
+                    Admin((Administrador TI))
+                    
+                    subgraph Enterprise [Agrovet Market]
+                        System[Sistema Finanzas AGV]
+                        ERP[ERP Odoo v17]
+                        Mail[Servidor de Correo]
+                    end
+                    
+                    SUNAT[SUNAT / OSE]
+                    
+                    User -->|Usa| System
+                    Admin -->|Configura| System
+                    
+                    System -->|Consulta| ERP
+                    System -->|Notifica| Mail
+                    System -->|Valida| SUNAT
+                    
+                    style System fill:#714B67,color:#fff,stroke:#5a3c52,stroke-width:2px
+                    style ERP fill:#999,color:#fff
+                    style Mail fill:#999,color:#fff
+                    style SUNAT fill:#999,color:#fff
+            </div>
+        </section>
+
+        <section>
+            <h2>3. Descripción de Elementos</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Elemento</th>
+                        <th>¿Qué hace?</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Usuario Financiero</strong></td>
+                        <td>Consulta cuentas, genera reportes y gestiona cobranzas.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sistema Finanzas AGV</strong></td>
+                        <td>Centraliza información y ofrece dashboards en tiempo real.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ERP Odoo</strong></td>
+                        <td>Fuente de verdad de facturas, pagos y datos maestros.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>4. Vista de Contenedores (C2) - Avance</h2>
+            <div class="mermaid">
+                graph LR
+                    Browser[Browser] -->|HTTPS/JSON| Frontend[Next.js App]
+                    Frontend -->|REST API| Backend[Flask API]
+                    Backend -->|XML-RPC| Odoo[Odoo ERP]
+                    Backend -->|SMTP| SMTP[Gmail Server]
+                    
+                    style Frontend fill:#875A7B,color:#fff
+                    style Backend fill:#714B67,color:#fff
+            </div>
+        </section>
+    </main>
+</body>
+</html>

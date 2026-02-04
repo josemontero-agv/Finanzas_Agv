@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADR-002 - Finanzas AGV</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <nav id="toc">
+        <div class="nav-logo">
+            <img src="../assets/logo-agrovet.png" alt="Agrovet Market Logo">
+        </div>
+        <h2><i class="bi bi-folder2-open"></i> Documentación</h2>
+        <ul>
+            <li><a href="../index.html"><i class="bi bi-house"></i> Inicio</a></li>
+            <li><a href="index.html" class="active"><i class="bi bi-diagram-2"></i> ADRs</a></li>
+        </ul>
+    </nav>
+    <main>
+        <h1>ADR-002: Plataforma Externa para Reportería</h1>
+        <section>
+            <p><strong>Estado:</strong> Aceptado</p>
+            <p><strong>Fecha:</strong> 2025-11-14</p>
+        </section>
+
+        <section>
+            <h2>Contexto</h2>
+            <p>Odoo presenta lentitud en la generación de reportes complejos y personalizados de cobranzas, lo que afecta la operatividad del equipo financiero.</p>
+        </section>
+
+        <section>
+            <h2>Decisión</h2>
+            <p>Desarrollar una plataforma externa (Finanzas AGV) que consuma datos de Odoo vía API y los procese de forma optimizada para la visualización y exportación.</p>
+        </section>
+
+        <section>
+            <h2>Consecuencias</h2>
+            <ul>
+                <li><strong>Positivas:</strong> Mayor velocidad, UX personalizada, menor carga en Odoo.</li>
+                <li><strong>Negativas:</strong> Necesidad de mantener un sistema adicional y asegurar la sincronización de datos.</li>
+            </ul>
+        </section>
+    </main>
+</body>
+</html>
