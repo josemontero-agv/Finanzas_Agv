@@ -12,7 +12,7 @@ def investigate_letters_model():
     """Investiga el modelo de letras de cambio en Odoo."""
     
     # Cargar variables de entorno manualmente
-    load_dotenv('.env.desarrollo')
+    load_dotenv('.env.produccion')
     
     url = os.getenv('ODOO_URL')
     db = os.getenv('ODOO_DB')

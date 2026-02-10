@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Rutas Web (Frontend).
+Rutas Web (Gateway hacia Frontend Next.js).
 
-Sirve las páginas HTML del sistema.
+Mantiene compatibilidad con URLs historicas de Flask redirigiendo
+al nuevo frontend en `frontend/`.
 """
 
-from flask import render_template, request, redirect, url_for, session, flash, jsonify
+from flask import request, redirect, session, jsonify
 from app.web import web_bp
 from app.core.supabase import SupabaseClient
 from app.core.odoo import OdooRepository
@@ -57,38 +58,24 @@ def health_check():
 # AUTENTICACIÓN
 # =============================================================================
 
+def _frontend_url(path='/'):
+    """Construye URL absoluta al frontend Next.js."""
+    base_url = current_app.config.get('FRONTEND_URL', 'http://localhost:3000').rstrip('/')
+    safe_path = path if path.startswith('/') else f'/{path}'
+    return f'{base_url}{safe_path}'
+
+
 @web_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    """
-    Página de login.
-    
-    TODO: Conectar con API de autenticación
-    """
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        
-        # TODO: Llamar a /api/v1/auth/login
-        # Por ahora, login dummy
-        if username and password:
-            session['username'] = username
-            session['logged_in'] = True
-            # Generar email basado en username (temporal hasta integración con Odoo)
-            session['email'] = f"{username.lower().replace(' ', '.')}@agrovet.com.pe"
-            flash('Login exitoso', 'success')
-            return redirect(url_for('web.dashboard'))
-        else:
-            flash('Credenciales inválidas', 'danger')
-    
-    return render_template('login.html')
+    """Redirige login legacy al frontend."""
+    return redirect(_frontend_url('/login'))
 
 
 @web_bp.route('/logout')
 def logout():
-    """Cierra sesión del usuario."""
+    """Cierra sesion legacy y redirige al frontend."""
     session.clear()
-    flash('Sesión cerrada correctamente', 'info')
-    return redirect(url_for('web.login'))
+    return redirect(_frontend_url('/login'))
 
 
 # =============================================================================
@@ -98,15 +85,8 @@ def logout():
 @web_bp.route('/')
 @web_bp.route('/dashboard')
 def dashboard():
-    """
-    Dashboard principal con KPIs.
-    
-    TODO: Obtener datos de APIs para mostrar métricas
-    """
-    if not session.get('logged_in'):
-        return redirect(url_for('web.login'))
-    
-    return render_template('dashboard.html', username=session.get('username'))
+    """Redirige dashboard legacy al frontend."""
+    return redirect(_frontend_url('/dashboard'))
 
 
 # =============================================================================
@@ -115,54 +95,26 @@ def dashboard():
 
 @web_bp.route('/collections/report-12')
 def collections_report_12():
-    """
-    Reporte de Cuenta 12 - Cuentas por Cobrar.
-    
-    FUNCIONAL: Conectado con API
-    """
-    if not session.get('logged_in'):
-        return redirect(url_for('web.login'))
-    
-    return render_template('collections/report_account12.html')
+    """Redirige reporte legacy de cobranzas al frontend."""
+    return redirect(_frontend_url('/collections'))
 
 
 @web_bp.route('/collections/report-national')
 def collections_report_national():
-    """
-    Reporte Nacional de Cobranzas.
-    
-    TODO: Implementar vista
-    """
-    if not session.get('logged_in'):
-        return redirect(url_for('web.login'))
-    
-    return render_template('en_progreso.html')
+    """Redirige reporte nacional legacy a cobranzas en frontend."""
+    return redirect(_frontend_url('/collections'))
 
 
 @web_bp.route('/collections/report-international')
 def collections_report_international():
-    """
-    Reporte Internacional de Cobranzas.
-    
-    TODO: Implementar vista
-    """
-    if not session.get('logged_in'):
-        return redirect(url_for('web.login'))
-    
-    return render_template('en_progreso.html')
+    """Redirige reporte internacional legacy a cobranzas en frontend."""
+    return redirect(_frontend_url('/collections'))
 
 
 @web_bp.route('/collections/dashboard')
 def collections_dashboard():
-    """
-    Dashboard de Cobranzas con gráficos.
-    
-    TODO: Implementar dashboard interactivo
-    """
-    if not session.get('logged_in'):
-        return redirect(url_for('web.login'))
-    
-    return render_template('en_progreso.html')
+    """Redirige dashboard de cobranzas legacy al frontend."""
+    return redirect(_frontend_url('/collections'))
 
 
 # =============================================================================
@@ -171,51 +123,26 @@ def collections_dashboard():
 
 @web_bp.route('/treasury/report-42')
 def treasury_report_42():
-    """
-    Reporte de Cuenta 42 - Cuentas por Pagar.
-    
-    FUNCIONAL: Conectado con API
-    """
-    if not session.get('logged_in'):
-        return redirect(url_for('web.login'))
-    
-    return render_template('treasury/report_account42.html')
+    """Redirige reporte de tesoreria legacy al frontend."""
+    return redirect(_frontend_url('/treasury'))
 
 
 @web_bp.route('/treasury/report-daily-payments')
 def treasury_report_daily_payments():
-    """
-    Reporte de Pagos Diarios - Registros Abiertos.
-    """
-    if not session.get('logged_in'):
-        return redirect(url_for('web.login'))
-    
-    return render_template('treasury/report_daily_payments.html')
+    """Redirige reporte diario legacy al frontend."""
+    return redirect(_frontend_url('/treasury'))
 
 
 @web_bp.route('/treasury/report-supplier-banks')
 def treasury_report_supplier_banks():
-    """
-    Reporte de Cuentas Bancarias de Proveedores.
-    """
-    if not session.get('logged_in'):
-        return redirect(url_for('web.login'))
-    
-    return render_template('treasury/report_supplier_banks.html')
-
+    """Redirige reporte de bancos legacy al frontend."""
+    return redirect(_frontend_url('/treasury'))
 
 
 @web_bp.route('/treasury/dashboard')
 def treasury_dashboard():
-    """
-    Dashboard de Tesorería.
-    
-    TODO: Implementar dashboard interactivo
-    """
-    if not session.get('logged_in'):
-        return redirect(url_for('web.login'))
-    
-    return render_template('en_progreso.html')
+    """Redirige dashboard de tesoreria legacy al frontend."""
+    return redirect(_frontend_url('/treasury'))
 
 
 # =============================================================================
@@ -224,46 +151,26 @@ def treasury_dashboard():
 
 @web_bp.route('/letters/dashboard')
 def letters_dashboard():
-    """
-    Dashboard de Letras.
-    """
-    if not session.get('logged_in'):
-        return redirect(url_for('web.login'))
-    
-    return render_template('letters/dashboard.html')
+    """Redirige dashboard de letras legacy al frontend."""
+    return redirect(_frontend_url('/letters'))
 
 
 @web_bp.route('/letters/management')
 def letters_management():
-    """
-    Gestión de Créditos - Envío de correos (Letras).
-    """
-    if not session.get('logged_in'):
-        return redirect(url_for('web.login'))
-    
-    return render_template('letters/manage.html')
+    """Redirige gestion de letras legacy al frontend."""
+    return redirect(_frontend_url('/letters'))
 
 
 @web_bp.route('/letters/to-recover')
 def letters_to_recover():
-    """
-    Gestión de letras por recuperar (Redirect a Management).
-    """
-    if not session.get('logged_in'):
-        return redirect(url_for('web.login'))
-    
-    return redirect(url_for('web.letters_management'))
+    """Redirige ruta legacy de letras por recuperar al frontend."""
+    return redirect(_frontend_url('/letters'))
 
 
 @web_bp.route('/letters/in-bank')
 def letters_in_bank():
-    """
-    Gestión de letras en banco (Redirect a Management).
-    """
-    if not session.get('logged_in'):
-        return redirect(url_for('web.login'))
-    
-    return redirect(url_for('web.letters_management'))
+    """Redirige ruta legacy de letras en banco al frontend."""
+    return redirect(_frontend_url('/letters'))
 
 
 # =============================================================================
@@ -272,15 +179,8 @@ def letters_in_bank():
 
 @web_bp.route('/detractions/send-certificates')
 def detractions_send():
-    """
-    Envío masivo de constancias de detracción.
-    
-    TODO: Implementar vista
-    """
-    if not session.get('logged_in'):
-        return redirect(url_for('web.login'))
-    
-    return render_template('en_progreso.html')
+    """Redirige detracciones legacy al frontend."""
+    return redirect(_frontend_url('/detractions'))
 
 
 # =============================================================================
@@ -289,13 +189,6 @@ def detractions_send():
 
 @web_bp.route('/dashboard/interdepartmental')
 def dashboard_interdepartmental():
-    """
-    Dashboard interdepartamental (Cobranzas + Tesorería).
-    
-    TODO: Implementar dashboard combinado
-    """
-    if not session.get('logged_in'):
-        return redirect(url_for('web.login'))
-    
-    return render_template('en_progreso.html')
+    """Redirige dashboard interdepartamental legacy al frontend."""
+    return redirect(_frontend_url('/dashboard'))
 

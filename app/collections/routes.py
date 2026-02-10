@@ -5,7 +5,7 @@ Rutas de Cobranzas (Collections).
 Endpoints para reportes de cuentas por cobrar.
 """
 
-from flask import request, jsonify, current_app, render_template
+from flask import request, jsonify, current_app
 from app.collections import collections_bp
 from app.collections.services import CollectionsService
 from app.core.odoo import OdooRepository
@@ -395,115 +395,13 @@ def filter_options():
 @cache.cached(timeout=300, query_string=True)
 def report_account12_rows():
     """
-    Endpoint para lazy loading con HTMX - retorna solo filas HTML.
-    VERSIÓN OPTIMIZADA con paginación real en Odoo.
+    Endpoint legacy de lazy loading HTML (deprecado).
     """
-    try:
-        print(f"[DEBUG] report_account12_rows llamado - page={request.args.get('page', 1)}")
-        # Parámetros de paginación
-        page = request.args.get('page', 1, type=int)
-        per_page = 50
-        
-        # Filtros
-        date_from = request.args.get('date_from')
-        date_to = request.args.get('date_to')
-        customer = request.args.get('customer')
-        account_codes = request.args.get('account_codes', '122,1212,123,1312,132,13')
-        sales_channel_id = request.args.get('sales_channel_id', type=int)
-        doc_type_id = request.args.get('doc_type_id', type=int)
-        cutoff_date = request.args.get('date_cutoff')
-        include_reconciled = request.args.get('include_reconciled') == 'true'
-        if cutoff_date:
-            include_reconciled = True
-        
-        # Crear repositorio y servicio
-        odoo_repo = _get_odoo_repository()
-        collections_service = CollectionsService(odoo_repo)
-        
-        # ✅ OBTENER DATOS PAGINADOS (solo esta página)
-        try:
-            result = collections_service.get_report_lines_paginated(
-                page=page,
-                per_page=per_page,
-                start_date=date_from,
-                end_date=date_to,
-                customer=customer,
-                account_codes=account_codes,
-                sales_channel_id=sales_channel_id,
-                doc_type_id=doc_type_id,
-                cutoff_date=cutoff_date,
-                include_reconciled=include_reconciled
-            )
-            
-            data = result['data']
-            has_more = result.get('has_more', False)
-            total_count = result.get('total_count', 0)
-            print(f"[DEBUG] Página {page}: {len(data)} filas, total={total_count}, has_more={has_more}")
-        except Exception as pagination_error:
-            print(f"[ERROR] Error en paginación optimizada: {pagination_error}")
-            import traceback
-            traceback.print_exc()
-            # Fallback: usar método original
-            print("[WARN] Usando método original como fallback")
-            all_data = collections_service.get_report_lines(
-                start_date=date_from,
-                end_date=date_to,
-                customer=customer,
-                account_codes=account_codes,
-                sales_channel_id=sales_channel_id,
-                doc_type_id=doc_type_id,
-                cutoff_date=cutoff_date,
-                include_reconciled=include_reconciled,
-                limit=0
-            )
-            # Paginar en memoria como fallback
-            start = (page - 1) * per_page
-            end = start + per_page
-            data = all_data[start:end]
-            has_more = len(all_data) > end
-            total_count = len(all_data)
-            print(f"[DEBUG] Fallback - Página {page}: {len(data)} filas, total={total_count}, has_more={has_more}")
-        
-        # Si no hay datos
-        if not data and page == 1:
-            return '''
-                <tr>
-                    <td colspan="32" class="text-center py-4 text-gray-500">
-                        No se encontraron registros con los filtros aplicados
-                    </td>
-                </tr>
-            '''
-        elif not data:
-            # Página sin datos - eliminar trigger de scroll infinito
-            return '''
-                <div id="infinite-scroll-trigger" hx-swap-oob="delete"></div>
-            '''
-        
-        print(f"[DEBUG] Datos obtenidos: {len(data)} filas, has_more={has_more}")
-        
-        # Renderizar filas
-        html = render_template('collections/report_account12_rows.html', rows=data)
-        
-        print(f"[DEBUG] HTML renderizado: {len(html)} caracteres, has_more={has_more}")
-        
-        # Para fetch/axios: retornar solo las filas HTML
-        # El frontend manejará el scroll infinito con Intersection Observer
-        # Si no hay más páginas, agregar un comentario que el frontend puede detectar
-        if not has_more:
-            html += '<!-- NO_MORE_DATA -->'
-        
-        return html
-        
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return f'''
-            <tr>
-                <td colspan="32" class="text-center text-red-600 py-4">
-                    Error: {str(e)}
-                </td>
-            </tr>
-        ''', 500
+    return jsonify({
+        'success': False,
+        'message': 'Endpoint deprecado. Use /api/v1/collections/report/account12 (JSON).',
+        'deprecated': True
+    }), 410
 
 
 @collections_bp.route('/report/account12/stats', methods=['GET'])

@@ -8,7 +8,7 @@ import os
 from dotenv import load_dotenv
 
 def investigate_bill_form():
-    load_dotenv('.env.desarrollo')
+    load_dotenv('.env.produccion')
     
     url = os.getenv('ODOO_URL')
     db = os.getenv('ODOO_DB')

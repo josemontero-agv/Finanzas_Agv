@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 def trace_flow(invoice_name=None):
     # Cargar env desde dos directorios arriba (estamos en scripts/investigation)
-    env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../.env.desarrollo'))
+    env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../.env.produccion'))
     load_dotenv(env_path)
     
     url = os.getenv('ODOO_URL')

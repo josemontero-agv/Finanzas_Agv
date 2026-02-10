@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía de Diseño - Finanzas AGV</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="nav.js" defer></script>
+</head>
+<body>
+    <nav id="toc">
+        <!-- Navegación cargada por nav.js -->
+    </nav>
+    <main>
+        <h1><i class="bi bi-palette"></i> Guía de Diseño y Paleta de Colores</h1>
+        
+        <p>Este documento resume los estándares visuales utilizados en la documentación del proyecto Finanzas AGV.</p>
+
+        <section>
+            <h2>1. Concepto de Diseño</h2>
+            <p>El diseño está orientado a un entorno <strong>Corporativo y Profesional</strong>, priorizando la legibilidad técnica y una presentación impecable.</p>
+            <ul>
+                <li><strong>Layout:</strong> Estructura de dos columnas con barra lateral (TOC) fija.</li>
+                <li><strong>Tipografía:</strong> Poppins para texto general y Fira Code para bloques técnicos.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>2. Paleta de Colores</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Elemento</th>
+                        <th>Color</th>
+                        <th>Hex</th>
+                        <th>Uso</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Primario</td>
+                        <td style="background: #714B67;"></td>
+                        <td><code>#714B67</code></td>
+                        <td>Títulos y botones.</td>
+                    </tr>
+                    <tr>
+                        <td>Secundario</td>
+                        <td style="background: #5A3C52;"></td>
+                        <td><code>#5A3C52</code></td>
+                        <td>Hover y énfasis.</td>
+                    </tr>
+                    <tr>
+                        <td>Acento</td>
+                        <td style="background: #875A7B;"></td>
+                        <td><code>#875A7B</code></td>
+                        <td>Bordes y badges.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>3. Bloques de Información</h2>
+            <div class="note">
+                <strong>Nota:</strong> Las sombras y bordes redondeados son clave para la jerarquía visual del sitio.
+            </div>
+            <pre><code>// Ejemplo de estilo de código
+.card {
+    border-radius: 16px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}</code></pre>
+        </section>
+    </main>
+
+    <button class="print-button" onclick="window.print()" title="Exportar a PDF">
+        <i class="bi bi-file-earmark-pdf"></i>
+    </button>
+</body>
+</html>

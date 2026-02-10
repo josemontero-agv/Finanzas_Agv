@@ -53,6 +53,9 @@ class Config:
     # Modo de desarrollo para correos (redirige todos los correos a un email de prueba)
     DEV_EMAIL_MODE = os.getenv('DEV_EMAIL_MODE', 'False').lower() == 'true'
     DEV_EMAIL_RECIPIENT = os.getenv('DEV_EMAIL_RECIPIENT', 'josemontero2415@gmail.com')
+
+    # URL pública del frontend Next.js (para redirecciones del gateway web)
+    FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
     
     @staticmethod
     def init_app(app):
@@ -112,6 +115,7 @@ class DevelopmentConfig(Config):
         app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
         app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
         app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'jose.montero@agrovetmarket.com')
+        app.config['FRONTEND_URL'] = os.getenv('FRONTEND_URL', 'http://localhost:3000')
         
         # Modo de desarrollo para correos (activado por defecto en desarrollo)
         app.config['DEV_EMAIL_MODE'] = os.getenv('DEV_EMAIL_MODE', 'True').lower() == 'true'
@@ -178,6 +182,7 @@ class ProductionConfig(Config):
         app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
         app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
         app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'jose.montero@agrovetmarket.com')
+        app.config['FRONTEND_URL'] = os.getenv('FRONTEND_URL', 'http://localhost:3000')
         
         # Modo de desarrollo para correos (desactivado en producción)
         app.config['DEV_EMAIL_MODE'] = os.getenv('DEV_EMAIL_MODE', 'False').lower() == 'true'

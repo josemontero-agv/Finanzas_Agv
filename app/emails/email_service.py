@@ -3,8 +3,10 @@
 Servicio de Envío de Emails.
 """
 
+from pathlib import Path
 from flask_mail import Mail, Message
-from flask import current_app, render_template
+from flask import current_app
+from jinja2 import Environment, FileSystemLoader
 from app.emails.email_logger import EmailLogger
 
 class EmailService:
@@ -28,6 +30,22 @@ class EmailService:
         
         # Inicializar logger de auditoría
         self.logger = EmailLogger()
+
+    def _get_frontend_templates_dir(self):
+        """
+        Retorna la ruta absoluta del directorio de templates de email en frontend.
+        """
+        project_root = Path(current_app.root_path).parent
+        return project_root / 'frontend' / 'email-templates'
+
+    def _render_email_template(self, template_name, **context):
+        """
+        Renderiza un template Jinja2 desde frontend/email-templates.
+        """
+        templates_dir = self._get_frontend_templates_dir()
+        env = Environment(loader=FileSystemLoader(str(templates_dir)))
+        template = env.get_template(template_name)
+        return template.render(**context)
     
     def send_letters_to_recover(self, recipients_data):
         """
@@ -52,9 +70,9 @@ class EmailService:
         
         for recipient in recipients_data:
             try:
-                # Renderizar template
-                html_body = render_template(
-                    'emails/letters_recover.html',
+                # Renderizar template (ubicado en frontend/email-templates)
+                html_body = self._render_email_template(
+                    'letters_recover.html',
                     customer_name=recipient['name'],
                     letters=recipient['letters']
                 )
@@ -98,9 +116,9 @@ class EmailService:
         
         for recipient in recipients_data:
             try:
-                # Renderizar template
-                html_body = render_template(
-                    'emails/letters_bank.html',
+                # Renderizar template (ubicado en frontend/email-templates)
+                html_body = self._render_email_template(
+                    'letters_bank.html',
                     customer_name=recipient['name'],
                     letters=recipient['letters']
                 )
@@ -195,9 +213,9 @@ class EmailService:
                     
                     formatted_letters.append(letter_copy)
 
-                # Renderizar template profesional basado en el diseño del frontend
-                body_html = render_template(
-                    'emails/letters_acceptance.html',
+                # Renderizar template profesional desde frontend/email-templates
+                body_html = self._render_email_template(
+                    'letters_acceptance.html',
                     customer_name=recipient['name'],
                     letters=formatted_letters,
                     today=today_str
@@ -228,7 +246,7 @@ class EmailService:
                     # Adjuntar logo como CID para que se muestre inline
                     try:
                         import os
-                        logo_path = os.path.join(current_app.root_path, 'templates', 'emails', 'agrovet-market.png')
+                        logo_path = os.path.join(current_app.root_path, '..', 'frontend', 'public', 'img', 'agrovet-market.png')
                         if os.path.exists(logo_path):
                             with open(logo_path, 'rb') as f:
                                 msg.attach(

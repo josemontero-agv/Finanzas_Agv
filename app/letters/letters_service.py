@@ -59,8 +59,7 @@ class LettersService:
                 'city': cust['city'],
                 'payment_state': 'no_paid',
                 'ref': f'REF-{i}',
-                'days_overdue': (datetime.now() - due_dt).days if datetime.now() > due_dt else 0,
-                'unique_number': f'U-{1000000+i}'
+                'days_overdue': (datetime.now() - due_dt).days if datetime.now() > due_dt else 0
             })
         return mock_data
     
@@ -181,8 +180,7 @@ class LettersService:
                         'status_calc': self._calculate_status(orig_date, client.get('city', '') if client else ''),
                         'salesperson': orig_user,
                         'customer_email': client.get('email', '') if client else '',
-                        'state': move.get('state', ''),
-                        'unique_number': move.get('ref', '') # Usamos ref como placeholder para número único
+                        'state': move.get('state', '')
                     })
                 except Exception as row_error:
                     print(f"[WARN] Error procesando letra {move.get('id')}: {row_error}")
@@ -197,62 +195,46 @@ class LettersService:
             return []
 
     def _calculate_status(self, date_str, city):
-        """Calcula el estado basado en la ubicación y días transcurridos."""
-        if not date_str: return "VIGENTE"
+        """
+        Calcula el estado de la letra según días transcurridos y ciudad.
+        
+        Reglas:
+        - Límite de días: 4 para Lima, 10 para otras ciudades.
+        - "VENCIDO"     : days > limit
+        - "POR VENCER"  : (limit - 2) < days <= limit
+        - "VIGENTE"     : resto de casos o ante errores/fecha vacía.
+        """
+        if not date_str:
+            return "VIGENTE"
         try:
             from datetime import datetime
             dt = datetime.strptime(date_str, '%Y-%m-%d')
             days = (datetime.now() - dt).days
             limit = 4 if city == 'Lima' else 10
-            return "POR RECUPERAR" if days > limit else "VIGENTE"
-        except: return "VIGENTE"
+
+            if days > limit:
+                return "VENCIDO"
+            if days > (limit - 2):
+                return "POR VENCER"
+            return "VIGENTE"
+        except Exception:
+            return "VIGENTE"
 
     def get_letters_in_bank(self, start_date=None, end_date=None, bank=None):
         """
         Obtiene letras enviadas al banco.
         """
-        # Mock data por ahora para visualización
-        mock_data = []
-        banks = ['BCP', 'BBVA', 'Interbank', 'Scotiabank']
-        customers = [
-            {'name': 'Agrovet S.A.', 'vat': '20123456789', 'city': 'Lima'},
-            {'name': 'Distribuidora Norte', 'vat': '20543219876', 'city': 'Trujillo'}
-        ]
-        
-        for i in range(1, 10):
-            issue_dt = datetime.now() - timedelta(days=random.randint(20, 40))
-            due_dt = issue_dt + timedelta(days=60)
-            cust = random.choice(customers)
-            bank_name = random.choice(banks)
-            
-            mock_data.append({
-                'id': 100 + i,
-                'vat': cust['vat'],
-                'acceptor_id': cust['name'],
-                'number': f'L-BNK-{2024000+i}',
-                'ref_docs': f'F001-{random.randint(5000,9999)}',
-                'amount': round(random.uniform(5000, 20000), 2),
-                'currency': 'PEN',
-                'invoice_date': issue_dt.strftime('%Y-%m-%d'),
-                'due_date': due_dt.strftime('%Y-%m-%d'),
-                'status_calc': 'EN BANCO',
-                'salesperson': 'Vendedor Banco',
-                'city': cust['city'],
-                'bank': bank_name,
-                'unique_number': f'BNK-{random.randint(100000, 999999)}',
-                'customer_email': 'josemontero2415@gmail.com'
-            })
-        return mock_data
+        # Mock data por ahora
+        return []
 
     def get_letters_summary(self):
         """
         Obtiene resumen estadístico de letras.
         """
-        # Por ahora valores mock basados en la lógica actual
         return {
-            'to_accept': 14, # Aproximado de _get_mock_letters_to_accept
-            'to_recover': 24, # Aproximado de get_letters_to_recover
-            'in_bank': 9     # Aproximado de get_letters_in_bank
+            'to_accept': 0,
+            'to_recover': 0,
+            'in_bank': 0
         }
 
     def _get_mock_letters_to_accept(self):
@@ -279,7 +261,6 @@ class LettersService:
                 'status_calc': self._calculate_status(dt.strftime('%Y-%m-%d'), cust['city']),
                 'salesperson': 'Vendedor Mock',
                 'customer_email': cust['email'],
-                'state': 'to_accept',
-                'unique_number': f'MOCK-U-{i}'
+                'state': 'to_accept'
             })
         return mock_data
