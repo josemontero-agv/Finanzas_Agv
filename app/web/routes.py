@@ -85,8 +85,8 @@ def logout():
 @web_bp.route('/')
 @web_bp.route('/dashboard')
 def dashboard():
-    """Redirige dashboard legacy al frontend."""
-    return redirect(_frontend_url('/dashboard'))
+    """Redirige dashboard legacy a Letras (modo restringido)."""
+    return redirect(_frontend_url('/letters'))
 
 
 # =============================================================================
@@ -95,26 +95,26 @@ def dashboard():
 
 @web_bp.route('/collections/report-12')
 def collections_report_12():
-    """Redirige reporte legacy de cobranzas al frontend."""
-    return redirect(_frontend_url('/collections'))
+    """Redirige módulo no disponible hacia Letras."""
+    return redirect(_frontend_url('/letters'))
 
 
 @web_bp.route('/collections/report-national')
 def collections_report_national():
-    """Redirige reporte nacional legacy a cobranzas en frontend."""
-    return redirect(_frontend_url('/collections'))
+    """Redirige módulo no disponible hacia Letras."""
+    return redirect(_frontend_url('/letters'))
 
 
 @web_bp.route('/collections/report-international')
 def collections_report_international():
-    """Redirige reporte internacional legacy a cobranzas en frontend."""
-    return redirect(_frontend_url('/collections'))
+    """Redirige módulo no disponible hacia Letras."""
+    return redirect(_frontend_url('/letters'))
 
 
 @web_bp.route('/collections/dashboard')
 def collections_dashboard():
-    """Redirige dashboard de cobranzas legacy al frontend."""
-    return redirect(_frontend_url('/collections'))
+    """Redirige módulo no disponible hacia Letras."""
+    return redirect(_frontend_url('/letters'))
 
 
 # =============================================================================
@@ -123,26 +123,26 @@ def collections_dashboard():
 
 @web_bp.route('/treasury/report-42')
 def treasury_report_42():
-    """Redirige reporte de tesoreria legacy al frontend."""
-    return redirect(_frontend_url('/treasury'))
+    """Redirige módulo no disponible hacia Letras."""
+    return redirect(_frontend_url('/letters'))
 
 
 @web_bp.route('/treasury/report-daily-payments')
 def treasury_report_daily_payments():
-    """Redirige reporte diario legacy al frontend."""
-    return redirect(_frontend_url('/treasury'))
+    """Redirige módulo no disponible hacia Letras."""
+    return redirect(_frontend_url('/letters'))
 
 
 @web_bp.route('/treasury/report-supplier-banks')
 def treasury_report_supplier_banks():
-    """Redirige reporte de bancos legacy al frontend."""
-    return redirect(_frontend_url('/treasury'))
+    """Redirige módulo no disponible hacia Letras."""
+    return redirect(_frontend_url('/letters'))
 
 
 @web_bp.route('/treasury/dashboard')
 def treasury_dashboard():
-    """Redirige dashboard de tesoreria legacy al frontend."""
-    return redirect(_frontend_url('/treasury'))
+    """Redirige módulo no disponible hacia Letras."""
+    return redirect(_frontend_url('/letters'))
 
 
 # =============================================================================
@@ -179,8 +179,8 @@ def letters_in_bank():
 
 @web_bp.route('/detractions/send-certificates')
 def detractions_send():
-    """Redirige detracciones legacy al frontend."""
-    return redirect(_frontend_url('/detractions'))
+    """Redirige módulo no disponible hacia Letras."""
+    return redirect(_frontend_url('/letters'))
 
 
 # =============================================================================
@@ -189,6 +189,6 @@ def detractions_send():
 
 @web_bp.route('/dashboard/interdepartmental')
 def dashboard_interdepartmental():
-    """Redirige dashboard interdepartamental legacy al frontend."""
-    return redirect(_frontend_url('/dashboard'))
+    """Redirige módulo no disponible hacia Letras."""
+    return redirect(_frontend_url('/letters'))
 

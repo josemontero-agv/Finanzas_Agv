@@ -10,6 +10,21 @@ from app.auth import auth_bp
 from app.core.odoo import OdooRepository
 
 
+def _normalize_user_email(username, provided_email=None):
+    """
+    Normaliza email corporativo del usuario autenticado.
+    Si el username ya es email, lo usa; de lo contrario agrega el dominio corporativo.
+    """
+    domain = current_app.config.get('USER_EMAIL_DOMAIN', 'agrovetmarket.com').strip().lower()
+    candidate = (provided_email or username or '').strip().lower()
+
+    if '@' in candidate:
+        return candidate
+    if candidate:
+        return f'{candidate}@{domain}'
+    return ''
+
+
 @auth_bp.route('/login', methods=['POST'])
 def login():
     """
@@ -69,11 +84,18 @@ def login():
             
             # Autenticar usuario
             if odoo_repo.authenticate_user(username, password):
+                user_email = _normalize_user_email(username, data.get('email'))
+                session['logged_in'] = True
+                session['username'] = username
+                session['email'] = user_email
+                session.permanent = True
+
                 return jsonify({
                     'success': True,
                     'message': 'Login exitoso',
                     'token': 'dummy_token_12345',  # En producción: generar JWT real
-                    'user': username
+                    'user': username,
+                    'email': user_email
                 }), 200
             else:
                 return jsonify({
@@ -124,6 +146,16 @@ def user_info():
         }), 401
 
 
+@auth_bp.route('/logout', methods=['POST'])
+def logout():
+    """Cierra la sesión del usuario autenticado."""
+    session.clear()
+    return jsonify({
+        'success': True,
+        'message': 'Sesión cerrada'
+    }), 200
+
+
 @auth_bp.route('/status', methods=['GET'])
 def status():
     """
@@ -139,6 +171,6 @@ def status():
     return jsonify({
         'module': 'auth',
         'status': 'active',
-        'endpoints': ['/login', '/status', '/user-info']
+        'endpoints': ['/login', '/logout', '/status', '/user-info']
     }), 200
 

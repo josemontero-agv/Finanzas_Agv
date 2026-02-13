@@ -6,7 +6,7 @@ Implementa el patrón Factory para crear instancias de la aplicación Flask
 con diferentes configuraciones.
 """
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_caching import Cache
 from flask_compress import Compress
 from flask_mail import Mail
@@ -37,6 +37,7 @@ def create_app(config_name='development'):
     # Cargar configuración
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
+    app.config.setdefault('RESTRICT_TO_LETTERS_ONLY', True)
     
     # Configurar CORS para Next.js frontend
     CORS(app, resources={
@@ -103,24 +104,70 @@ def create_app(config_name='development'):
     # Registrar blueprint Web (Frontend)
     from app.web import web_bp
     app.register_blueprint(web_bp)
+
+    @app.before_request
+    def restrict_api_modules():
+        """
+        Restringe temporalmente la API a endpoints de Letras.
+        Evita exposición de módulos en desarrollo por acceso directo.
+        """
+        if not app.config.get('RESTRICT_TO_LETTERS_ONLY', False):
+            return None
+
+        if request.method == 'OPTIONS':
+            return None
+
+        path = request.path or ''
+
+        # Endpoints públicos fuera de /api/v1
+        if path == '/api/health':
+            return None
+
+        # Solo controlar endpoints versionados de API
+        if not path.startswith('/api/v1/'):
+            return None
+
+        allowed_prefixes = (
+            '/api/v1/letters',
+            '/api/v1/auth/login',
+            '/api/v1/auth/logout',
+            '/api/v1/auth/status',
+            '/api/v1/auth/user-info',
+        )
+
+        if any(path == prefix or path.startswith(f'{prefix}/') for prefix in allowed_prefixes):
+            return None
+
+        return jsonify({
+            'success': False,
+            'message': 'Módulo no disponible actualmente',
+            'status': 403
+        }), 403
     
     # Ruta raíz informativa
     @app.route('/')
     def index():
         """Endpoint raíz con información de la API."""
+        restricted_mode = app.config.get('RESTRICT_TO_LETTERS_ONLY', False)
         return jsonify({
             'app': 'Finanzas AGV API',
             'version': '1.0.0',
-            'description': 'API REST para gestión financiera - Cobranzas y Tesorería',
-            'endpoints': {
-                'auth': '/api/v1/auth',
-                'collections': '/api/v1/collections',
-                'treasury': '/api/v1/treasury',
-                'exports': '/api/v1/exports',
-                'emails': '/api/v1/emails',
-                'letters': '/api/v1/letters',
-                'detractions': '/api/v1/detractions'
-            },
+            'description': 'API REST para gestión financiera - Modo Letras',
+            'endpoints': (
+                {
+                    'auth': '/api/v1/auth',
+                    'letters': '/api/v1/letters'
+                } if restricted_mode else {
+                    'auth': '/api/v1/auth',
+                    'collections': '/api/v1/collections',
+                    'treasury': '/api/v1/treasury',
+                    'exports': '/api/v1/exports',
+                    'emails': '/api/v1/emails',
+                    'letters': '/api/v1/letters',
+                    'detractions': '/api/v1/detractions'
+                }
+            ),
+            'restricted_mode': restricted_mode,
             'status': 'running'
         })
     
@@ -146,6 +193,7 @@ def create_app(config_name='development'):
     
     print(f"[OK] Aplicación creada con configuración: {config_name}")
     print(f"[OK] Blueprints API registrados: auth, collections, treasury, exports, emails, letters, detractions")
+    print(f"[OK] Restricción temporal de módulos activa: {app.config.get('RESTRICT_TO_LETTERS_ONLY', False)}")
     print(f"[OK] Blueprint Web (Frontend) registrado")
     print(f"[OK] Flask-Caching configurado (timeout: 300s)")
     print(f"[OK] Flask-Compress configurado (nivel: 6)")

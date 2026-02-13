@@ -6,14 +6,17 @@ Este script ayuda a identificar los campos correctos del módulo de letras.
 
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 from app import create_app
 from app.core.odoo import OdooRepository
 
 def investigate_letters_model():
     """Investiga el modelo de letras de cambio en Odoo."""
-    app = create_app('development')
+    app = create_app('production')
     
     with app.app_context():
         try:

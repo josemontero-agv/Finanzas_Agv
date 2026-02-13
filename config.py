@@ -52,10 +52,14 @@ class Config:
     
     # Modo de desarrollo para correos (redirige todos los correos a un email de prueba)
     DEV_EMAIL_MODE = os.getenv('DEV_EMAIL_MODE', 'False').lower() == 'true'
-    DEV_EMAIL_RECIPIENT = os.getenv('DEV_EMAIL_RECIPIENT', 'josemontero2415@gmail.com')
+    DEV_EMAIL_RECIPIENT = os.getenv('DEV_EMAIL_RECIPIENT', 'creditosycobranzas@agrovetmarket.com')
 
     # URL pública del frontend Next.js (para redirecciones del gateway web)
     FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+
+    # Dominio corporativo para identidad de usuario/remitente
+    USER_EMAIL_DOMAIN = os.getenv('USER_EMAIL_DOMAIN', 'agrovetmarket.com')
+    ALLOWED_EMAIL_SENDER_DOMAIN = os.getenv('ALLOWED_EMAIL_SENDER_DOMAIN', 'agrovetmarket.com')
     
     @staticmethod
     def init_app(app):
@@ -116,10 +120,12 @@ class DevelopmentConfig(Config):
         app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
         app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'jose.montero@agrovetmarket.com')
         app.config['FRONTEND_URL'] = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+        app.config['USER_EMAIL_DOMAIN'] = os.getenv('USER_EMAIL_DOMAIN', 'agrovetmarket.com')
+        app.config['ALLOWED_EMAIL_SENDER_DOMAIN'] = os.getenv('ALLOWED_EMAIL_SENDER_DOMAIN', 'agrovetmarket.com')
         
         # Modo de desarrollo para correos (activado por defecto en desarrollo)
         app.config['DEV_EMAIL_MODE'] = os.getenv('DEV_EMAIL_MODE', 'True').lower() == 'true'
-        app.config['DEV_EMAIL_RECIPIENT'] = os.getenv('DEV_EMAIL_RECIPIENT', 'josemontero2415@gmail.com')
+        app.config['DEV_EMAIL_RECIPIENT'] = os.getenv('DEV_EMAIL_RECIPIENT', 'creditosycobranzas@agrovetmarket.com')
 
         # Configuración Celery Dict
         app.config['CELERY'] = {
@@ -183,10 +189,12 @@ class ProductionConfig(Config):
         app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
         app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'jose.montero@agrovetmarket.com')
         app.config['FRONTEND_URL'] = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+        app.config['USER_EMAIL_DOMAIN'] = os.getenv('USER_EMAIL_DOMAIN', 'agrovetmarket.com')
+        app.config['ALLOWED_EMAIL_SENDER_DOMAIN'] = os.getenv('ALLOWED_EMAIL_SENDER_DOMAIN', 'agrovetmarket.com')
         
         # Modo de desarrollo para correos (desactivado en producción)
         app.config['DEV_EMAIL_MODE'] = os.getenv('DEV_EMAIL_MODE', 'False').lower() == 'true'
-        app.config['DEV_EMAIL_RECIPIENT'] = os.getenv('DEV_EMAIL_RECIPIENT', 'josemontero2415@gmail.com')
+        app.config['DEV_EMAIL_RECIPIENT'] = os.getenv('DEV_EMAIL_RECIPIENT', 'creditosycobranzas@agrovetmarket.com')
 
         # Configuración Celery Dict
         app.config['CELERY'] = {

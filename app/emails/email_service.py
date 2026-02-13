@@ -31,6 +31,19 @@ class EmailService:
         # Inicializar logger de auditoría
         self.logger = EmailLogger()
 
+    def _resolve_sender_email(self, sender_email=None):
+        """
+        Resuelve remitente permitido por dominio corporativo.
+        Si no cumple política, usa remitente por defecto configurado.
+        """
+        default_sender = current_app.config.get('MAIL_DEFAULT_SENDER', 'noreply@agrovetmarket.com')
+        allowed_domain = current_app.config.get('ALLOWED_EMAIL_SENDER_DOMAIN', 'agrovetmarket.com').strip().lower()
+
+        candidate = (sender_email or '').strip().lower()
+        if candidate and candidate.endswith(f'@{allowed_domain}'):
+            return candidate
+        return default_sender
+
     def _get_frontend_templates_dir(self):
         """
         Retorna la ruta absoluta del directorio de templates de email en frontend.
@@ -47,7 +60,7 @@ class EmailService:
         template = env.get_template(template_name)
         return template.render(**context)
     
-    def send_letters_to_recover(self, recipients_data):
+    def send_letters_to_recover(self, recipients_data, sender_email=None):
         """
         Envía correos de letras por recuperar.
         
@@ -82,11 +95,13 @@ class EmailService:
                 
                 # Enviar correo
                 if self.mail:
+                    resolved_sender = self._resolve_sender_email(sender_email)
                     msg = Message(
                         subject=subject,
                         recipients=[recipient['email']],
                         html=html_body,
-                        sender=current_app.config.get('MAIL_DEFAULT_SENDER', 'noreply@agrovetmarket.com')
+                        sender=resolved_sender,
+                        reply_to=resolved_sender
                     )
                     self.mail.send(msg)
                     print(f"[OK] Email enviado a {recipient['email']}")
@@ -104,7 +119,7 @@ class EmailService:
         
         return results
     
-    def send_letters_in_bank(self, recipients_data):
+    def send_letters_in_bank(self, recipients_data, sender_email=None):
         """
         Envía correos de letras en banco.
         """
@@ -128,11 +143,13 @@ class EmailService:
                 
                 # Enviar correo
                 if self.mail:
+                    resolved_sender = self._resolve_sender_email(sender_email)
                     msg = Message(
                         subject=subject,
                         recipients=[recipient['email']],
                         html=html_body,
-                        sender=current_app.config.get('MAIL_DEFAULT_SENDER', 'noreply@agrovetmarket.com')
+                        sender=resolved_sender,
+                        reply_to=resolved_sender
                     )
                     self.mail.send(msg)
                     print(f"[OK] Email enviado a {recipient['email']}")
@@ -156,7 +173,7 @@ class EmailService:
         """
         raise NotImplementedError("Funcionalidad pendiente de implementación")
     
-    def send_acceptance_reminders(self, recipients_data):
+    def send_acceptance_reminders(self, recipients_data, sender_email=None):
         """
         Envía correos para firma de letras (estado 'to_accept').
         
@@ -179,7 +196,7 @@ class EmailService:
         
         # Verificar si estamos en modo desarrollo
         dev_mode = current_app.config.get('DEV_EMAIL_MODE', False)
-        dev_email = current_app.config.get('DEV_EMAIL_RECIPIENT', 'josemontero2415@gmail.com')
+        dev_email = current_app.config.get('DEV_EMAIL_RECIPIENT', 'creditosycobranzas@agrovetmarket.com')
         
         from datetime import datetime
         now = datetime.now()
@@ -236,11 +253,13 @@ class EmailService:
                 
                 # Enviar correo
                 if self.mail:
+                    resolved_sender = self._resolve_sender_email(sender_email)
                     msg = Message(
                         subject=subject,
                         recipients=[actual_recipient],
                         html=body_html,
-                        sender=current_app.config.get('MAIL_DEFAULT_SENDER', 'jose.montero@agrovetmarket.com')
+                        sender=resolved_sender,
+                        reply_to=resolved_sender
                     )
                     
                     # Adjuntar logo como CID para que se muestre inline

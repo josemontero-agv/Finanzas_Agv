@@ -10,6 +10,7 @@ from app.letters import letters_bp
 from app.letters.letters_service import LettersService
 from app.emails.email_service import EmailService
 from app.core.odoo import OdooRepository
+from app.auth.security import require_login, get_authenticated_user_email
 
 def get_odoo_repository():
     """Helper para crear instancia de OdooRepository desde la configuración."""
@@ -35,6 +36,7 @@ def get_email_service():
 
 
 @letters_bp.route('/to-accept', methods=['GET'])
+@require_login
 def get_letters_to_accept():
     """
     Endpoint para obtener letras en estado 'to_accept' (Por aceptar).
@@ -70,6 +72,7 @@ def get_letters_to_accept():
 
 
 @letters_bp.route('/to-recover', methods=['GET'])
+@require_login
 def get_letters_to_recover():
     """
     Endpoint para obtener letras por recuperar.
@@ -100,6 +103,7 @@ def get_letters_to_recover():
 
 
 @letters_bp.route('/in-bank', methods=['GET'])
+@require_login
 def get_letters_in_bank():
     """
     Endpoint para obtener letras en banco.
@@ -130,6 +134,7 @@ def get_letters_in_bank():
 
 
 @letters_bp.route('/send-acceptance', methods=['POST'])
+@require_login
 def send_acceptance_emails():
     """
     Envía correos de recordatorio de firma para letras en estado 'to_accept'.
@@ -193,7 +198,11 @@ def send_acceptance_emails():
         # 3. Enviar correos usando el método de aceptación
         email_service = get_email_service()
         recipients_data = list(grouped_by_email.values())
-        result = email_service.send_acceptance_reminders(recipients_data)
+        sender_email = get_authenticated_user_email()
+        result = email_service.send_acceptance_reminders(
+            recipients_data,
+            sender_email=sender_email
+        )
         
         return jsonify({
             'success': True,
@@ -215,6 +224,7 @@ def send_acceptance_emails():
 
 
 @letters_bp.route('/send-recover', methods=['POST'])
+@require_login
 def send_recover_emails():
     """
     Envía correos de recordatorio de firma.
@@ -257,7 +267,11 @@ def send_recover_emails():
         # 3. Enviar correos
         email_service = get_email_service()
         recipients_data = list(grouped_by_customer.values())
-        result = email_service.send_letters_to_recover(recipients_data)
+        sender_email = get_authenticated_user_email()
+        result = email_service.send_letters_to_recover(
+            recipients_data,
+            sender_email=sender_email
+        )
         
         return jsonify({
             'success': True,
@@ -274,6 +288,7 @@ def send_recover_emails():
 
 
 @letters_bp.route('/send-bank', methods=['POST'])
+@require_login
 def send_bank_emails():
     """
     Envía avisos de letras en banco (Número de pago).
@@ -314,7 +329,11 @@ def send_bank_emails():
         # 3. Enviar correos
         email_service = get_email_service()
         recipients_data = list(grouped_by_customer.values())
-        result = email_service.send_letters_in_bank(recipients_data)
+        sender_email = get_authenticated_user_email()
+        result = email_service.send_letters_in_bank(
+            recipients_data,
+            sender_email=sender_email
+        )
         
         return jsonify({
             'success': True,
@@ -331,6 +350,7 @@ def send_bank_emails():
 
 
 @letters_bp.route('/generate-schedule', methods=['POST'])
+@require_login
 def generate_bank_schedule():
     """
     Endpoint para generar planilla bancaria de letras.
@@ -344,6 +364,7 @@ def generate_bank_schedule():
 
 
 @letters_bp.route('/summary', methods=['GET'])
+@require_login
 def get_summary():
     """
     Endpoint para obtener resumen de letras.

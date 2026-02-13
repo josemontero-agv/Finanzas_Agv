@@ -18,6 +18,12 @@ class LettersService:
             odoo_repository (OdooRepository): Instancia del repositorio de Odoo
         """
         self.repository = odoo_repository
+
+    def _normalize_status(self, status):
+        """
+        Normaliza estados legacy para no exponer valores descontinuados.
+        """
+        return "VENCIDO" if status == "POR RECUPERAR" else status
     
     def get_letters_to_recover(self, start_date=None, end_date=None, customer=None):
         """
@@ -41,7 +47,9 @@ class LettersService:
             if customer and customer.lower() not in cust['name'].lower():
                 continue
                 
-            status_calc = self._calculate_status(issue_dt.strftime('%Y-%m-%d'), cust['city'])
+            status_calc = self._normalize_status(
+                self._calculate_status(issue_dt.strftime('%Y-%m-%d'), cust['city'])
+            )
 
             mock_data.append({
                 'id': i,
@@ -177,7 +185,9 @@ class LettersService:
                         'currency': move.get('currency_id')[1] if move.get('currency_id') else 'PEN',
                         'invoice_date': orig_date,
                         'due_date': move.get('invoice_date_due', ''),
-                        'status_calc': self._calculate_status(orig_date, client.get('city', '') if client else ''),
+                        'status_calc': self._normalize_status(
+                            self._calculate_status(orig_date, client.get('city', '') if client else '')
+                        ),
                         'salesperson': orig_user,
                         'customer_email': client.get('email', '') if client else '',
                         'state': move.get('state', '')
@@ -258,7 +268,9 @@ class LettersService:
                 'currency': 'PEN',
                 'invoice_date': dt.strftime('%Y-%m-%d'),
                 'due_date': (dt + timedelta(days=30)).strftime('%Y-%m-%d'),
-                'status_calc': self._calculate_status(dt.strftime('%Y-%m-%d'), cust['city']),
+                'status_calc': self._normalize_status(
+                    self._calculate_status(dt.strftime('%Y-%m-%d'), cust['city'])
+                ),
                 'salesperson': 'Vendedor Mock',
                 'customer_email': cust['email'],
                 'state': 'to_accept'

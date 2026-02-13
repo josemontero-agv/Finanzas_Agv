@@ -38,6 +38,57 @@ git checkout -b feat/nueva-mejora
 git commit -m "feat: implementar nueva mejora"
 git push origin feat/nueva-mejora</code></pre>
         </section>
+
+        <section>
+            <h2>3. Frontend como submódulo (rama <code>frontend</code>)</h2>
+            <p>El frontend Next.js vive en la carpeta <code>frontend/</code> con su propio historial Git. En el remoto:</p>
+            <ul>
+                <li><strong>main</strong>: repo completo (app/, docs/, frontend como submódulo).</li>
+                <li><strong>frontend</strong>: rama con solo el código del frontend (no se hace PR contra main).</li>
+            </ul>
+
+            <h3>3.1 Subir cambios del frontend</h3>
+            <p>Trabaja siempre dentro de <code>frontend/</code>. La rama local del frontend es <code>main</code> y hace push a <code>origin/frontend</code>:</p>
+            <pre><code>cd frontend
+# ... hacer cambios ...
+git add .
+git commit -m "feat: descripción del cambio"
+git push</code></pre>
+            <p>O explícito: <code>git push origin main</code> (sube tu <code>main</code> local a la rama <code>frontend</code> en GitHub).</p>
+
+            <h3>3.2 Actualizar <code>main</code> del repo con el último frontend</h3>
+            <p>Para que la rama <code>main</code> del proyecto apunte al último estado del frontend, <strong>no se usa Pull Request</strong> (main y frontend tienen historiales distintos). Se hace en local:</p>
+            <pre><code># En la raíz del repo (Finanzas_Agv)
+git checkout main
+git pull origin main
+
+# Poner el submódulo en la rama frontend
+cd frontend
+git fetch origin
+git checkout frontend
+git pull origin frontend
+cd ..
+
+# Registrar el nuevo puntero del submódulo y subir
+git add frontend
+git commit -m "chore: actualizar submódulo frontend"
+git push origin main</code></pre>
+            <p>Así <code>main</code> queda actualizado con el último commit de la rama <code>frontend</code>.</p>
+
+            <h3>3.3 Rama <code>master</code></h3>
+            <p>Si existe la rama <code>master</code> en el remoto y ya no se usa, se puede eliminar: en GitHub (Code → View all branches → Delete junto a <code>master</code>) o con <code>git push origin --delete master</code> desde el repo correspondiente.</p>
+        </section>
+
+        <section>
+            <h2>4. Actualizar documentación en <code>docs/</code></h2>
+            <p>Cada vez que hagas cambios en la documentación (archivos en <code>docs/</code>):</p>
+            <ol>
+                <li>Los cambios van en el <strong>repo raíz</strong> (Finanzas_Agv), no dentro de <code>frontend/</code>.</li>
+                <li>Usa mensajes de commit con prefijo <code>docs:</code>, por ejemplo: <code>docs: añadir flujo de frontend a guía Git</code>.</li>
+                <li>Si trabajas en rama: <code>git checkout -b docs/nombre-cambio</code> → editar → <code>git add docs/</code> → <code>git commit -m "docs: ..."</code> → <code>git push origin docs/nombre-cambio</code> y luego abrir PR hacia <code>main</code>.</li>
+                <li>Consulta esta guía (secciones 1–3) para estándar de commits y flujo de ramas; la sección 3 para cualquier duda sobre el frontend y el submódulo.</li>
+            </ol>
+        </section>
     </main>
 </body>
 </html>
