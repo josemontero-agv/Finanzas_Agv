@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-const ALLOWED_PATH_PREFIXES = ["/letters", "/login"]
+const ALLOWED_PATH_PREFIXES = ["/letters", "/collections", "/login"]
 const SESSION_COOKIE_NAME = "session"
 
 export function proxy(request: NextRequest) {
@@ -14,10 +14,11 @@ export function proxy(request: NextRequest) {
   }
 
   const isLettersRoute = pathname === "/letters" || pathname.startsWith("/letters/")
+  const isCollectionsRoute = pathname === "/collections" || pathname.startsWith("/collections/")
   const isLoginRoute = pathname === "/login" || pathname.startsWith("/login/")
 
-  // Protección temprana: evita renderizar /letters sin sesión.
-  if (isLettersRoute && !hasSession) {
+  // Protección temprana: evita renderizar módulos privados sin sesión.
+  if ((isLettersRoute || isCollectionsRoute) && !hasSession) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = "/login"
     redirectUrl.search = ""
@@ -27,7 +28,7 @@ export function proxy(request: NextRequest) {
   // Si ya hay sesión, evita volver a login.
   if (isLoginRoute && hasSession) {
     const redirectUrl = request.nextUrl.clone()
-    redirectUrl.pathname = "/letters"
+    redirectUrl.pathname = "/collections"
     redirectUrl.search = ""
     return NextResponse.redirect(redirectUrl)
   }

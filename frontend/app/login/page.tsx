@@ -20,7 +20,7 @@ export default function LoginPage() {
       try {
         const response = await authApi.getUserInfo()
         if (response.data.success) {
-          router.replace("/letters")
+          router.replace("/collections")
         }
       } catch {
         // Sin sesión activa: usuario permanece en login.
@@ -38,7 +38,7 @@ export default function LoginPage() {
     try {
       const response = await authApi.login(username, password)
       if (response.data.success) {
-        router.replace("/letters")
+        router.replace("/collections")
         return
       }
 
@@ -68,7 +68,7 @@ export default function LoginPage() {
               className="h-auto w-auto max-w-[290px]"
             />
           </div>
-          <h1 className="text-2xl font-black text-[#714B67] dark:text-purple-400">Acceso Letras AGV</h1>
+          <h1 className="text-2xl font-black text-[#714B67] dark:text-purple-400">Acceso Finanzas AGV</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
             Ingresa con tu usuario de Odoo
           </p>

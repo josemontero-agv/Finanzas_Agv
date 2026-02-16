@@ -1,7 +1,7 @@
 "use client"
 
 import Link from 'next/link'
-import { Mail, Moon, Sun } from 'lucide-react'
+import { Mail, Moon, Sun, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/components/theme-provider'
@@ -30,6 +30,12 @@ export function Sidebar() {
       </div>
       
       <nav className="flex-1 px-4 space-y-2">
+        <SidebarLink
+          href="/collections"
+          icon={<Wallet size={22} />}
+          label="Cobranzas"
+          isExpanded={isExpanded}
+        />
         <SidebarLink 
           href="/letters" 
           icon={<Mail size={22} />} 
