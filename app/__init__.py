@@ -6,6 +6,7 @@ Implementa el patrón Factory para crear instancias de la aplicación Flask
 con diferentes configuraciones.
 """
 
+from urllib.parse import urlsplit
 from flask import Flask, jsonify, request
 from flask_caching import Cache
 from flask_compress import Compress
@@ -40,9 +41,18 @@ def create_app(config_name='development'):
     app.config.setdefault('RESTRICT_TO_LETTERS_ONLY', True)
     
     # Configurar CORS para Next.js frontend
+    cors_origins = ["http://localhost:3000", "http://localhost:5000"]
+    frontend_url = (app.config.get('FRONTEND_URL') or '').strip()
+    if frontend_url:
+        parsed_frontend = urlsplit(frontend_url)
+        if parsed_frontend.scheme and parsed_frontend.netloc:
+            frontend_origin = f"{parsed_frontend.scheme}://{parsed_frontend.netloc}"
+            if frontend_origin not in cors_origins:
+                cors_origins.append(frontend_origin)
+
     CORS(app, resources={
         r"/api/*": {
-            "origins": ["http://localhost:3000", "http://localhost:5000"],
+            "origins": cors_origins,
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True
