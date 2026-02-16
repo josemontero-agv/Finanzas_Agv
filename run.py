@@ -17,8 +17,13 @@ import sys
 import os
 from app import create_app
 
-# Determinar el entorno desde argumentos o variable de entorno
-env_from_args = sys.argv[1] if len(sys.argv) > 1 else None
+# Entornos válidos permitidos
+valid_environments = ['development', 'production', 'testing']
+
+# Determinar el entorno desde argumentos o variable de entorno.
+# Nota: con Gunicorn, sys.argv[1] suele ser "run:app", no un entorno.
+raw_arg = sys.argv[1].lower() if len(sys.argv) > 1 else None
+env_from_args = raw_arg if raw_arg in valid_environments else None
 env_from_vars = (
     os.getenv('APP_ENV') or
     os.getenv('FLASK_ENV') or
@@ -28,7 +33,6 @@ env_from_vars = (
 environment = (env_from_args or env_from_vars or 'development').lower()
 
 # Validar entorno
-valid_environments = ['development', 'production', 'testing']
 if environment not in valid_environments:
     print(f"[ERROR] Entorno inválido: {environment}")
     print(f"[INFO] Entornos válidos: {', '.join(valid_environments)}")
