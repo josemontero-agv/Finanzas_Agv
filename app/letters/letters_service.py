@@ -24,6 +24,13 @@ class LettersService:
         Normaliza estados legacy para no exponer valores descontinuados.
         """
         return "VENCIDO" if status == "POR RECUPERAR" else status
+
+    def _is_lima(self, city):
+        """
+        Determina si la ciudad corresponde a Lima.
+        """
+        city_value = (city or "").strip().lower()
+        return city_value == "lima" or city_value.startswith("lima ")
     
     def get_letters_to_recover(self, start_date=None, end_date=None, customer=None):
         """
@@ -189,6 +196,7 @@ class LettersService:
                             self._calculate_status(orig_date, client.get('city', '') if client else '')
                         ),
                         'salesperson': orig_user,
+                        'city': client.get('city', '') if client else '',
                         'customer_email': client.get('email', '') if client else '',
                         'state': move.get('state', '')
                     })
@@ -206,26 +214,24 @@ class LettersService:
 
     def _calculate_status(self, date_str, city):
         """
-        Calcula el estado de la letra según días transcurridos y ciudad.
-        
+        Calcula el estado de la letra según fecha de emisión y ciudad.
+
         Reglas:
-        - Límite de días: 4 para Lima, 10 para otras ciudades.
-        - "VENCIDO"     : days > limit
-        - "POR VENCER"  : (limit - 2) < days <= limit
-        - "VIGENTE"     : resto de casos o ante errores/fecha vacía.
+        - Lima: 7 días de plazo.
+        - Provincia: 15 días de plazo.
+        - "VENCIDO": si hoy es posterior a la fecha límite.
+        - "VIGENTE": en cualquier otro caso.
         """
         if not date_str:
             return "VIGENTE"
         try:
             from datetime import datetime
-            dt = datetime.strptime(date_str, '%Y-%m-%d')
-            days = (datetime.now() - dt).days
-            limit = 4 if city == 'Lima' else 10
+            issue_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            deadline_days = 7 if self._is_lima(city) else 15
+            deadline_date = issue_date + timedelta(days=deadline_days)
 
-            if days > limit:
+            if datetime.now().date() > deadline_date:
                 return "VENCIDO"
-            if days > (limit - 2):
-                return "POR VENCER"
             return "VIGENTE"
         except Exception:
             return "VIGENTE"
@@ -272,6 +278,7 @@ class LettersService:
                     self._calculate_status(dt.strftime('%Y-%m-%d'), cust['city'])
                 ),
                 'salesperson': 'Vendedor Mock',
+                'city': cust['city'],
                 'customer_email': cust['email'],
                 'state': 'to_accept'
             })

@@ -95,26 +95,26 @@ def dashboard():
 
 @web_bp.route('/collections/report-12')
 def collections_report_12():
-    """Redirige módulo no disponible hacia Letras."""
-    return redirect(_frontend_url('/letters'))
+    """Redirige reporte legacy de cobranzas al frontend."""
+    return redirect(_frontend_url('/collections'))
 
 
 @web_bp.route('/collections/report-national')
 def collections_report_national():
-    """Redirige módulo no disponible hacia Letras."""
-    return redirect(_frontend_url('/letters'))
+    """Redirige reporte nacional legacy de cobranzas al frontend."""
+    return redirect(_frontend_url('/collections'))
 
 
 @web_bp.route('/collections/report-international')
 def collections_report_international():
-    """Redirige módulo no disponible hacia Letras."""
-    return redirect(_frontend_url('/letters'))
+    """Redirige reporte internacional legacy de cobranzas al frontend."""
+    return redirect(_frontend_url('/collections'))
 
 
 @web_bp.route('/collections/dashboard')
 def collections_dashboard():
-    """Redirige módulo no disponible hacia Letras."""
-    return redirect(_frontend_url('/letters'))
+    """Redirige dashboard legacy de cobranzas al frontend."""
+    return redirect(_frontend_url('/collections'))
 
 
 # =============================================================================

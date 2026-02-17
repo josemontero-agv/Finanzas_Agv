@@ -6,9 +6,7 @@ Lógica de negocio para reportes de cuentas por cobrar.
 Migrado desde dashboard-Cobranzas/services/report_service.py
 """
 
-import os
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor
 from app.core.calculators import calcular_mora, calcular_dias_vencido, clasificar_antiguedad
 
 
@@ -25,6 +23,38 @@ class CollectionsService:
             odoo_repository (OdooRepository): Instancia del repositorio de Odoo
         """
         self.repository = odoo_repository
+
+    @staticmethod
+    def _chunked(items, size=500):
+        """Divide una lista en lotes para evitar timeouts en XML-RPC."""
+        if not items:
+            return
+        for idx in range(0, len(items), size):
+            yield items[idx:idx + size]
+
+    def _read_in_batches(self, model, ids, fields, batch_size=500):
+        """Lee registros en lotes y retorna lista consolidada."""
+        if not ids:
+            return []
+        results = []
+        for batch in self._chunked(ids, batch_size):
+            batch_records = self.repository.read(model, batch, fields) or []
+            results.extend(batch_records)
+        return results
+
+    def _search_read_in_batches(self, model, in_field, ids, fields, batch_size=300):
+        """Ejecuta search_read en lotes para dominios tipo ('field', 'in', ids)."""
+        if not ids:
+            return []
+        results = []
+        for batch in self._chunked(ids, batch_size):
+            batch_records = self.repository.search_read(
+                model,
+                [(in_field, 'in', batch)],
+                fields
+            ) or []
+            results.extend(batch_records)
+        return results
     
     def get_filter_options(self):
         """
@@ -160,41 +190,32 @@ class CollectionsService:
         Returns:
             list: Domain de Odoo listo para usar en búsquedas
         """
-        # Códigos de cuenta a buscar
-        if account_codes:
-            codes = [c.strip() for c in account_codes.split(',') if c.strip()]
-        else:
-            codes = ['122', '1212', '123', '1312', '132', '13']
-        
-        # Construir dominio base
+        # Dominio solicitado para análisis de volumen de registros.
         domain = [
-            ('parent_state', '=', 'posted'),
-            ('move_id.move_type', 'in', ['out_invoice', 'out_refund', 'out_bill', 'entry']),
+            '&', '&',
+            '|',
+            ('account_id', 'ilike', '12'),
+            ('account_id', 'ilike', '13'),
+            '&',
+            ('account_id', 'not ilike', '104'),
+            '&',
+            ('account_id', 'not ilike', '123'),
+            '&',
+            ('account_id', 'not ilike', '133'),
+            '&',
+            ('amount_residual', '!=', 0),
+            ('account_id.reconcile', '=', True),
+            ('parent_state', 'in', (
+                'posted',
+                'portfolio',
+                'accepted',
+                'collection',
+                'discount',
+                'warranty',
+                'disbursed',
+                'protested'
+            ))
         ]
-        
-        # Construir OR para códigos de cuenta
-        if len(codes) > 1:
-            or_operators = ['|'] * (len(codes) - 1)
-            code_conditions = []
-            for code in codes:
-                # Si el usuario pasa un código "completo" (ej: 1312001), hacemos match exacto.
-                # Si pasa un prefijo (ej: 13, 1312), usamos prefijo.
-                is_exact = code.isdigit() and len(code) >= 6
-                if is_exact:
-                    code_conditions.append(('account_id.code', '=', code))
-                else:
-                    code_conditions.append(('account_id.code', '=like', f'{code}%'))
-            domain = or_operators + code_conditions + domain
-        else:
-            code0 = codes[0]
-            is_exact = code0.isdigit() and len(code0) >= 6
-            if is_exact:
-                domain.insert(0, ('account_id.code', '=', code0))
-            else:
-                domain.insert(0, ('account_id.code', '=like', f'{code0}%'))
-        
-        # Excluir cuenta específica de letras
-        domain.append(('account_id.code', '!=', '1239001'))
         
         # Filtros adicionales / histórico
         if cutoff_date:
@@ -214,21 +235,6 @@ class CollectionsService:
                 domain.append(('move_id.l10n_latam_document_type_id', '=', doc_type_id))
         elif doc_type_id:
             domain.append(('move_id.l10n_latam_document_type_id', '=', doc_type_id))
-            
-            # Filtro inteligente por Canal de Venta (validar consistencia con país)
-            if sales_channel_id:
-                try:
-                    channel = self.repository.read('agr.sales.channel', [sales_channel_id], ['name'])
-                    if channel:
-                        channel_name = channel[0].get('name', '').upper()
-                        if 'INTERNACIONAL' in channel_name:
-                            # Si es internacional, EXCLUIR Perú
-                            domain.append(('partner_id.country_id.code', '!=', 'PE'))
-                        elif 'NACIONAL' in channel_name:
-                            # Si es nacional, SOLO Perú
-                            domain.append(('partner_id.country_id.code', '=', 'PE'))
-                except Exception as e:
-                    print(f"[WARN] No se pudo validar nombre del canal para filtro inteligente: {e}")
 
         return domain
     
@@ -313,10 +319,11 @@ class CollectionsService:
             line_fields = [
                 'id', 'move_id', 'partner_id', 'account_id', 'name', 'date',
                 'date_maturity', 'amount_currency', 'amount_residual', 'currency_id',
-                'debit', 'credit', 'matched_debit_ids', 'matched_credit_ids',
+                'debit', 'credit', 'balance', 'matched_debit_ids', 'matched_credit_ids',
             ]
             
-            effective_limit = limit if limit and limit > 0 else 10000
+            # Si limit <= 0 o None, traer todos los registros para análisis.
+            effective_limit = limit if limit and limit > 0 else None
             lines = self.repository.search_read(
                 'account.move.line', line_domain, line_fields,
                 limit=effective_limit
@@ -332,94 +339,79 @@ class CollectionsService:
             partner_ids = list(set([l['partner_id'][0] for l in lines if l.get('partner_id')]))
             account_ids = list(set([l['account_id'][0] for l in lines if l.get('account_id')]))
             
-            # 3. Obtener datos relacionados en PARALELO para reducir latencia
+            # 3. Obtener datos relacionados de forma secuencial por lotes (más estable para XML-RPC)
             move_map = {}
             partner_map = {}
             account_map = {}
             credit_map = {}
             reconciliation_map = {}
-            
-            def fetch_moves():
-                if move_ids:
-                    move_fields = [
-                        'id', 'name', 'payment_state', 'invoice_date', 'invoice_date_due',
-                        'invoice_origin', 'l10n_latam_document_type_id', 'amount_total',
-                        'amount_residual', 'amount_residual_with_retention', 'amount_residual_signed', 'currency_id',
-                        'l10n_latam_boe_number',
-                        'ref', 'invoice_payment_term_id', 'invoice_user_id',
-                        'sales_channel_id', 'sale_type_id', 'team_id',
-                    ]
-                    moves = self.repository.read('account.move', move_ids, move_fields)
-                    return {m['id']: m for m in moves}
-                return {}
 
-            def fetch_partners():
-                if partner_ids:
-                    partner_fields = [
-                        'id', 'name', 'vat', 'state_id', 'l10n_pe_district',
-                        'country_code', 'country_id', 'groups_ids'
-                    ]
-                    partners = self.repository.read('res.partner', partner_ids, partner_fields)
-                    return {p['id']: p for p in partners}
-                return {}
+            if move_ids:
+                move_fields = [
+                    'id', 'name', 'payment_state', 'invoice_date', 'date', 'invoice_date_due',
+                    'invoice_origin', 'l10n_latam_document_type_id', 'amount_total',
+                    'amount_residual', 'amount_residual_with_retention', 'amount_residual_signed', 'currency_id',
+                    'l10n_latam_boe_number',
+                    'ref', 'invoice_payment_term_id', 'invoice_user_id',
+                    'sales_channel_id', 'sale_type_id', 'team_id',
+                    'bill_form_invoices_order_sales_line_commercial_zone_id',
+                ]
+                moves = self._read_in_batches('account.move', move_ids, move_fields, batch_size=300)
+                move_map = {m['id']: m for m in moves}
 
-            def fetch_accounts():
-                if account_ids:
-                    accounts = self.repository.read('account.account', account_ids, ['id', 'code', 'name'])
-                    return {a['id']: a for a in accounts}
-                return {}
+            if partner_ids:
+                partner_fields = [
+                    'id', 'name', 'vat', 'state_id', 'l10n_pe_district',
+                    'country_code', 'country_id', 'groups_ids'
+                ]
+                partners = self._read_in_batches('res.partner', partner_ids, partner_fields, batch_size=300)
+                partner_map = {p['id']: p for p in partners}
 
-            def fetch_credit():
-                if partner_ids:
-                    try:
-                        credit_customers = self.repository.search_read(
-                            'agr.credit.customer',
-                            [('partner_id', 'in', partner_ids)],
-                            ['partner_id', 'sub_channel_id']
-                        )
-                        return {cc['partner_id'][0]: cc for cc in credit_customers}
-                    except Exception as e:
-                        print(f"[WARN] No se pudo obtener agr.credit.customer: {e}")
-                return {}
+            if account_ids:
+                accounts = self._read_in_batches(
+                    'account.account',
+                    account_ids,
+                    ['id', 'code', 'name', 'currency_id'],
+                    batch_size=300
+                )
+                account_map = {a['id']: a for a in accounts}
 
-            def fetch_reconciliations():
-                if cutoff_date:
-                    return self._get_reconciliation_amounts(lines, cutoff_date)
-                return {}
+            if partner_ids:
+                try:
+                    credit_customers = self._search_read_in_batches(
+                        'agr.credit.customer',
+                        'partner_id',
+                        partner_ids,
+                        ['partner_id', 'partner_groups_ids', 'sub_channel_id'],
+                        batch_size=200
+                    )
+                    credit_map = {cc['partner_id'][0]: cc for cc in credit_customers if cc.get('partner_id')}
+                except Exception as e:
+                    print(f"[WARN] No se pudo obtener agr.credit.customer: {e}")
 
-            with ThreadPoolExecutor(max_workers=5) as executor:
-                f_moves = executor.submit(fetch_moves)
-                f_partners = executor.submit(fetch_partners)
-                f_accounts = executor.submit(fetch_accounts)
-                f_credit = executor.submit(fetch_credit)
-                f_reconcile = executor.submit(fetch_reconciliations)
-                
-                move_map = f_moves.result()
-                partner_map = f_partners.result()
-                account_map = f_accounts.result()
-                credit_map = f_credit.result()
-                reconciliation_map = f_reconcile.result()
+            if cutoff_date:
+                reconciliation_map = self._get_reconciliation_amounts(lines, cutoff_date)
 
-            # Obtener nombres de grupos de cliente (segundo nivel de datos)
+            # Obtener nombres de línea comercial desde agr.credit.customer.partner_groups_ids
             partner_groups_map = {}
-            partner_group_ids = set()
-            for p in partner_map.values():
-                for gid in p.get('groups_ids') or []:
-                    partner_group_ids.add(gid)
+            credit_group_ids = set()
+            for credit_data in credit_map.values():
+                for gid in credit_data.get('partner_groups_ids') or []:
+                    credit_group_ids.add(gid)
 
-            if partner_group_ids:
+            if credit_group_ids:
                 try:
                     group_records = self.repository.read(
                         'agr.groups',
-                        list(partner_group_ids),
+                        list(credit_group_ids),
                         ['id', 'name']
                     )
                     group_name_map = {g['id']: g.get('name', '') for g in group_records}
-                    for partner_id_key, partner_data in partner_map.items():
-                        names = [group_name_map[gid] for gid in partner_data.get('groups_ids') or [] if gid in group_name_map]
+                    for partner_id_key, credit_data in credit_map.items():
+                        names = [group_name_map[gid] for gid in credit_data.get('partner_groups_ids') or [] if gid in group_name_map]
                         partner_groups_map[partner_id_key] = ', '.join(names)
                 except Exception as e:
-                    print(f"[WARN] No se pudieron obtener los nombres de grupos de cliente: {e}")
+                    print(f"[WARN] No se pudieron obtener los nombres de línea comercial: {e}")
             
             # Combinar datos
             rows = []
@@ -487,10 +479,16 @@ class CollectionsService:
                 row = {
                     'payment_state': move.get('payment_state', ''),
                     'invoice_date': move.get('invoice_date', ''),
+                    'move_id/invoice_date': move.get('invoice_date', ''),
+                    'account.move/invoice_date': move.get('date', ''),
                     'l10n_latam_document_type_id': m2o_name(move.get('l10n_latam_document_type_id')),
+                    'account.move/l10n_latam_document_type_id': m2o_name(move.get('l10n_latam_document_type_id')),
                     'move_name': move.get('name', ''),
+                    'account.move/name': move.get('name', ''),
                     'l10n_latam_boe_number': move.get('l10n_latam_boe_number', ''),
+                    'account.move/l10n_latam_boe_number': move.get('l10n_latam_boe_number', ''),
                     'invoice_origin': move.get('invoice_origin', ''),
+                    'account.move/invoice_origin': move.get('invoice_origin', ''),
                     'account_id/code': account.get('code', ''),
                     'account_id/name': account.get('name', ''),
                     'partner_vat': partner.get('vat', ''),
@@ -502,32 +500,66 @@ class CollectionsService:
                     'partner_district': partner.get('l10n_pe_district', ''),
                     'partner_country_code': country_code,
                     'partner_country_name': m2o_name(partner.get('country_id')),
-                    'currency_id': m2o_name(line.get('currency_id') or move.get('currency_id')),
+                    'patner_id/state_id': m2o_name(partner.get('state_id')), # Alias legacy para exportación
+                    'patner_id/l10n_pe_district': partner.get('l10n_pe_district', ''), # Alias legacy
+                    'patner_id/country_code': country_code, # Alias legacy
+                    'patner_id/country_id': m2o_name(partner.get('country_id')), # Alias legacy
+                    'currency_id': m2o_name(account.get('currency_id') or line.get('currency_id') or move.get('currency_id')),
+                    'account_id/currency_id': m2o_name(account.get('currency_id') or line.get('currency_id') or move.get('currency_id')),
                     'amount_total': move.get('amount_total', 0.0),
-                    'amount_residual_with_retention': move.get('amount_residual_with_retention', 0.0),
+                    'account.move/amount_total': move.get('amount_total', 0.0),
+                    'amount_residual_with_retention': move.get('amount_residual_with_retention', move.get('amount_residual', 0.0)),
                     'amount_residual_signed': move.get('amount_residual_signed', 0.0),
+                    'account.move/amount_residual': move.get('amount_residual', 0.0),
                     'amount_currency': line.get('amount_currency', 0.0),
                     'amount_residual_currency': line.get('amount_residual', 0.0),
                     'amount_residual_historical': amount_residual_historical,
                     'paid_after_cutoff': paid_after_cutoff,
+                    'paid_before_cutoff': paid_before_cutoff,
+                    'debit': line.get('debit', 0.0) or 0.0,
+                    'credit': line.get('credit', 0.0) or 0.0,
+                    'balance': line.get('balance', 0.0) or 0.0,
                     'date': line.get('date', ''),
                     'date_maturity': date_maturity,
                     'invoice_date_due': move.get('invoice_date_due', ''),
+                    'account.move/invoice_date_due': move.get('invoice_date_due', ''),
                     'ref': move.get('ref', ''),
                     'invoice_payment_term_id': m2o_name(move.get('invoice_payment_term_id')),
+                    'account.move/invoice_payment_term_id': m2o_name(move.get('invoice_payment_term_id')),
                     'name': line.get('name', ''),
+                    'account.move.line/name': line.get('name', ''),
                     'invoice_user_name': m2o_name(move.get('invoice_user_id')),
+                    'account.move/invoice_user_id': m2o_name(move.get('invoice_user_id')),
                     'sales_channel_name': m2o_name(move.get('sales_channel_id')),
+                    'account.move/sales_channel_id': m2o_name(move.get('sales_channel_id')),
                     'sales_type_name': m2o_name(move.get('sale_type_id')),
+                    'account.move/sales_type_id': m2o_name(move.get('sale_type_id')),
+                    'account.move/sale_type_id': m2o_name(move.get('sale_type_id')),
+                    'linea_comercial': (
+                        m2o_name(move.get('bill_form_invoices_order_sales_line_commercial_zone_id'))
+                        or m2o_name(move.get('team_id'))
+                    ),
+                    'account.move/linea_comercial': (
+                        m2o_name(move.get('bill_form_invoices_order_sales_line_commercial_zone_id'))
+                        or m2o_name(move.get('team_id'))
+                    ),
                     'team_name': m2o_name(move.get('team_id')),
+                    'move_id/invoice_user_id': m2o_name(move.get('invoice_user_id')), # Alias legacy para exportación
+                    'move_id/sales_channel_id': m2o_name(move.get('sales_channel_id')), # Alias legacy
+                    'move_id/sales_type_id': m2o_name(move.get('sale_type_id')), # Alias legacy
+                    'move_id/payment_state': move.get('payment_state', ''), # Alias legacy
+                    'team_id': m2o_name(move.get('team_id')), # Alias legacy para exportación
                     'partner_groups': partner_groups_display,
+                    'grupo_comercial': partner_groups_display,
+                    'agr.credit.customer/patner_groups_ids': partner_groups_display,
+                    'agr.credit.customer/partner_groups_ids': partner_groups_display,
                     'sub_channel_id': sub_channel_final,
+                    'agr.credit.customer/sub_channel_id': sub_channel_final,
                     # Campos calculados
                     'dias_vencido': dias_vencido,
                     'estado_deuda': estado_deuda,
                     'antiguedad': antiguedad,
                     'reconciliation_date': reconcile_date,
-                    'paid_before_cutoff': paid_before_cutoff,
                 }
                 
                 rows.append(row)
@@ -608,7 +640,7 @@ class CollectionsService:
             line_fields = [
                 'id', 'move_id', 'partner_id', 'account_id', 'name', 'date',
                 'date_maturity', 'amount_currency', 'amount_residual', 'currency_id',
-                'debit', 'credit', 'matched_debit_ids', 'matched_credit_ids'
+                'debit', 'credit', 'balance', 'matched_debit_ids', 'matched_credit_ids'
             ]
             
             lines = self.repository.search_read(
@@ -632,100 +664,89 @@ class CollectionsService:
                     'has_more': False
                 }
             
-            # 4. Procesar líneas con datos relacionados en PARALELO
+            # 4. Procesar líneas con datos relacionados
+            move_ids = list(set([l['move_id'][0] for l in lines if l.get('move_id')]))
+            partner_ids = list(set([l['partner_id'][0] for l in lines if l.get('partner_id')]))
+            account_ids = list(set([l['account_id'][0] for l in lines if l.get('account_id')]))
+
             move_map = {}
             partner_map = {}
             account_map = {}
             credit_map = {}
             reconciliation_map = {}
 
-            def fetch_moves():
-                if move_ids:
-                    move_fields = [
-                        'id', 'name', 'payment_state', 'invoice_date', 'invoice_date_due',
-                        'invoice_origin', 'l10n_latam_document_type_id', 'amount_total',
-                        'amount_residual', 'amount_residual_with_retention', 'amount_residual_signed', 'currency_id',
-                        'l10n_latam_boe_number', 'ref', 'invoice_payment_term_id', 'invoice_user_id',
-                        'sales_channel_id', 'sale_type_id', 'team_id',
-                    ]
-                    moves = self.repository.read('account.move', move_ids, move_fields)
-                    return {m['id']: m for m in moves}
-                return {}
+            if move_ids:
+                move_fields = [
+                    'id', 'name', 'payment_state', 'invoice_date', 'date', 'invoice_date_due',
+                    'invoice_origin', 'l10n_latam_document_type_id', 'amount_total',
+                    'amount_residual', 'amount_residual_with_retention', 'amount_residual_signed', 'currency_id',
+                    'l10n_latam_boe_number', 'ref', 'invoice_payment_term_id', 'invoice_user_id',
+                    'sales_channel_id', 'sale_type_id', 'team_id',
+                    'bill_form_invoices_order_sales_line_commercial_zone_id',
+                ]
+                moves = self._read_in_batches('account.move', move_ids, move_fields, batch_size=300)
+                move_map = {m['id']: m for m in moves}
 
-            def fetch_partners():
-                if partner_ids:
-                    partner_fields = [
-                        'id', 'name', 'vat', 'state_id', 'l10n_pe_district',
-                        'country_code', 'country_id', 'groups_ids'
-                    ]
-                    partners = self.repository.read('res.partner', partner_ids, partner_fields)
-                    return {p['id']: p for p in partners}
-                return {}
+            if partner_ids:
+                partner_fields = [
+                    'id', 'name', 'vat', 'state_id', 'l10n_pe_district',
+                    'country_code', 'country_id', 'groups_ids'
+                ]
+                partners = self._read_in_batches('res.partner', partner_ids, partner_fields, batch_size=300)
+                partner_map = {p['id']: p for p in partners}
 
-            def fetch_accounts():
-                if account_ids:
-                    accounts = self.repository.read('account.account', account_ids, ['id', 'code', 'name'])
-                    return {a['id']: a for a in accounts}
-                return {}
+            if account_ids:
+                accounts = self._read_in_batches(
+                    'account.account',
+                    account_ids,
+                    ['id', 'code', 'name', 'currency_id'],
+                    batch_size=300
+                )
+                account_map = {a['id']: a for a in accounts}
 
-            def fetch_credit():
-                if partner_ids:
-                    try:
-                        credit_customers = self.repository.search_read(
-                            'agr.credit.customer',
-                            [('partner_id', 'in', partner_ids)],
-                            ['partner_id', 'sub_channel_id']
-                        )
-                        result_map = {}
-                        for cred in credit_customers:
-                            pid = cred['partner_id'][0] if isinstance(cred.get('partner_id'), list) else cred.get('partner_id')
-                            result_map[pid] = cred
-                        return result_map
-                    except Exception as e:
-                        print(f"[WARN] No se pudo obtener sub_channel_id: {e}")
-                return {}
+            if partner_ids:
+                try:
+                    credit_customers = self._search_read_in_batches(
+                        'agr.credit.customer',
+                        'partner_id',
+                        partner_ids,
+                        ['partner_id', 'partner_groups_ids', 'sub_channel_id'],
+                        batch_size=200
+                    )
+                    for cred in credit_customers:
+                        pid = cred['partner_id'][0] if isinstance(cred.get('partner_id'), list) else cred.get('partner_id')
+                        if pid:
+                            credit_map[pid] = cred
+                except Exception as e:
+                    print(f"[WARN] No se pudo obtener sub_channel_id: {e}")
 
-            def fetch_reconciliations():
-                if cutoff_date:
-                    return self._get_reconciliation_amounts(lines, cutoff_date)
-                return {}
+            if cutoff_date:
+                reconciliation_map = self._get_reconciliation_amounts(lines, cutoff_date)
 
-            with ThreadPoolExecutor(max_workers=5) as executor:
-                f_moves = executor.submit(fetch_moves)
-                f_partners = executor.submit(fetch_partners)
-                f_accounts = executor.submit(fetch_accounts)
-                f_credit = executor.submit(fetch_credit)
-                f_reconcile = executor.submit(fetch_reconciliations)
-                
-                move_map = f_moves.result()
-                partner_map = f_partners.result()
-                account_map = f_accounts.result()
-                credit_map = f_credit.result()
-                reconciliation_map = f_reconcile.result()
-
-            # Obtener nombres de grupos de cliente (segundo nivel)
+            # Obtener nombres de línea comercial desde agr.credit.customer.partner_groups_ids
             partner_groups_map = {}
-            partner_group_ids = set()
-            for p in partner_map.values():
-                for gid in p.get('groups_ids') or []:
-                    partner_group_ids.add(gid)
+            credit_group_ids = set()
+            for credit_data in credit_map.values():
+                for gid in credit_data.get('partner_groups_ids') or []:
+                    credit_group_ids.add(gid)
 
-            if partner_group_ids:
+            if credit_group_ids:
                 try:
                     group_records = self.repository.read(
                         'agr.groups',
-                        list(partner_group_ids),
+                        list(credit_group_ids),
                         ['id', 'name']
                     )
                     group_name_map = {g['id']: g.get('name', '') for g in group_records}
-                    for partner_id_key, partner_data in partner_map.items():
-                        names = [group_name_map[gid] for gid in partner_data.get('groups_ids') or [] if gid in group_name_map]
+                    for partner_id_key, credit_data in credit_map.items():
+                        names = [group_name_map[gid] for gid in credit_data.get('partner_groups_ids') or [] if gid in group_name_map]
                         partner_groups_map[partner_id_key] = ', '.join(names)
                 except Exception as e:
-                    print(f"[WARN] No se pudieron obtener nombres de grupos: {e}")
+                    print(f"[WARN] No se pudieron obtener nombres de línea comercial: {e}")
             
             # Procesar líneas
             rows = []
+            today = datetime.today().date()
             
             def m2o_name(val):
                 if isinstance(val, list) and len(val) >= 2:
@@ -786,22 +807,43 @@ class CollectionsService:
                 row = {
                     'payment_state': move.get('payment_state', ''),
                     'invoice_date': move.get('invoice_date', ''),
+                    'move_id/invoice_date': move.get('invoice_date', ''),
+                    'account.move/invoice_date': move.get('date', ''),
                     'l10n_latam_document_type_id': m2o_name(move.get('l10n_latam_document_type_id')),
+                    'account.move/l10n_latam_document_type_id': m2o_name(move.get('l10n_latam_document_type_id')),
                     'move_name': move.get('name', ''),
+                    'account.move/name': move.get('name', ''),
                     'l10n_latam_boe_number': move.get('l10n_latam_boe_number', ''),
+                    'account.move/l10n_latam_boe_number': move.get('l10n_latam_boe_number', ''),
                     'invoice_origin': move.get('invoice_origin', ''),
+                    'account.move/invoice_origin': move.get('invoice_origin', ''),
                     'account_id/code': account.get('code', ''),
                     'account_id/name': account.get('name', ''),
+                    'partner_vat': partner.get('vat', ''),
+                    'partner_name': partner.get('name', ''),
+                    'partner_id': partner.get('name', ''),
+                    'partner_id/vat': partner.get('vat', ''),
                     'patner_id/vat': partner.get('vat', ''),
                     'patner_id': partner.get('name', ''),
+                    'partner_state': m2o_name(partner.get('state_id')),
+                    'partner_district': partner.get('l10n_pe_district', ''),
+                    'partner_country_code': country_code,
+                    'partner_country_name': m2o_name(partner.get('country_id')),
+                    'partner_id/state_id': m2o_name(partner.get('state_id')),
+                    'partner_id/l10n_pe_district': partner.get('l10n_pe_district', ''),
+                    'partner_id/country_code': country_code,
+                    'partner_id/country_id': m2o_name(partner.get('country_id')),
                     'patner_id/state_id': m2o_name(partner.get('state_id')),
                     'patner_id/l10n_pe_district': partner.get('l10n_pe_district', ''),
                     'patner_id/country_code': country_code,
                     'patner_id/country_id': m2o_name(partner.get('country_id')),
-                    'currency_id': m2o_name(line.get('currency_id') or move.get('currency_id')),
+                    'currency_id': m2o_name(account.get('currency_id') or line.get('currency_id') or move.get('currency_id')),
+                    'account_id/currency_id': m2o_name(account.get('currency_id') or line.get('currency_id') or move.get('currency_id')),
                     'amount_total': move.get('amount_total', 0.0),
-                    'amount_residual_with_retention': move.get('amount_residual_with_retention', 0.0),
+                    'account.move/amount_total': move.get('amount_total', 0.0),
+                    'amount_residual_with_retention': move.get('amount_residual_with_retention', move.get('amount_residual', 0.0)),
                     'amount_residual_signed': move.get('amount_residual_signed', 0.0),
+                    'account.move/amount_residual': move.get('amount_residual', 0.0),
                     'amount_currency': line.get('amount_currency', 0.0),
                     'amount_residual_currency': line.get('amount_residual', 0.0),
                     'amount_residual_historical': amount_residual_historical,
@@ -809,19 +851,43 @@ class CollectionsService:
                     'paid_before_cutoff': paid_before_cutoff,
                     'debit': line.get('debit', 0.0) or 0.0,
                     'credit': line.get('credit', 0.0) or 0.0,
+                    'balance': line.get('balance', 0.0) or 0.0,
                     'date': line.get('date', ''),
                     'date_maturity': date_maturity,
                     'invoice_date_due': move.get('invoice_date_due', ''),
+                    'account.move/invoice_date_due': move.get('invoice_date_due', ''),
                     'ref': move.get('ref', ''),
                     'invoice_payment_term_id': m2o_name(move.get('invoice_payment_term_id')),
+                    'account.move/invoice_payment_term_id': m2o_name(move.get('invoice_payment_term_id')),
                     'name': line.get('name', ''),
+                    'account.move.line/name': line.get('name', ''),
+                    'invoice_user_name': m2o_name(move.get('invoice_user_id')),
+                    'sales_channel_name': m2o_name(move.get('sales_channel_id')),
+                    'sales_type_name': m2o_name(move.get('sale_type_id')),
+                    'team_name': m2o_name(move.get('team_id')),
+                    'account.move/invoice_user_id': m2o_name(move.get('invoice_user_id')),
+                    'account.move/sales_channel_id': m2o_name(move.get('sales_channel_id')),
+                    'account.move/sales_type_id': m2o_name(move.get('sale_type_id')),
+                    'account.move/sale_type_id': m2o_name(move.get('sale_type_id')),
+                    'linea_comercial': (
+                        m2o_name(move.get('bill_form_invoices_order_sales_line_commercial_zone_id'))
+                        or m2o_name(move.get('team_id'))
+                    ),
+                    'account.move/linea_comercial': (
+                        m2o_name(move.get('bill_form_invoices_order_sales_line_commercial_zone_id'))
+                        or m2o_name(move.get('team_id'))
+                    ),
                     'move_id/invoice_user_id': m2o_name(move.get('invoice_user_id')),
                     'move_id/sales_channel_id': m2o_name(move.get('sales_channel_id')),
                     'move_id/sales_type_id': m2o_name(move.get('sale_type_id')),
                     'move_id/payment_state': move.get('payment_state', ''),
                     'team_id': m2o_name(move.get('team_id')),
                     'partner_groups': partner_groups_display,
+                    'grupo_comercial': partner_groups_display,
+                    'agr.credit.customer/patner_groups_ids': partner_groups_display,
+                    'agr.credit.customer/partner_groups_ids': partner_groups_display,
                     'sub_channel_id': sub_channel_final,
+                    'agr.credit.customer/sub_channel_id': sub_channel_final,
                     'dias_vencido': dias_vencido,
                     'estado_deuda': estado_deuda,
                     'antiguedad': antiguedad,
@@ -892,7 +958,7 @@ class CollectionsService:
             )
             
             # Campos a agregar
-            fields = ['debit', 'credit', 'amount_residual']
+            fields = ['debit', 'credit', 'amount_residual', 'balance']
             groupby = ['account_id']
             
             groups = self.repository.read_group('account.move.line', line_domain, fields, groupby)
@@ -902,6 +968,7 @@ class CollectionsService:
                 'credit': 0.0,
                 'pending_cutoff': 0.0,
                 'paid_after_cutoff': 0.0,
+                'saldo_total': 0.0,
                 'saldo': 0.0,
                 'count': 0
             }
@@ -924,11 +991,13 @@ class CollectionsService:
                 debit = float(g.get('debit', 0.0) or 0.0)
                 credit = float(g.get('credit', 0.0) or 0.0)
                 residual = abs(float(g.get('amount_residual', 0.0) or 0.0))
+                balance = float(g.get('balance', 0.0) or 0.0)
                 count = int(g.get('__count', 0))
                 
                 overall['debit'] += debit
                 overall['credit'] += credit
                 overall['pending_cutoff'] += residual
+                overall['saldo_total'] += balance
                 overall['count'] += count
                 
                 by_account.append({
@@ -938,11 +1007,12 @@ class CollectionsService:
                     'credit': credit,
                     'pending_cutoff': residual,
                     'paid_after_cutoff': 0.0,
-                    'saldo': debit - credit,
+                    'saldo_total': balance,
+                    'saldo': balance,
                     'count': count
                 })
             
-            overall['saldo'] = overall['debit'] - overall['credit']
+            overall['saldo'] = overall['saldo_total']
             by_account.sort(key=lambda x: x['account_code'])
             
             return {
@@ -1168,40 +1238,27 @@ class CollectionsService:
             move_ids = list(set([l['move_id'][0] for l in lines if l.get('move_id')]))
             partner_ids = list(set([l['partner_id'][0] for l in lines if l.get('partner_id')]))
             
-            # Obtener datos relacionados en PARALELO
+            # Obtener datos relacionados (en lotes)
             move_map = {}
             partner_map = {}
 
-            def fetch_moves():
-                if move_ids:
-                    move_fields = [
-                        'id', 'name', 'payment_state', 'invoice_date', 'invoice_date_due',
-                        'invoice_origin', 'l10n_latam_document_type_id', 'amount_total',
-                        'amount_residual', 'currency_id', 'invoice_payment_term_id',
-                        'invoice_user_id', 'amount_total_signed', 'amount_residual_with_retention',
-                        'team_id',
-                    ]
-                    moves = self.repository.read('account.move', move_ids, move_fields)
-                    res = {m['id']: m for m in moves}
-                    # Filtrar por payment_state si se especificó
-                    if payment_state:
-                        res = {k: v for k, v in res.items() if v.get('payment_state') == payment_state}
-                    return res
-                return {}
+            if move_ids:
+                move_fields = [
+                    'id', 'name', 'payment_state', 'invoice_date', 'invoice_date_due',
+                    'invoice_origin', 'l10n_latam_document_type_id', 'amount_total',
+                    'amount_residual', 'currency_id', 'invoice_payment_term_id',
+                    'invoice_user_id', 'amount_total_signed', 'amount_residual_with_retention',
+                    'team_id',
+                ]
+                moves = self._read_in_batches('account.move', move_ids, move_fields, batch_size=300)
+                move_map = {m['id']: m for m in moves}
+                if payment_state:
+                    move_map = {k: v for k, v in move_map.items() if v.get('payment_state') == payment_state}
 
-            def fetch_partners():
-                if partner_ids:
-                    partner_fields = ['id', 'name', 'vat', 'country_code', 'country_id']
-                    partners = self.repository.read('res.partner', partner_ids, partner_fields)
-                    return {p['id']: p for p in partners}
-                return {}
-
-            with ThreadPoolExecutor(max_workers=2) as executor:
-                f_moves = executor.submit(fetch_moves)
-                f_partners = executor.submit(fetch_partners)
-                
-                move_map = f_moves.result()
-                partner_map = f_partners.result()
+            if partner_ids:
+                partner_fields = ['id', 'name', 'vat', 'country_code', 'country_id']
+                partners = self._read_in_batches('res.partner', partner_ids, partner_fields, batch_size=300)
+                partner_map = {p['id']: p for p in partners}
             
             # Procesar y calcular campos
             rows = []

@@ -139,6 +139,8 @@ def create_app(config_name='development'):
 
         allowed_prefixes = (
             '/api/v1/letters',
+            '/api/v1/collections',
+            '/api/v1/exports/collections',
             '/api/v1/auth/login',
             '/api/v1/auth/logout',
             '/api/v1/auth/status',
@@ -162,11 +164,12 @@ def create_app(config_name='development'):
         return jsonify({
             'app': 'Finanzas AGV API',
             'version': '1.0.0',
-            'description': 'API REST para gestión financiera - Modo Letras',
+            'description': 'API REST para gestión financiera - Modo Letras + Cobranzas',
             'endpoints': (
                 {
                     'auth': '/api/v1/auth',
-                    'letters': '/api/v1/letters'
+                    'letters': '/api/v1/letters',
+                    'collections': '/api/v1/collections'
                 } if restricted_mode else {
                     'auth': '/api/v1/auth',
                     'collections': '/api/v1/collections',

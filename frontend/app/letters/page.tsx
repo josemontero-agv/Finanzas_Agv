@@ -157,13 +157,45 @@ export default function LettersPage() {
     }).format(amount).replace("PEN", "S/.")
   }
 
+  const parseLocalDate = (value?: string) => {
+    if (!value) return null
+    const [year, month, day] = value.split("-").map(Number)
+    if (!year || !month || !day) return null
+    return new Date(year, month - 1, day)
+  }
+
+  const isLimaCity = (city?: string) => {
+    const normalizedCity = (city || "").trim().toLowerCase()
+    return normalizedCity === "lima" || normalizedCity.startsWith("lima ")
+  }
+
+  const getLimitDate = (invoiceDate?: string, city?: string) => {
+    const emissionDate = parseLocalDate(invoiceDate)
+    if (!emissionDate) return null
+    const daysToAdd = isLimaCity(city) ? 7 : 15
+    const limitDate = new Date(emissionDate)
+    limitDate.setDate(limitDate.getDate() + daysToAdd)
+    return limitDate
+  }
+
+  const isLimitDateOverdue = (invoiceDate?: string, city?: string) => {
+    const limitDate = getLimitDate(invoiceDate, city)
+    if (!limitDate) return false
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return today > limitDate
+  }
+
+  const getLimitDateBadgeClass = (invoiceDate?: string, city?: string) => {
+    return isLimitDateOverdue(invoiceDate, city)
+      ? "bg-red-100 text-red-700 border-red-200"
+      : "bg-blue-100 text-blue-700 border-blue-200"
+  }
+
   const getStatusBadgeClass = (status: string) => {
     const normalizedStatus = normalizeStatus(status)
     if (normalizedStatus === "VENCIDO") {
       return "bg-red-100 text-red-700 border-red-200"
-    }
-    if (normalizedStatus === "POR VENCER") {
-      return "bg-amber-100 text-amber-700 border-amber-200"
     }
     if (normalizedStatus === "VIGENTE") {
       return "bg-blue-100 text-blue-700 border-blue-200"
@@ -288,7 +320,7 @@ export default function LettersPage() {
 
           {/* Filtro por Estado */}
           <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
-            {["TODOS", "VIGENTE", "POR VENCER", "VENCIDO"].map((status) => (
+            {["TODOS", "VIGENTE", "VENCIDO"].map((status) => (
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
@@ -500,6 +532,8 @@ export default function LettersPage() {
                       <p className="leading-relaxed">Le saludamos cordialmente del <strong>Área de Créditos y Cobranzas de Agrovet Market S.A.</strong></p>
                       <p className="leading-relaxed bg-blue-50/50 dark:bg-blue-950/30 p-4 rounded-2xl border border-blue-100 dark:border-blue-900 italic text-blue-800 dark:text-blue-300">
                         Adjunto el detalle de las letras que aún se encuentran pendientes de firma, confirmar fecha de recojo.
+                        <br />
+                        <strong>F.LIMITE</strong> indica la fecha máxima para gestionar la firma/recojo de la letra (Lima: 7 días desde la emisión; provincia: 15 días).
                       </p>
                     </div>
                     
@@ -512,13 +546,15 @@ export default function LettersPage() {
                             <th className="px-4 py-3 text-right font-bold uppercase tracking-tighter text-[10px]">MONTO</th>
                             <th className="px-4 py-3 text-center font-bold uppercase tracking-tighter text-[10px]">F.EMISIÓN</th>
                             <th className="px-4 py-3 text-center font-bold uppercase tracking-tighter text-[10px]">VENCIMIENTO</th>
-                            <th className="px-4 py-3 text-center font-bold uppercase tracking-tighter text-[10px]">ESTADO</th>
+                            <th className="px-4 py-3 text-center font-bold uppercase tracking-tighter text-[10px]">F.LIMITE</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                           {selectedLetters
                             .filter(l => l.acceptor_id === selectedLetters[0].acceptor_id)
-                            .map(letter => (
+                            .map(letter => {
+                              const limitDate = getLimitDate(letter.invoice_date, letter.city)
+                              return (
                               <tr key={letter.id}>
                                 <td className="px-4 py-4 font-black text-[#714B67] dark:text-purple-400">{letter.number}</td>
                                 <td className="px-4 py-4 font-bold text-slate-500 dark:text-slate-400">{letter.ref_docs}</td>
@@ -534,13 +570,14 @@ export default function LettersPage() {
                                 <td className="px-4 py-4 text-center">
                                   <span className={cn(
                                     "inline-flex items-center rounded-full border text-[10px] font-black px-2 py-1",
-                                    getStatusBadgeClass(letter.status_calc)
+                                    getLimitDateBadgeClass(letter.invoice_date, letter.city)
                                   )}>
-                                    {normalizeStatus(letter.status_calc)}
+                                    {limitDate ? limitDate.toLocaleDateString("es-PE") : "-"}
                                   </span>
                                 </td>
                               </tr>
-                            ))}
+                              )
+                            })}
                         </tbody>
                       </table>
                     </div>

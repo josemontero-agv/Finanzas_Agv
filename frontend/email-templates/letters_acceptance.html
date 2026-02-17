@@ -110,23 +110,19 @@
             text-align: right;
             white-space: nowrap;
         }
-        .status-badge {
+        .limit-badge {
             display: inline-block;
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 10px;
             font-weight: 900;
-            text-transform: uppercase;
+            white-space: nowrap;
         }
-        .status-vencido {
+        .limit-vencido {
             background-color: #fee2e2;
             color: #b91c1c;
         }
-        .status-por-vencer {
-            background-color: #fef3c7;
-            color: #92400e;
-        }
-        .status-vigente {
+        .limit-vigente {
             background-color: #dbeafe;
             color: #1e40af;
         }
@@ -193,6 +189,8 @@
             
             <div class="alert-box">
                 Adjunto el detalle de las letras que aun se encuentran pendientes de firma, confirmar fecha de recojo.
+                <br>
+                <strong>F.Limite</strong> indica la fecha maxima para gestionar la firma/recojo de la letra (Lima: 7 dias desde la emision; provincia: 15 dias).
             </div>
 
             <table class="letters-table">
@@ -203,7 +201,7 @@
                         <th style="text-align: right;">Monto</th>
                         <th style="text-align: center;">F. Factura</th>
                         <th style="text-align: center;">Vencimiento</th>
-                        <th style="text-align: center;">Estado</th>
+                        <th style="text-align: center;">F.Limite</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -215,15 +213,13 @@
                         <td style="text-align: center; font-weight: 700; color: #64748b;">{{ letter.invoice_date or '-' }}</td>
                         <td style="text-align: center; font-weight: 700; color: #64748b;">{{ letter.due_date }}</td>
                         <td style="text-align: center;">
-                            <span class="status-badge 
-                                {% if letter.status_calc == 'VENCIDO' %}
-                                    status-vencido
-                                {% elif letter.status_calc == 'POR VENCER' %}
-                                    status-por-vencer
+                            <span class="limit-badge 
+                                {% if letter.is_limit_overdue %}
+                                    limit-vencido
                                 {% else %}
-                                    status-vigente
+                                    limit-vigente
                                 {% endif %}">
-                                {{ letter.status_calc }}
+                                {{ letter.limit_date or '-' }}
                             </span>
                         </td>
                     </tr>
