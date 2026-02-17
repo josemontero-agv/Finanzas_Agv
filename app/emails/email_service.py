@@ -8,6 +8,7 @@ from flask_mail import Mail, Message
 from flask import current_app
 from jinja2 import Environment, FileSystemLoader
 from app.emails.email_logger import EmailLogger
+from datetime import datetime, timedelta
 
 class EmailService:
     """
@@ -59,6 +60,13 @@ class EmailService:
         env = Environment(loader=FileSystemLoader(str(templates_dir)))
         template = env.get_template(template_name)
         return template.render(**context)
+
+    def _is_lima(self, city):
+        """
+        Determina si la ciudad corresponde a Lima.
+        """
+        city_value = (city or "").strip().lower()
+        return city_value == "lima" or city_value.startswith("lima ")
     
     def send_letters_to_recover(self, recipients_data, sender_email=None):
         """
@@ -198,7 +206,6 @@ class EmailService:
         dev_mode = current_app.config.get('DEV_EMAIL_MODE', False)
         dev_email = current_app.config.get('DEV_EMAIL_RECIPIENT', 'creditosycobranzas@agrovetmarket.com')
         
-        from datetime import datetime
         now = datetime.now()
         # Formato 3/2/2026 para el cuerpo y 03/02/26 para el asunto
         today_str = f"{now.day}/{now.month}/{now.year}"
@@ -225,8 +232,18 @@ class EmailService:
                             if isinstance(inv_date, str):
                                 date_obj = datetime.strptime(inv_date, '%Y-%m-%d')
                                 letter_copy['invoice_date'] = date_obj.strftime('%d/%m/%Y')
+                                # Fecha límite para cliente: Lima +7 días, provincia +15 días
+                                deadline_days = 7 if self._is_lima(l.get('city', '')) else 15
+                                limit_date = date_obj.date() + timedelta(days=deadline_days)
+                                letter_copy['limit_date'] = limit_date.strftime('%d/%m/%Y')
+                                letter_copy['is_limit_overdue'] = datetime.now().date() > limit_date
                         except:
                             pass
+
+                    if 'limit_date' not in letter_copy:
+                        letter_copy['limit_date'] = '-'
+                    if 'is_limit_overdue' not in letter_copy:
+                        letter_copy['is_limit_overdue'] = False
                     
                     formatted_letters.append(letter_copy)
 
