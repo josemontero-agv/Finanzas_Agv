@@ -44,7 +44,8 @@ def report_account12():
         summary_only = request.args.get('summary_only') == 'true'
         if cutoff_date:
             include_reconciled = True
-        limit = request.args.get('limit', type=int, default=10000)
+        # Sin límite por defecto para permitir análisis completo.
+        limit = request.args.get('limit', type=int, default=0)
         
         # Crear repositorio y servicio
         odoo_repo = _get_odoo_repository()
@@ -102,6 +103,7 @@ def report_account12():
                 'credit': 0.0,
                 'pending_cutoff': 0.0,
                 'paid_after_cutoff': 0.0,
+                'saldo_total': 0.0,
                 'saldo': 0.0,
                 'overdue_amount': 0.0,
                 'count': 0
@@ -112,6 +114,7 @@ def report_account12():
                 acc_name = row.get('account_id/name') or ''
                 debit = float(row.get('debit', 0.0) or 0.0)
                 credit = float(row.get('credit', 0.0) or 0.0)
+                balance = float(row.get('balance', debit - credit) or 0.0)
                 # Saldo es amount_residual_with_retention (en soles)
                 pending = float(row.get('amount_residual_with_retention', 0.0) or 0.0)
                 # O si es histórico, usar amount_residual_historical
@@ -125,9 +128,10 @@ def report_account12():
                 overall['credit'] += credit
                 overall['pending_cutoff'] += pending
                 overall['paid_after_cutoff'] += paid_after
+                overall['saldo_total'] += balance
                 overall['count'] += 1
                 if dias_vencido > 0:
-                    overall['overdue_amount'] += pending
+                    overall['overdue_amount'] += abs(balance)
 
                 if acc not in accounts:
                     accounts[acc] = {
@@ -137,6 +141,7 @@ def report_account12():
                         'credit': 0.0,
                         'pending_cutoff': 0.0,
                         'paid_after_cutoff': 0.0,
+                        'saldo_total': 0.0,
                         'saldo': 0.0,
                         'overdue_amount': 0.0,
                         'count': 0
@@ -145,13 +150,14 @@ def report_account12():
                 accounts[acc]['credit'] += credit
                 accounts[acc]['pending_cutoff'] += pending
                 accounts[acc]['paid_after_cutoff'] += paid_after
+                accounts[acc]['saldo_total'] += balance
                 accounts[acc]['count'] += 1
                 if dias_vencido > 0:
-                    accounts[acc]['overdue_amount'] += pending
+                    accounts[acc]['overdue_amount'] += abs(balance)
 
             for acc_code, acc_data in accounts.items():
-                acc_data['saldo'] = acc_data['debit'] - acc_data['credit']
-            overall['saldo'] = overall['debit'] - overall['credit']
+                acc_data['saldo'] = acc_data['saldo_total']
+            overall['saldo'] = overall['saldo_total']
 
             by_account = list(accounts.values())
             by_account.sort(key=lambda x: x['account_code'])

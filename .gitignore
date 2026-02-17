@@ -33,6 +33,8 @@ ENV/
 .env.produccion
 
 
+/scripts/*
+
 # IDE
 .vscode/
 .idea/
