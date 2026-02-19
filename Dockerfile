@@ -1,20 +1,24 @@
 FROM python:3.11-slim
 
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
 WORKDIR /app
 
-# Instalar dependencias del sistema necesarias para psycopg2 y compilación
-RUN apt-get update && apt-get install -y \
-    gcc \
-    libpq-dev \
+# Dependencias de sistema para psycopg2-binary y SSL
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
 COPY . .
 
 EXPOSE 5000
 
-# Comando por defecto (sobrescrito por docker-compose para web/worker)
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "run:app"]
+# Render define PORT dinámico; local usa 5000 por defecto.
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 2 --threads 4 --timeout 180 run:app"]
 
