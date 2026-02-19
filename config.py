@@ -50,6 +50,8 @@ class Config:
     MAIL_USERNAME = os.getenv('MAIL_USERNAME')
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER', 'jose.montero@agrovetmarket.com')
+    MAIL_DEFAULT_CC = os.getenv('MAIL_DEFAULT_CC', '')
+    MAIL_DEFAULT_BCC = os.getenv('MAIL_DEFAULT_BCC', '')
     
     # Modo de desarrollo para correos (redirige todos los correos a un email de prueba)
     DEV_EMAIL_MODE = os.getenv('DEV_EMAIL_MODE', 'False').lower() == 'true'
@@ -161,6 +163,8 @@ class DevelopmentConfig(Config):
         app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
         app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
         app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'jose.montero@agrovetmarket.com')
+        app.config['MAIL_DEFAULT_CC'] = os.getenv('MAIL_DEFAULT_CC', '')
+        app.config['MAIL_DEFAULT_BCC'] = os.getenv('MAIL_DEFAULT_BCC', '')
         app.config['FRONTEND_URL'] = os.getenv('FRONTEND_URL', 'http://localhost:3000')
         app.config['USER_EMAIL_DOMAIN'] = os.getenv('USER_EMAIL_DOMAIN', 'agrovetmarket.com')
         app.config['ALLOWED_EMAIL_SENDER_DOMAIN'] = os.getenv('ALLOWED_EMAIL_SENDER_DOMAIN', 'agrovetmarket.com')
@@ -231,6 +235,8 @@ class ProductionConfig(Config):
         app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
         app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
         app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'jose.montero@agrovetmarket.com')
+        app.config['MAIL_DEFAULT_CC'] = os.getenv('MAIL_DEFAULT_CC', '')
+        app.config['MAIL_DEFAULT_BCC'] = os.getenv('MAIL_DEFAULT_BCC', '')
         app.config['FRONTEND_URL'] = os.getenv('FRONTEND_URL', 'http://localhost:3000')
         app.config['USER_EMAIL_DOMAIN'] = os.getenv('USER_EMAIL_DOMAIN', 'agrovetmarket.com')
         app.config['ALLOWED_EMAIL_SENDER_DOMAIN'] = os.getenv('ALLOWED_EMAIL_SENDER_DOMAIN', 'agrovetmarket.com')

@@ -9,6 +9,7 @@ from flask import current_app
 from jinja2 import Environment, FileSystemLoader
 from app.emails.email_logger import EmailLogger
 from datetime import datetime, timedelta
+import re
 
 class EmailService:
     """
@@ -44,6 +45,46 @@ class EmailService:
         if candidate and candidate.endswith(f'@{allowed_domain}'):
             return candidate
         return default_sender
+
+    def _is_valid_email(self, value):
+        """
+        Valida formato básico de email para evitar rechazos SMTP por destinatarios inválidos.
+        """
+        if not value:
+            return False
+        return bool(re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', value))
+
+    def _split_emails(self, raw_value):
+        """
+        Convierte un string o lista de correos en lista normalizada/única de emails válidos.
+        Acepta separadores coma y punto y coma.
+        """
+        if not raw_value:
+            return []
+
+        if isinstance(raw_value, (list, tuple)):
+            candidates = raw_value
+        else:
+            normalized = str(raw_value).strip().strip('"').strip("'").replace(';', ',')
+            candidates = normalized.split(',')
+
+        result = []
+        seen = set()
+        for item in candidates:
+            email = str(item).strip().strip('"').strip("'").lower()
+            if not email or not self._is_valid_email(email):
+                continue
+            if email in seen:
+                continue
+            seen.add(email)
+            result.append(email)
+        return result
+
+    def _get_config_emails(self, key):
+        """
+        Obtiene lista de correos desde config (MAIL_DEFAULT_CC / MAIL_DEFAULT_BCC, etc).
+        """
+        return self._split_emails(current_app.config.get(key, ''))
 
     def _get_frontend_templates_dir(self):
         """
@@ -205,6 +246,8 @@ class EmailService:
         # Verificar si estamos en modo desarrollo
         dev_mode = current_app.config.get('DEV_EMAIL_MODE', False)
         dev_email = current_app.config.get('DEV_EMAIL_RECIPIENT', 'creditosycobranzas@agrovetmarket.com')
+        default_cc = self._get_config_emails('MAIL_DEFAULT_CC')
+        default_bcc = self._get_config_emails('MAIL_DEFAULT_BCC')
         
         now = datetime.now()
         # Formato 3/2/2026 para el cuerpo y 03/02/26 para el asunto
@@ -262,7 +305,38 @@ class EmailService:
                 
                 # Determinar destinatario real (modo desarrollo o producción)
                 original_email = recipient['email']
-                actual_recipient = dev_email if dev_mode else original_email
+                customer_recipients = self._split_emails(original_email)
+                dev_recipients = self._split_emails(dev_email)
+                to_recipients = dev_recipients if dev_mode else customer_recipients
+
+                if not to_recipients:
+                    results['failed'] += 1
+                    error_msg = (
+                        f"Error enviando a {recipient.get('name', 'Unknown')}: "
+                        "No hay destinatarios válidos para envío"
+                    )
+                    results['errors'].append(error_msg)
+                    print(f"[ERROR] {error_msg}")
+                    self.logger.log_email_failed(
+                        recipient_email=original_email or 'unknown',
+                        recipient_name=recipient.get('name', 'Unknown'),
+                        subject=subject,
+                        error_message="No hay destinatarios válidos para envío",
+                        letter_ids=letter_ids
+                    )
+                    continue
+
+                # Si el cliente tiene múltiples correos, el primero va en TO y el resto en CC.
+                # Además, se agregan CC/BCC de configuración.
+                customer_cc = [] if dev_mode else customer_recipients[1:]
+                cc_recipients = []
+                bcc_recipients = []
+                for email in customer_cc + default_cc:
+                    if email not in to_recipients and email not in cc_recipients:
+                        cc_recipients.append(email)
+                for email in default_bcc:
+                    if email not in to_recipients and email not in cc_recipients and email not in bcc_recipients:
+                        bcc_recipients.append(email)
                 
                 # Agregar nota en el asunto si estamos en modo desarrollo
                 if dev_mode:
@@ -273,7 +347,9 @@ class EmailService:
                     resolved_sender = self._resolve_sender_email(sender_email)
                     msg = Message(
                         subject=subject,
-                        recipients=[actual_recipient],
+                        recipients=to_recipients,
+                        cc=cc_recipients,
+                        bcc=bcc_recipients,
                         html=body_html,
                         sender=resolved_sender,
                         reply_to=resolved_sender
@@ -298,9 +374,13 @@ class EmailService:
                     self.mail.send(msg)
                     
                     if dev_mode:
-                        print(f"[DEV MODE] Email redirigido de {original_email} a {actual_recipient}")
+                        print(f"[DEV MODE] Email redirigido de {original_email} a {', '.join(to_recipients)}")
                     else:
-                        print(f"[OK] Email de aceptación enviado a {original_email}")
+                        print(
+                            f"[OK] Email de aceptación enviado a TO={','.join(to_recipients)}"
+                            + (f" CC={','.join(cc_recipients)}" if cc_recipients else "")
+                            + (f" BCC={','.join(bcc_recipients)}" if bcc_recipients else "")
+                        )
                     
                     # Log exitoso
                     self.logger.log_email_sent(
@@ -312,9 +392,13 @@ class EmailService:
                     )
                 else:
                     # MOCK SEND (para desarrollo sin configuración SMTP)
-                    print(f"--- SIMULATING EMAIL SEND TO {actual_recipient} ---")
+                    print(f"--- SIMULATING EMAIL SEND TO {', '.join(to_recipients)} ---")
                     if dev_mode:
                         print(f"[DEV MODE] Original destinatario: {original_email}")
+                    if cc_recipients:
+                        print(f"CC: {', '.join(cc_recipients)}")
+                    if bcc_recipients:
+                        print(f"BCC: {', '.join(bcc_recipients)}")
                     print(f"Subject: {subject}")
                     print("------------------------------------------------")
                     
