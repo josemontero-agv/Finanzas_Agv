@@ -7,6 +7,7 @@ Las credenciales se cargan desde archivos .env específicos.
 """
 
 import os
+from datetime import timedelta
 from dotenv import load_dotenv
 
 
@@ -60,6 +61,47 @@ class Config:
     # Dominio corporativo para identidad de usuario/remitente
     USER_EMAIL_DOMAIN = os.getenv('USER_EMAIL_DOMAIN', 'agrovetmarket.com')
     ALLOWED_EMAIL_SENDER_DOMAIN = os.getenv('ALLOWED_EMAIL_SENDER_DOMAIN', 'agrovetmarket.com')
+
+    # Sesión y cookies (cross-site)
+    SESSION_COOKIE_NAME = os.getenv('SESSION_COOKIE_NAME', 'finanzas_agv_session')
+    SESSION_COOKIE_HTTPONLY = os.getenv('SESSION_COOKIE_HTTPONLY', 'True').lower() == 'true'
+    SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
+    SESSION_COOKIE_SAMESITE = os.getenv('SESSION_COOKIE_SAMESITE', 'Lax')
+    SESSION_REFRESH_EACH_REQUEST = os.getenv('SESSION_REFRESH_EACH_REQUEST', 'True').lower() == 'true'
+    SESSION_LIFETIME_MINUTES = int(os.getenv('SESSION_LIFETIME_MINUTES', '480'))
+
+    @staticmethod
+    def _as_bool(value, default=False):
+        if value is None:
+            return default
+        return str(value).strip().lower() in ('1', 'true', 'yes', 'on')
+
+    @classmethod
+    def _apply_session_settings(cls, app, secure_default=False, samesite_default='Lax'):
+        """
+        Aplica configuración de sesión/cookies con soporte cross-site.
+        """
+        app.config['SESSION_COOKIE_NAME'] = os.getenv('SESSION_COOKIE_NAME', 'finanzas_agv_session')
+        app.config['SESSION_COOKIE_HTTPONLY'] = cls._as_bool(
+            os.getenv('SESSION_COOKIE_HTTPONLY'),
+            default=True
+        )
+        app.config['SESSION_COOKIE_SECURE'] = cls._as_bool(
+            os.getenv('SESSION_COOKIE_SECURE'),
+            default=secure_default
+        )
+
+        cookie_samesite = os.getenv('SESSION_COOKIE_SAMESITE', samesite_default)
+        if str(cookie_samesite).lower() == 'none':
+            cookie_samesite = 'None'
+        app.config['SESSION_COOKIE_SAMESITE'] = cookie_samesite
+
+        app.config['SESSION_REFRESH_EACH_REQUEST'] = cls._as_bool(
+            os.getenv('SESSION_REFRESH_EACH_REQUEST'),
+            default=True
+        )
+        lifetime_minutes = int(os.getenv('SESSION_LIFETIME_MINUTES', '480'))
+        app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=lifetime_minutes)
     
     @staticmethod
     def init_app(app):
@@ -126,6 +168,7 @@ class DevelopmentConfig(Config):
         # Modo de desarrollo para correos (activado por defecto en desarrollo)
         app.config['DEV_EMAIL_MODE'] = os.getenv('DEV_EMAIL_MODE', 'True').lower() == 'true'
         app.config['DEV_EMAIL_RECIPIENT'] = os.getenv('DEV_EMAIL_RECIPIENT', 'creditosycobranzas@agrovetmarket.com')
+        cls._apply_session_settings(app, secure_default=False, samesite_default='Lax')
 
         # Configuración Celery Dict
         app.config['CELERY'] = {
@@ -195,6 +238,7 @@ class ProductionConfig(Config):
         # Modo de desarrollo para correos (desactivado en producción)
         app.config['DEV_EMAIL_MODE'] = os.getenv('DEV_EMAIL_MODE', 'False').lower() == 'true'
         app.config['DEV_EMAIL_RECIPIENT'] = os.getenv('DEV_EMAIL_RECIPIENT', 'creditosycobranzas@agrovetmarket.com')
+        cls._apply_session_settings(app, secure_default=True, samesite_default='None')
 
         # Configuración Celery Dict
         app.config['CELERY'] = {
