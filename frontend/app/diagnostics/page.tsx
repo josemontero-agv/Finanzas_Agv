@@ -72,7 +72,7 @@ export default function DiagnosticsPage() {
         </h2>
         <div className="grid gap-4 md:grid-cols-3">
           <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 flex flex-col items-center text-center transition-colors duration-300">
-            {movesCount !== undefined && movesCount > 0 ? (
+            {movesCount != null && movesCount > 0 ? (
               <CheckCircle className="h-8 w-8 text-green-500 dark:text-green-400 mb-2" />
             ) : movesCount === 0 ? (
               <AlertCircle className="h-8 w-8 text-yellow-500 dark:text-yellow-400 mb-2" />
@@ -82,12 +82,12 @@ export default function DiagnosticsPage() {
             <p className="font-bold text-slate-800 dark:text-slate-200 text-lg">fact_moves</p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider font-semibold">Facturas y Notas</p>
             <Badge variant="outline" className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600">
-              {movesCount !== undefined ? `${movesCount} registros` : "Error"}
+              {movesCount != null ? `${movesCount} registros` : "Error"}
             </Badge>
           </div>
 
           <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 flex flex-col items-center text-center transition-colors duration-300">
-            {lettersCount !== undefined && lettersCount > 0 ? (
+            {lettersCount != null && lettersCount > 0 ? (
               <CheckCircle className="h-8 w-8 text-green-500 dark:text-green-400 mb-2" />
             ) : lettersCount === 0 ? (
               <AlertCircle className="h-8 w-8 text-yellow-500 dark:text-yellow-400 mb-2" />
@@ -97,12 +97,12 @@ export default function DiagnosticsPage() {
             <p className="font-bold text-slate-800 dark:text-slate-200 text-lg">fact_letters</p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider font-semibold">Letras de Cambio</p>
             <Badge variant="outline" className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600">
-              {lettersCount !== undefined ? `${lettersCount} registros` : "Error"}
+              {lettersCount != null ? `${lettersCount} registros` : "Error"}
             </Badge>
           </div>
 
           <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 flex flex-col items-center text-center transition-colors duration-300">
-            {partnersCount !== undefined && partnersCount > 0 ? (
+            {partnersCount != null && partnersCount > 0 ? (
               <CheckCircle className="h-8 w-8 text-green-500 dark:text-green-400 mb-2" />
             ) : partnersCount === 0 ? (
               <AlertCircle className="h-8 w-8 text-yellow-500 dark:text-yellow-400 mb-2" />
@@ -112,7 +112,7 @@ export default function DiagnosticsPage() {
             <p className="font-bold text-slate-800 dark:text-slate-200 text-lg">dim_partners</p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider font-semibold">Clientes/Proveedores</p>
             <Badge variant="outline" className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600">
-              {partnersCount !== undefined ? `${partnersCount} registros` : "Error"}
+              {partnersCount != null ? `${partnersCount} registros` : "Error"}
             </Badge>
           </div>
         </div>
