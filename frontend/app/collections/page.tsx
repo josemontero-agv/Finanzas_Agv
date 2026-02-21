@@ -15,7 +15,8 @@ const DEFAULT_FILTERS: ReportParams = {
   date_to: '',
   date_cutoff: '',
   customer: '',
-  account_codes: '122,1212,123,1312,132,13',
+  sub_channel: '',
+  account_codes: '',
   sales_channel_id: undefined,
   doc_type_id: undefined,
   include_reconciled: false,
@@ -24,15 +25,16 @@ const DEFAULT_FILTERS: ReportParams = {
 export default function CollectionsPage() {
   const [draftFilters, setDraftFilters] = useState<ReportParams>(DEFAULT_FILTERS)
   const [appliedFilters, setAppliedFilters] = useState<ReportParams>(DEFAULT_FILTERS)
+  const [hasAppliedFilters, setHasAppliedFilters] = useState(false)
 
   const [isFiltersOpen, setIsFiltersOpen] = useState(true)
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
 
   // Opciones de filtros
   const { data: filterOptions } = useQuery({
-    queryKey: ["collections", "filter-options"],
+    queryKey: ["collections", "filter-options", appliedFilters],
     queryFn: async () => {
-      const response = await collectionsApi.getFilterOptions()
+      const response = await collectionsApi.getFilterOptions(appliedFilters)
       return response.data.data
     }
   })
@@ -41,9 +43,10 @@ export default function CollectionsPage() {
   const { data: response, isLoading, error, refetch } = useQuery({
     queryKey: ["collections", "report", appliedFilters],
     queryFn: async () => {
-      const response = await collectionsApi.getReport(appliedFilters)
+      const response = await collectionsApi.getReport({ ...appliedFilters, limit: 500 })
       return response.data
     },
+    enabled: hasAppliedFilters,
     retry: 1,
     staleTime: 60_000,
   })
@@ -58,13 +61,16 @@ export default function CollectionsPage() {
   const resetFilters = () => {
     setDraftFilters(DEFAULT_FILTERS)
     setAppliedFilters(DEFAULT_FILTERS)
+    setHasAppliedFilters(false)
   }
 
   const applyFilters = () => {
     setAppliedFilters(draftFilters)
+    setHasAppliedFilters(true)
   }
 
   const handleExport = () => {
+    if (!hasAppliedFilters) return
     const params = new URLSearchParams()
     Object.entries(appliedFilters).forEach(([key, value]) => {
       if (value !== undefined && value !== '' && value !== null) {
@@ -132,7 +138,7 @@ export default function CollectionsPage() {
     { key: "ruc", label: "RUC", get: (row: any) => firstValue(row, ["patner_id/vat", "partner_vat"]) },
     { key: "moneda", label: "Moneda", get: (row: any) => firstValue(row, ["account_id/currency_id", "currency_id"]) },
     { key: "monto_total", label: "Monto Total", get: (row: any) => firstNumber(row, ["account.move/amount_total", "amount_total", "amount_currency"]), isMoney: true },
-    { key: "saldo", label: "Saldo", get: (row: any) => firstNumber(row, ["account.move/amount_residual", "amount_residual_with_retention", "amount_residual_historical"]), isMoney: true },
+    { key: "saldo", label: "Monto Residual", get: (row: any) => firstNumber(row, ["account.move/amount_residual", "amount_residual_with_retention", "amount_residual_historical"]), isMoney: true },
     { key: "condicion_pago", label: "Condición Pago", get: (row: any) => firstValue(row, ["account.move/invoice_payment_term_id", "invoice_payment_term_id"]), maxWidth: "max-w-[180px]" },
     { key: "descripcion", label: "Descripción", get: (row: any) => firstValue(row, ["account.move.line/name", "name"]), maxWidth: "max-w-[260px]" },
     { key: "vendedor", label: "Vendedor", get: (row: any) => firstValue(row, ["account.move/invoice_user_id", "invoice_user_name", "move_id/invoice_user_id"]), maxWidth: "max-w-[220px]" },
@@ -175,6 +181,7 @@ export default function CollectionsPage() {
           </Button>
           <Button 
             onClick={handleExport}
+            disabled={!hasAppliedFilters}
             className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white"
           >
             <Download className="mr-2 h-4 w-4" />
@@ -282,9 +289,22 @@ export default function CollectionsPage() {
                 </select>
               </div>
               <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Sub Canal</label>
+                <select
+                  className="w-full h-10 px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#714B67] dark:focus:ring-purple-500 focus:ring-offset-0 disabled:opacity-50"
+                  value={draftFilters.sub_channel || ""}
+                  onChange={(e) => handleFilterChange('sub_channel', e.target.value)}
+                >
+                  <option value="">Todos los sub canales</option>
+                  {filterOptions?.sub_channels?.map(sc => (
+                    <option key={sc.value} value={sc.value}>{sc.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Códigos de Cuenta</label>
                 <Input 
-                  placeholder="Ingresa el numero de cuenta o subcuenta" 
+                  placeholder="Ingresa su cuenta contable" 
                   value={draftFilters.account_codes} 
                   onChange={(e) => handleFilterChange('account_codes', e.target.value)}
                   className="focus-visible:ring-[#714B67] dark:focus-visible:ring-purple-500 border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
@@ -317,7 +337,7 @@ export default function CollectionsPage() {
           <p className="text-2xl font-bold text-green-900 dark:text-green-200">{formatCurrency(summary?.overall.credit)}</p>
         </div>
         <div className="bg-purple-50/50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-xl p-6">
-          <p className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-2">Saldo Total</p>
+          <p className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-2">Monto Residual Total</p>
           <p className="text-2xl font-bold text-purple-900 dark:text-purple-200">
             {formatCurrency(summary?.overall.saldo_total ?? summary?.overall.saldo)}
           </p>
@@ -358,6 +378,12 @@ export default function CollectionsPage() {
                     ))}
                   </tr>
                 ))
+              ) : !hasAppliedFilters ? (
+                <tr>
+                  <td colSpan={columns.length} className="px-4 py-12 text-center text-slate-500 dark:text-slate-400">
+                    Aplica filtros para consultar y luego exportar a Excel.
+                  </td>
+                </tr>
               ) : data.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className="px-4 py-12 text-center text-slate-500 dark:text-slate-400">
@@ -415,7 +441,10 @@ export default function CollectionsPage() {
         </div>
         {!isLoading && data.length > 0 && (
           <div className="p-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 flex justify-between">
-            <span>Mostrando {data.length} de {response?.count || data.length} registros</span>
+            <span>
+              Mostrando {response?.shown_count || data.length} de {response?.count || data.length} registros.
+              Para ver el total detallado, exporta a Excel.
+            </span>
             <span>* Montos en moneda local del sistema</span>
           </div>
         )}

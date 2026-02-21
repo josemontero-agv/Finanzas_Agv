@@ -36,3 +36,16 @@ Todas las modificaciones notables a este proyecto serán documentadas en este ar
 
 ### Prevención de Errores
 - **Detección de Duplicados**: Se implementó una lógica de historial de sesión que marca las letras ya enviadas con un badge verde y muestra una alerta roja si se intenta re-enviar una letra en la misma sesión, evitando envíos duplicados por error de filtrado.
+
+### Mejorado (2026-02-20)
+- **Exportación Excel (Cobranzas)**: Las columnas de fecha ahora se exportan como tipo fecha real de Excel (no texto), con formato `DD/MM/YYYY`, permitiendo ordenar y filtrar cronológicamente de forma correcta.
+- **Web Cobranzas (Fechas)**: Se robusteció el formateo en frontend para soportar `YYYY-MM-DD`, `YYYY-MM-DD HH:mm:ss` y `YYYY-MM-DDTHH:mm:ss`.
+- **Fecha de Corte (Mini feature)**: Se reforzó el cálculo histórico para que mora/antigüedad se evalúen contra la fecha de corte y el saldo al corte use la lógica `saldo_actual + pagos_despues_del_corte`, mejorando casos de pagos en meses posteriores.
+- **Conciliados al Corte**: Se ajustó el filtro para excluir conciliados usando saldo histórico al corte (`<= 0`) cuando `include_reconciled` está desactivado, evitando exclusiones incorrectas por fecha máxima de conciliación.
+- **Cuentas Contables (Cobranzas)**: Se reemplazó el dominio rígido por un filtro dinámico por prefijos de cuenta (`account_id.code`) en base al campo `account_codes`, eliminando exclusiones hardcodeadas que quitaban cuentas válidas (como `123`).
+- **Corte Histórico (Dominio Base)**: En consultas con fecha de corte se dejó de filtrar por `amount_residual != 0` para no perder documentos ya cancelados hoy pero pendientes al corte.
+- **UX Filtros Web**: El campo `Códigos de Cuenta` ahora inicia vacío y muestra el placeholder `Ingresa su cuenta contable`.
+
+### Pendiente (2026-02-20)
+- **Cuadre de Data Cobranzas**: Aún falta cuadrar al 100% la data contra ERP; al consultar cuenta 12 se están incluyendo letras y el resultado no coincide totalmente con el esperado operativo.
+- **Paginación Cobranzas**: Se requiere optimizar/mejorar la paginación del módulo para evitar sobrecarga de registros y facilitar validaciones de cuadre por bloques.

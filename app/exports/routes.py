@@ -42,6 +42,7 @@ def export_collections_excel():
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
         customer = request.args.get('customer')
+        sub_channel = request.args.get('sub_channel')
         account_codes = request.args.get('account_codes')
         sales_channel_id = request.args.get('sales_channel_id', type=int)
         doc_type_id = request.args.get('doc_type_id', type=int)
@@ -61,6 +62,7 @@ def export_collections_excel():
             end_date=date_to,
             customer=customer,
             limit=limit,
+            sub_channel=sub_channel,
             account_codes=account_codes,
             sales_channel_id=sales_channel_id,
             doc_type_id=doc_type_id,

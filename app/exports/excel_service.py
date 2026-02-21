@@ -62,17 +62,18 @@ class ExcelExportService:
             (('patner_id', 'partner_name'), 'Cliente'),
             (('account_id/currency_id', 'currency_id'), 'Moneda'),
             (('account.move/amount_total', 'amount_total', 'amount_currency'), 'Monto Total'),
-            (('account.move/amount_residual', 'amount_residual_with_retention', 'amount_residual_historical'), 'Saldo'),
+            (('account.move/amount_residual', 'amount_residual_with_retention', 'amount_residual_historical'), 'Monto Residual'),
             (('debit',), 'Débito'),
             (('credit',), 'Haber'),
-            (('amount_residual_historical',), 'Pendiente al corte'),
-            (('paid_after_cutoff',), 'Pagado después corte'),
+            (('amount_residual_historical',), 'Monto Residual al Corte'),
+            (('paid_after_cutoff',), 'Pagos Posteriores al Corte'),
             (('dias_vencido',), 'Días Vencido'),
             (('estado_deuda',), 'Estado'),
             (('antiguedad',), 'Antigüedad'),
             (('account.move/invoice_payment_term_id', 'invoice_payment_term_id'), 'Condición Pago'),
             (('account.move.line/name', 'name'), 'Descripción'),
             (('account.move/invoice_user_id', 'invoice_user_name', 'move_id/invoice_user_id'), 'Vendedor'),
+            (('move_id/state', 'state'), 'Estado Documento'),
             (('account.move/linea_comercial', 'linea_comercial', 'team_name'), 'Línea Comercial'),
             (('grupo_comercial', 'agr.credit.customer/partner_groups_ids', 'agr.credit.customer/patner_groups_ids', 'partner_groups'), 'Grupo Comercial'),
             (('agr.credit.customer/sub_channel_id', 'sub_channel_id'), 'Sub Canal'),
@@ -94,6 +95,25 @@ class ExcelExportService:
                 yyyy, mm, dd = value.split('-')
                 return f"{dd}/{mm}/{yyyy}"
             return value
+
+        def parse_excel_date(value):
+            """
+            Convierte strings YYYY-MM-DD (o con hora) a fecha real de Excel.
+            """
+            if not value:
+                return None
+            if isinstance(value, datetime):
+                return value.date()
+            if isinstance(value, str):
+                raw = value.strip()
+                if not raw:
+                    return None
+                date_part = raw.split(" ")[0].split("T")[0]
+                try:
+                    return datetime.strptime(date_part, "%Y-%m-%d").date()
+                except Exception:
+                    return None
+            return None
         
         # Escribir encabezados
         for col_num, (_keys, header) in enumerate(columns, 1):
@@ -119,6 +139,16 @@ class ExcelExportService:
                 if value is None:
                     value = ''
                 
+                date_keys = {
+                    'move_id/invoice_date',
+                    'invoice_date',
+                    'account.move/invoice_date',
+                    'date',
+                    'account.move/invoice_date_due',
+                    'invoice_date_due',
+                    'date_maturity',
+                }
+
                 # Formatear valores numéricos
                 numeric_keys = {
                     'amount_currency', 'amount_residual_with_retention', 'amount_residual_signed',
@@ -132,6 +162,9 @@ class ExcelExportService:
                             value = int(value)
                     except:
                         value = 0
+                elif any(k in date_keys for k in key_candidates):
+                    parsed_date = parse_excel_date(value)
+                    value = parsed_date if parsed_date else (format_date_for_export(value) if value else '')
                 else:
                     # Formato de fecha solicitado: dd/mm/aaaa
                     value = format_date_for_export(value)
@@ -159,6 +192,10 @@ class ExcelExportService:
                         cell.fill = PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
                     else:
                         cell.fill = PatternFill(start_color="CCFFCC", end_color="CCFFCC", fill_type="solid")
+                elif any(k in date_keys for k in key_candidates):
+                    if value != '':
+                        cell.number_format = 'DD/MM/YYYY'
+                    cell.alignment = Alignment(horizontal='center')
         
         # Ajustar anchos de columna según contenido
         column_widths = {
@@ -218,8 +255,8 @@ class ExcelExportService:
             ('amount_total_signed', 'Total S/.'),
             ('debit', 'Débito'),
             ('credit', 'Haber'),
-            ('amount_residual_historical', 'Pendiente al corte'),
-            ('paid_after_cutoff', 'Pagado después corte'),
+            ('amount_residual_historical', 'Monto Residual al Corte'),
+            ('paid_after_cutoff', 'Pagos Posteriores al Corte'),
             ('invoice_date_due', 'Fecha Vencimiento'),
             ('dias_vencido', 'Días Vencido'),
             ('estado_deuda', 'Estado'),

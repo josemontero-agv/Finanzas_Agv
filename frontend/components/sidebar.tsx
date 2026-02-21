@@ -1,6 +1,7 @@
 "use client"
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Mail, Moon, Sun, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -20,8 +21,15 @@ export function Sidebar() {
       onMouseLeave={() => setIsExpanded(false)}
     >
       <div className="p-6 mb-8 flex items-center gap-4">
-        <div className="min-w-[32px] h-8 bg-white/20 dark:bg-purple-500/20 rounded-lg flex items-center justify-center">
-          <span className="font-bold text-lg">A</span>
+        <div className="min-w-[32px] h-8 bg-white rounded-lg flex items-center justify-center overflow-hidden p-1">
+          <Image
+            src="/docs/assets/logo-agrovet.png"
+            alt="Agrovet Market"
+            width={28}
+            height={28}
+            className="h-7 w-7 object-contain"
+            priority
+          />
         </div>
         <div className={cn("transition-opacity duration-300 whitespace-nowrap", isExpanded ? "opacity-100" : "opacity-0")}>
           <h1 className="text-xl font-bold text-white leading-tight">Finanzas AGV</h1>

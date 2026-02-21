@@ -6,6 +6,11 @@ import { AppShell } from "@/components/app-shell";
 export const metadata: Metadata = {
   title: "Finanzas AGV - Sistema de Gestión Financiera",
   description: "Sistema de gestión de cobranzas, tesorería y letras de cambio",
+  icons: {
+    icon: "/docs/assets/logo-agrovet.png",
+    shortcut: "/docs/assets/logo-agrovet.png",
+    apple: "/docs/assets/logo-agrovet.png",
+  },
 };
 
 export default function RootLayout({
@@ -16,6 +21,8 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
+        <link rel="icon" href="/docs/assets/logo-agrovet.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/docs/assets/logo-agrovet.png" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

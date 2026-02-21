@@ -55,8 +55,181 @@ class CollectionsService:
             ) or []
             results.extend(batch_records)
         return results
+
+    @staticmethod
+    def _m2o_id(value):
+        """Obtiene el ID de un many2one."""
+        if isinstance(value, list) and len(value) >= 1:
+            return value[0]
+        return None
+
+    @staticmethod
+    def _has_value(value):
+        return value not in (None, False, '', [])
+
+    def _build_trace_invoice_map(self, move_map):
+        """
+        Construye mapeo move_id -> factura origen usando:
+        1) bill_form_id -> invoice_ids (traza fuerte)
+        2) fallback por l10n_latam_boe_number (traza por numero de letra)
+        """
+        trace_invoice_map = {}
+        if not move_map:
+            return trace_invoice_map
+
+        # ---------- 1) Traza fuerte por bill_form_id ----------
+        bill_form_ids = {
+            self._m2o_id(m.get('bill_form_id'))
+            for m in move_map.values()
+            if self._m2o_id(m.get('bill_form_id'))
+        }
+        bill_form_map = {}
+        source_invoice_map = {}
+        if bill_form_ids:
+            try:
+                bill_forms = self._read_in_batches(
+                    'account.bill.form',
+                    list(bill_form_ids),
+                    ['id', 'invoice_ids'],
+                    batch_size=300
+                )
+                bill_form_map = {bf['id']: bf for bf in bill_forms}
+                source_invoice_ids = set()
+                for bf in bill_forms:
+                    source_invoice_ids.update(bf.get('invoice_ids') or [])
+
+                if source_invoice_ids:
+                    source_invoices = self._read_in_batches(
+                        'account.move',
+                        list(source_invoice_ids),
+                        [
+                            'id', 'name', 'state', 'move_type', 'partner_id', 'amount_total',
+                            'invoice_origin', 'invoice_payment_term_id', 'invoice_user_id',
+                            'sales_channel_id', 'sale_type_id', 'team_id',
+                            'bill_form_invoices_order_sales_line_commercial_zone_id'
+                        ],
+                        batch_size=300
+                    )
+                    source_invoice_map = {inv['id']: inv for inv in source_invoices}
+
+                for move_id_key, move_data in move_map.items():
+                    bf_id = self._m2o_id(move_data.get('bill_form_id'))
+                    if not bf_id:
+                        continue
+                    bf = bill_form_map.get(bf_id, {})
+                    invoice_ids = bf.get('invoice_ids') or []
+                    if invoice_ids:
+                        src = source_invoice_map.get(invoice_ids[0], {})
+                        if src:
+                            trace_invoice_map[move_id_key] = src
+            except Exception as e:
+                print(f"[WARN] No se pudo calcular trazabilidad por bill_form_id: {e}")
+
+        # ---------- 2) Fallback por numero de letra ----------
+        boe_numbers = {
+            str(m.get('l10n_latam_boe_number')).strip()
+            for m in move_map.values()
+            if self._has_value(m.get('l10n_latam_boe_number'))
+        }
+        if not boe_numbers:
+            return trace_invoice_map
+
+        try:
+            boe_candidates = self.repository.search_read(
+                'account.move',
+                [
+                    ('move_type', '=', 'out_bill'),
+                    ('l10n_latam_boe_number', 'in', list(boe_numbers))
+                ],
+                [
+                    'id', 'name', 'state', 'move_type', 'l10n_latam_boe_number', 'bill_form_id',
+                    'partner_id', 'amount_total', 'invoice_origin', 'invoice_payment_term_id',
+                    'invoice_user_id', 'sales_channel_id', 'sale_type_id', 'team_id',
+                    'bill_form_invoices_order_sales_line_commercial_zone_id'
+                ],
+                limit=10000
+            ) or []
+
+            candidate_bill_form_ids = {
+                self._m2o_id(m.get('bill_form_id'))
+                for m in boe_candidates
+                if self._m2o_id(m.get('bill_form_id'))
+            }
+            candidate_bill_form_map = {}
+            candidate_source_invoice_map = {}
+            if candidate_bill_form_ids:
+                candidate_bill_forms = self._read_in_batches(
+                    'account.bill.form',
+                    list(candidate_bill_form_ids),
+                    ['id', 'invoice_ids'],
+                    batch_size=300
+                )
+                candidate_bill_form_map = {bf['id']: bf for bf in candidate_bill_forms}
+                candidate_source_ids = set()
+                for bf in candidate_bill_forms:
+                    candidate_source_ids.update(bf.get('invoice_ids') or [])
+                if candidate_source_ids:
+                    candidate_sources = self._read_in_batches(
+                        'account.move',
+                        list(candidate_source_ids),
+                        [
+                            'id', 'name', 'state', 'move_type', 'partner_id', 'amount_total',
+                            'invoice_origin', 'invoice_payment_term_id', 'invoice_user_id',
+                            'sales_channel_id', 'sale_type_id', 'team_id',
+                            'bill_form_invoices_order_sales_line_commercial_zone_id'
+                        ],
+                        batch_size=300
+                    )
+                    candidate_source_invoice_map = {inv['id']: inv for inv in candidate_sources}
+
+            boe_best_source = {}
+            for cand in boe_candidates:
+                boe = str(cand.get('l10n_latam_boe_number') or '').strip()
+                if not boe:
+                    continue
+
+                src = cand
+                bf_id = self._m2o_id(cand.get('bill_form_id'))
+                if bf_id:
+                    bf = candidate_bill_form_map.get(bf_id, {})
+                    inv_ids = bf.get('invoice_ids') or []
+                    if inv_ids:
+                        src = candidate_source_invoice_map.get(inv_ids[0], cand)
+
+                score_fields = [
+                    'invoice_payment_term_id',
+                    'sales_channel_id',
+                    'sale_type_id',
+                    'invoice_user_id',
+                    'invoice_origin',
+                    'bill_form_invoices_order_sales_line_commercial_zone_id',
+                    'team_id',
+                ]
+                score = sum(1 for f in score_fields if self._has_value(src.get(f)))
+                if src.get('move_type') == 'out_invoice':
+                    score += 2
+                if self._m2o_id(cand.get('bill_form_id')):
+                    score += 1
+
+                prev = boe_best_source.get(boe)
+                if not prev or score > prev['score']:
+                    boe_best_source[boe] = {'score': score, 'src': src}
+
+            for move_id_key, move_data in move_map.items():
+                if move_id_key in trace_invoice_map:
+                    continue
+                boe = str(move_data.get('l10n_latam_boe_number') or '').strip()
+                best = boe_best_source.get(boe)
+                if best and best.get('src'):
+                    trace_invoice_map[move_id_key] = best['src']
+        except Exception as e:
+            print(f"[WARN] No se pudo calcular trazabilidad por numero de letra: {e}")
+
+        return trace_invoice_map
     
-    def get_filter_options(self):
+    def get_filter_options(self, start_date=None, end_date=None, customer=None,
+                           account_codes=None, sales_channel_id=None, cutoff_date=None,
+                           include_reconciled=False):
         """
         Obtiene opciones para filtros (canales de venta, tipos de documento).
         
@@ -68,7 +241,7 @@ class CollectionsService:
             
             if not self.repository.is_connected():
                 print("[ERROR] No hay conexión a Odoo disponible")
-                return {'sales_channels': [], 'document_types': []}
+                return {'sales_channels': [], 'document_types': [], 'sub_channels': []}
             
             # Obtener canales de venta
             sales_channels = []
@@ -88,6 +261,24 @@ class CollectionsService:
             except Exception as e:
                 print(f"[WARN] No se pudo obtener canales de venta: {e}")
             
+            # Obtener sub canales desde agr.credit.customer + defaults
+            sub_channels = []
+            try:
+                sub_channel_set = {"NACIONAL", "INTERNACIONAL"}
+                credit_rows = self.repository.search_read(
+                    'agr.credit.customer',
+                    [],
+                    ['sub_channel_id'],
+                    limit=5000
+                )
+                for row in credit_rows:
+                    sub = row.get('sub_channel_id')
+                    if isinstance(sub, list) and len(sub) >= 2 and sub[1]:
+                        sub_channel_set.add(str(sub[1]).strip())
+                sub_channels = [{'value': name, 'name': name} for name in sorted(sub_channel_set)]
+            except Exception as e:
+                print(f"[WARN] No se pudo obtener sub canales: {e}")
+
             # Obtener tipos de documento LATAM
             document_types = []
             try:
@@ -100,31 +291,48 @@ class CollectionsService:
                     limit=200
                 )
                 
-                # Filtrar solo los tipos de documento permitidos
+                # Filtrar solo los tipos de documento permitidos con registros.
                 for doc in doc_types:
                     doc_name = doc.get('name', '')
                     if any(allowed_type.lower() in doc_name.lower() for allowed_type in allowed_doc_types):
-                        document_types.append({
-                            'id': doc['id'], 
-                            'name': doc_name
-                        })
+                        try:
+                            doc_domain = self._build_report_domain(
+                                start_date=start_date,
+                                end_date=end_date,
+                                customer=customer,
+                                account_codes=account_codes,
+                                sales_channel_id=sales_channel_id,
+                                doc_type_id=doc['id'],
+                                cutoff_date=cutoff_date,
+                                include_reconciled=include_reconciled
+                            )
+                            doc_count = self.repository.search_count('account.move.line', doc_domain)
+                        except Exception:
+                            doc_count = 0
+
+                        if doc_count > 0:
+                            document_types.append({
+                                'id': doc['id'],
+                                'name': doc_name
+                            })
                 
                 document_types.sort(key=lambda x: x['name'])
             except Exception as e:
                 print(f"[WARN] No se pudo obtener tipos de documento: {e}")
             
-            print(f"[OK] Filtros obtenidos: {len(sales_channels)} canales, {len(document_types)} tipos de documento")
+            print(f"[OK] Filtros obtenidos: {len(sales_channels)} canales, {len(document_types)} tipos de documento, {len(sub_channels)} sub canales")
             
             return {
                 'sales_channels': sales_channels,
-                'document_types': document_types
+                'document_types': document_types,
+                'sub_channels': sub_channels
             }
             
         except Exception as e:
             print(f"[ERROR] Error obteniendo opciones de filtros: {e}")
             import traceback
             traceback.print_exc()
-            return {'sales_channels': [], 'document_types': []}
+            return {'sales_channels': [], 'document_types': [], 'sub_channels': []}
     
     # Funciones de filtro integradas
     @staticmethod
@@ -172,8 +380,21 @@ class CollectionsService:
         
         return internacional_lines
     
+    @staticmethod
+    def _parse_account_codes(account_codes):
+        """
+        Normaliza los códigos de cuenta ingresados por el usuario.
+        Si no se envía nada, usa el set por defecto del módulo de cobranzas.
+        """
+        if account_codes and str(account_codes).strip():
+            parsed = [code.strip() for code in str(account_codes).split(',') if code.strip()]
+            if parsed:
+                return parsed
+        return ['122', '1212', '123', '1312', '132', '13']
+
     def _build_report_domain(self, start_date=None, end_date=None, customer=None,
                             account_codes=None, sales_channel_id=None, doc_type_id=None,
+                            sub_channel=None,
                             cutoff_date=None, include_reconciled=False):
         """
         Construye el domain de Odoo para filtrar líneas de movimiento.
@@ -186,24 +407,15 @@ class CollectionsService:
             account_codes (str): Códigos de cuenta separados por coma
             sales_channel_id (int): ID del canal de ventas
             doc_type_id (int): ID del tipo de documento
+            sub_channel (str): Sub canal (se aplica en post-proceso)
         
         Returns:
             list: Domain de Odoo listo para usar en búsquedas
         """
-        # Dominio solicitado para análisis de volumen de registros.
+        account_code_list = self._parse_account_codes(account_codes)
+
+        # Dominio base
         domain = [
-            '&', '&',
-            '|',
-            ('account_id', 'ilike', '12'),
-            ('account_id', 'ilike', '13'),
-            '&',
-            ('account_id', 'not ilike', '104'),
-            '&',
-            ('account_id', 'not ilike', '123'),
-            '&',
-            ('account_id', 'not ilike', '133'),
-            '&',
-            ('amount_residual', '!=', 0),
             ('account_id.reconcile', '=', True),
             ('parent_state', 'in', (
                 'posted',
@@ -216,11 +428,20 @@ class CollectionsService:
                 'protested'
             ))
         ]
+
+        # Filtro dinámico por códigos de cuenta
+        if account_code_list:
+            account_terms = [('account_id.code', '=like', f'{code}%') for code in account_code_list]
+            if len(account_terms) == 1:
+                domain.append(account_terms[0])
+            else:
+                domain.extend((['|'] * (len(account_terms) - 1)) + account_terms)
         
         # Filtros adicionales / histórico
         if cutoff_date:
             domain.append(('date', '<=', cutoff_date))
         else:
+            domain.append(('amount_residual', '!=', 0))
             if start_date:
                 domain.append(('date', '>=', start_date))
             if end_date:
@@ -281,6 +502,7 @@ class CollectionsService:
     
     def get_report_lines(self, start_date=None, end_date=None, customer=None, limit=0,
                          account_codes=None, sales_channel_id=None, doc_type_id=None,
+                         sub_channel=None,
                          cutoff_date=None, include_reconciled=False):
         """
         Obtener líneas de reporte de CxC siguiendo la cadena de relaciones.
@@ -293,6 +515,7 @@ class CollectionsService:
             account_codes (str): Códigos de cuenta separados por coma
             sales_channel_id (int): ID del canal de ventas
             doc_type_id (int): ID del tipo de documento
+            sub_channel (str): Sub canal
         
         Returns:
             list: Líneas de reporte CxC
@@ -311,6 +534,7 @@ class CollectionsService:
                 account_codes=account_codes,
                 sales_channel_id=sales_channel_id,
                 doc_type_id=doc_type_id,
+                sub_channel=sub_channel,
                 cutoff_date=cutoff_date,
                 include_reconciled=include_reconciled
             )
@@ -319,7 +543,7 @@ class CollectionsService:
             line_fields = [
                 'id', 'move_id', 'partner_id', 'account_id', 'name', 'date',
                 'date_maturity', 'amount_currency', 'amount_residual', 'currency_id',
-                'debit', 'credit', 'balance', 'matched_debit_ids', 'matched_credit_ids',
+                'debit', 'credit', 'balance', 'parent_state', 'matched_debit_ids', 'matched_credit_ids',
             ]
             
             # Si limit <= 0 o None, traer todos los registros para análisis.
@@ -348,7 +572,8 @@ class CollectionsService:
 
             if move_ids:
                 move_fields = [
-                    'id', 'name', 'payment_state', 'invoice_date', 'date', 'invoice_date_due',
+                    'id', 'name', 'state', 'move_type', 'bill_form_id',
+                    'payment_state', 'invoice_date', 'date', 'invoice_date_due',
                     'invoice_origin', 'l10n_latam_document_type_id', 'amount_total',
                     'amount_residual', 'amount_residual_with_retention', 'amount_residual_signed', 'currency_id',
                     'l10n_latam_boe_number',
@@ -358,6 +583,8 @@ class CollectionsService:
                 ]
                 moves = self._read_in_batches('account.move', move_ids, move_fields, batch_size=300)
                 move_map = {m['id']: m for m in moves}
+
+            trace_invoice_map = self._build_trace_invoice_map(move_map)
 
             if partner_ids:
                 partner_fields = [
@@ -428,9 +655,16 @@ class CollectionsService:
                 account_id = line['account_id'][0] if line.get('account_id') else None
                 
                 move = move_map.get(move_id, {})
+                source_move_base = trace_invoice_map.get(move_id, {})
                 partner = partner_map.get(partner_id, {})
                 account = account_map.get(account_id, {})
                 credit = credit_map.get(partner_id, {})
+
+                account_code = str(account.get('code') or '')
+                is_letters_account = account_code.startswith('123')
+                source_move = {}
+                if is_letters_account and source_move_base:
+                    source_move = source_move_base
                 
                 # Determinar Sub Canal
                 sub_channel_raw = m2o_name(credit.get('sub_channel_id'))
@@ -445,6 +679,10 @@ class CollectionsService:
                         sub_channel_final = 'N/A'
                 else:
                     sub_channel_final = sub_channel_raw
+
+                if sub_channel and str(sub_channel).strip():
+                    if sub_channel_final.strip().upper() != str(sub_channel).strip().upper():
+                        continue
 
                 # Determinar grupos del partner
                 partner_groups_display = partner_groups_map.get(partner_id, '')
@@ -465,19 +703,22 @@ class CollectionsService:
                 paid_after_cutoff = float(rec_info.get('paid_after', 0.0) or 0.0)
                 paid_before_cutoff = float(rec_info.get('paid_before', 0.0) or 0.0)
 
-                if cutoff_date and reconcile_date and reconcile_date <= cutoff_date and not include_reconciled:
-                    # Estaba pagado antes del corte y no queremos mostrar conciliados
-                    continue
-
                 current_residual = abs(line.get('amount_residual', 0.0) or 0.0)
                 amount_residual_historical = current_residual
                 if cutoff_date:
                     amount_residual_historical = current_residual + paid_after_cutoff
                     if reconcile_date and reconcile_date <= cutoff_date and include_reconciled:
                         amount_residual_historical = 0.0
+                    
+                    if not include_reconciled and amount_residual_historical <= 0:
+                        continue
                 
                 row = {
                     'payment_state': move.get('payment_state', ''),
+                    'parent_state': line.get('parent_state', ''),
+                    'move_id/parent_state': line.get('parent_state', ''),
+                    'move_id/state': move.get('state', ''),
+                    'state': move.get('state', ''),
                     'invoice_date': move.get('invoice_date', ''),
                     'move_id/invoice_date': move.get('invoice_date', ''),
                     'account.move/invoice_date': move.get('date', ''),
@@ -487,8 +728,8 @@ class CollectionsService:
                     'account.move/name': move.get('name', ''),
                     'l10n_latam_boe_number': move.get('l10n_latam_boe_number', ''),
                     'account.move/l10n_latam_boe_number': move.get('l10n_latam_boe_number', ''),
-                    'invoice_origin': move.get('invoice_origin', ''),
-                    'account.move/invoice_origin': move.get('invoice_origin', ''),
+                    'invoice_origin': move.get('invoice_origin', '') or source_move.get('invoice_origin', ''),
+                    'account.move/invoice_origin': move.get('invoice_origin', '') or source_move.get('invoice_origin', ''),
                     'account_id/code': account.get('code', ''),
                     'account_id/name': account.get('name', ''),
                     'partner_vat': partner.get('vat', ''),
@@ -524,31 +765,35 @@ class CollectionsService:
                     'invoice_date_due': move.get('invoice_date_due', ''),
                     'account.move/invoice_date_due': move.get('invoice_date_due', ''),
                     'ref': move.get('ref', ''),
-                    'invoice_payment_term_id': m2o_name(move.get('invoice_payment_term_id')),
-                    'account.move/invoice_payment_term_id': m2o_name(move.get('invoice_payment_term_id')),
+                    'invoice_payment_term_id': m2o_name(move.get('invoice_payment_term_id')) or m2o_name(source_move.get('invoice_payment_term_id')),
+                    'account.move/invoice_payment_term_id': m2o_name(move.get('invoice_payment_term_id')) or m2o_name(source_move.get('invoice_payment_term_id')),
                     'name': line.get('name', ''),
                     'account.move.line/name': line.get('name', ''),
-                    'invoice_user_name': m2o_name(move.get('invoice_user_id')),
-                    'account.move/invoice_user_id': m2o_name(move.get('invoice_user_id')),
-                    'sales_channel_name': m2o_name(move.get('sales_channel_id')),
-                    'account.move/sales_channel_id': m2o_name(move.get('sales_channel_id')),
-                    'sales_type_name': m2o_name(move.get('sale_type_id')),
-                    'account.move/sales_type_id': m2o_name(move.get('sale_type_id')),
-                    'account.move/sale_type_id': m2o_name(move.get('sale_type_id')),
+                    'invoice_user_name': m2o_name(move.get('invoice_user_id')) or m2o_name(source_move.get('invoice_user_id')),
+                    'account.move/invoice_user_id': m2o_name(move.get('invoice_user_id')) or m2o_name(source_move.get('invoice_user_id')),
+                    'sales_channel_name': m2o_name(move.get('sales_channel_id')) or m2o_name(source_move.get('sales_channel_id')),
+                    'account.move/sales_channel_id': m2o_name(move.get('sales_channel_id')) or m2o_name(source_move.get('sales_channel_id')),
+                    'sales_type_name': m2o_name(move.get('sale_type_id')) or m2o_name(source_move.get('sale_type_id')),
+                    'account.move/sales_type_id': m2o_name(move.get('sale_type_id')) or m2o_name(source_move.get('sale_type_id')),
+                    'account.move/sale_type_id': m2o_name(move.get('sale_type_id')) or m2o_name(source_move.get('sale_type_id')),
                     'linea_comercial': (
                         m2o_name(move.get('bill_form_invoices_order_sales_line_commercial_zone_id'))
                         or m2o_name(move.get('team_id'))
+                        or m2o_name(source_move.get('bill_form_invoices_order_sales_line_commercial_zone_id'))
+                        or m2o_name(source_move.get('team_id'))
                     ),
                     'account.move/linea_comercial': (
                         m2o_name(move.get('bill_form_invoices_order_sales_line_commercial_zone_id'))
                         or m2o_name(move.get('team_id'))
+                        or m2o_name(source_move.get('bill_form_invoices_order_sales_line_commercial_zone_id'))
+                        or m2o_name(source_move.get('team_id'))
                     ),
-                    'team_name': m2o_name(move.get('team_id')),
-                    'move_id/invoice_user_id': m2o_name(move.get('invoice_user_id')), # Alias legacy para exportación
-                    'move_id/sales_channel_id': m2o_name(move.get('sales_channel_id')), # Alias legacy
-                    'move_id/sales_type_id': m2o_name(move.get('sale_type_id')), # Alias legacy
+                    'team_name': m2o_name(move.get('team_id')) or m2o_name(source_move.get('team_id')),
+                    'move_id/invoice_user_id': m2o_name(move.get('invoice_user_id')) or m2o_name(source_move.get('invoice_user_id')), # Alias legacy para exportación
+                    'move_id/sales_channel_id': m2o_name(move.get('sales_channel_id')) or m2o_name(source_move.get('sales_channel_id')), # Alias legacy
+                    'move_id/sales_type_id': m2o_name(move.get('sale_type_id')) or m2o_name(source_move.get('sale_type_id')), # Alias legacy
                     'move_id/payment_state': move.get('payment_state', ''), # Alias legacy
-                    'team_id': m2o_name(move.get('team_id')), # Alias legacy para exportación
+                    'team_id': m2o_name(move.get('team_id')) or m2o_name(source_move.get('team_id')), # Alias legacy para exportación
                     'partner_groups': partner_groups_display,
                     'grupo_comercial': partner_groups_display,
                     'agr.credit.customer/patner_groups_ids': partner_groups_display,
@@ -606,6 +851,7 @@ class CollectionsService:
             account_codes = kwargs.get('account_codes')
             sales_channel_id = kwargs.get('sales_channel_id')
             doc_type_id = kwargs.get('doc_type_id')
+            sub_channel = kwargs.get('sub_channel')
             cutoff_date = kwargs.get('cutoff_date')
             include_reconciled = kwargs.get('include_reconciled', False)
             
@@ -617,6 +863,7 @@ class CollectionsService:
                 account_codes=account_codes,
                 sales_channel_id=sales_channel_id,
                 doc_type_id=doc_type_id,
+                sub_channel=sub_channel,
                 cutoff_date=cutoff_date,
                 include_reconciled=include_reconciled
             )
@@ -640,7 +887,7 @@ class CollectionsService:
             line_fields = [
                 'id', 'move_id', 'partner_id', 'account_id', 'name', 'date',
                 'date_maturity', 'amount_currency', 'amount_residual', 'currency_id',
-                'debit', 'credit', 'balance', 'matched_debit_ids', 'matched_credit_ids'
+                'debit', 'credit', 'balance', 'parent_state', 'matched_debit_ids', 'matched_credit_ids'
             ]
             
             lines = self.repository.search_read(
@@ -677,7 +924,8 @@ class CollectionsService:
 
             if move_ids:
                 move_fields = [
-                    'id', 'name', 'payment_state', 'invoice_date', 'date', 'invoice_date_due',
+                    'id', 'name', 'state', 'move_type', 'bill_form_id',
+                    'payment_state', 'invoice_date', 'date', 'invoice_date_due',
                     'invoice_origin', 'l10n_latam_document_type_id', 'amount_total',
                     'amount_residual', 'amount_residual_with_retention', 'amount_residual_signed', 'currency_id',
                     'l10n_latam_boe_number', 'ref', 'invoice_payment_term_id', 'invoice_user_id',
@@ -686,6 +934,8 @@ class CollectionsService:
                 ]
                 moves = self._read_in_batches('account.move', move_ids, move_fields, batch_size=300)
                 move_map = {m['id']: m for m in moves}
+
+            trace_invoice_map = self._build_trace_invoice_map(move_map)
 
             if partner_ids:
                 partner_fields = [
@@ -759,9 +1009,16 @@ class CollectionsService:
                 account_id = line['account_id'][0] if line.get('account_id') else None
                 
                 move = move_map.get(move_id, {})
+                source_move_base = trace_invoice_map.get(move_id, {})
                 partner = partner_map.get(partner_id, {})
                 account = account_map.get(account_id, {})
                 credit = credit_map.get(partner_id, {})
+
+                account_code = str(account.get('code') or '')
+                is_letters_account = account_code.startswith('123')
+                source_move = {}
+                if is_letters_account and source_move_base:
+                    source_move = source_move_base
                 
                 # Determinar Sub Canal
                 sub_channel_raw = m2o_name(credit.get('sub_channel_id'))
@@ -776,6 +1033,10 @@ class CollectionsService:
                         sub_channel_final = 'N/A'
                 else:
                     sub_channel_final = sub_channel_raw
+
+                if sub_channel and str(sub_channel).strip():
+                    if sub_channel_final.strip().upper() != str(sub_channel).strip().upper():
+                        continue
                 
                 partner_groups_display = partner_groups_map.get(partner_id, '')
                 
@@ -794,18 +1055,22 @@ class CollectionsService:
                 paid_after_cutoff = float(rec_info.get('paid_after', 0.0) or 0.0)
                 paid_before_cutoff = float(rec_info.get('paid_before', 0.0) or 0.0)
 
-                if cutoff_date and reconcile_date and reconcile_date <= cutoff_date and not include_reconciled:
-                    continue
-
                 current_residual = abs(line.get('amount_residual', 0.0) or 0.0)
                 amount_residual_historical = current_residual
                 if cutoff_date:
                     amount_residual_historical = current_residual + paid_after_cutoff
                     if reconcile_date and reconcile_date <= cutoff_date and include_reconciled:
                         amount_residual_historical = 0.0
+                    
+                    if not include_reconciled and amount_residual_historical <= 0:
+                        continue
                 
                 row = {
                     'payment_state': move.get('payment_state', ''),
+                    'parent_state': line.get('parent_state', ''),
+                    'move_id/parent_state': line.get('parent_state', ''),
+                    'move_id/state': move.get('state', ''),
+                    'state': move.get('state', ''),
                     'invoice_date': move.get('invoice_date', ''),
                     'move_id/invoice_date': move.get('invoice_date', ''),
                     'account.move/invoice_date': move.get('date', ''),
@@ -815,8 +1080,8 @@ class CollectionsService:
                     'account.move/name': move.get('name', ''),
                     'l10n_latam_boe_number': move.get('l10n_latam_boe_number', ''),
                     'account.move/l10n_latam_boe_number': move.get('l10n_latam_boe_number', ''),
-                    'invoice_origin': move.get('invoice_origin', ''),
-                    'account.move/invoice_origin': move.get('invoice_origin', ''),
+                    'invoice_origin': move.get('invoice_origin', '') or source_move.get('invoice_origin', ''),
+                    'account.move/invoice_origin': move.get('invoice_origin', '') or source_move.get('invoice_origin', ''),
                     'account_id/code': account.get('code', ''),
                     'account_id/name': account.get('name', ''),
                     'partner_vat': partner.get('vat', ''),
@@ -857,31 +1122,35 @@ class CollectionsService:
                     'invoice_date_due': move.get('invoice_date_due', ''),
                     'account.move/invoice_date_due': move.get('invoice_date_due', ''),
                     'ref': move.get('ref', ''),
-                    'invoice_payment_term_id': m2o_name(move.get('invoice_payment_term_id')),
-                    'account.move/invoice_payment_term_id': m2o_name(move.get('invoice_payment_term_id')),
+                    'invoice_payment_term_id': m2o_name(move.get('invoice_payment_term_id')) or m2o_name(source_move.get('invoice_payment_term_id')),
+                    'account.move/invoice_payment_term_id': m2o_name(move.get('invoice_payment_term_id')) or m2o_name(source_move.get('invoice_payment_term_id')),
                     'name': line.get('name', ''),
                     'account.move.line/name': line.get('name', ''),
-                    'invoice_user_name': m2o_name(move.get('invoice_user_id')),
-                    'sales_channel_name': m2o_name(move.get('sales_channel_id')),
-                    'sales_type_name': m2o_name(move.get('sale_type_id')),
-                    'team_name': m2o_name(move.get('team_id')),
-                    'account.move/invoice_user_id': m2o_name(move.get('invoice_user_id')),
-                    'account.move/sales_channel_id': m2o_name(move.get('sales_channel_id')),
-                    'account.move/sales_type_id': m2o_name(move.get('sale_type_id')),
-                    'account.move/sale_type_id': m2o_name(move.get('sale_type_id')),
+                    'invoice_user_name': m2o_name(move.get('invoice_user_id')) or m2o_name(source_move.get('invoice_user_id')),
+                    'sales_channel_name': m2o_name(move.get('sales_channel_id')) or m2o_name(source_move.get('sales_channel_id')),
+                    'sales_type_name': m2o_name(move.get('sale_type_id')) or m2o_name(source_move.get('sale_type_id')),
+                    'team_name': m2o_name(move.get('team_id')) or m2o_name(source_move.get('team_id')),
+                    'account.move/invoice_user_id': m2o_name(move.get('invoice_user_id')) or m2o_name(source_move.get('invoice_user_id')),
+                    'account.move/sales_channel_id': m2o_name(move.get('sales_channel_id')) or m2o_name(source_move.get('sales_channel_id')),
+                    'account.move/sales_type_id': m2o_name(move.get('sale_type_id')) or m2o_name(source_move.get('sale_type_id')),
+                    'account.move/sale_type_id': m2o_name(move.get('sale_type_id')) or m2o_name(source_move.get('sale_type_id')),
                     'linea_comercial': (
                         m2o_name(move.get('bill_form_invoices_order_sales_line_commercial_zone_id'))
                         or m2o_name(move.get('team_id'))
+                        or m2o_name(source_move.get('bill_form_invoices_order_sales_line_commercial_zone_id'))
+                        or m2o_name(source_move.get('team_id'))
                     ),
                     'account.move/linea_comercial': (
                         m2o_name(move.get('bill_form_invoices_order_sales_line_commercial_zone_id'))
                         or m2o_name(move.get('team_id'))
+                        or m2o_name(source_move.get('bill_form_invoices_order_sales_line_commercial_zone_id'))
+                        or m2o_name(source_move.get('team_id'))
                     ),
-                    'move_id/invoice_user_id': m2o_name(move.get('invoice_user_id')),
-                    'move_id/sales_channel_id': m2o_name(move.get('sales_channel_id')),
-                    'move_id/sales_type_id': m2o_name(move.get('sale_type_id')),
+                    'move_id/invoice_user_id': m2o_name(move.get('invoice_user_id')) or m2o_name(source_move.get('invoice_user_id')),
+                    'move_id/sales_channel_id': m2o_name(move.get('sales_channel_id')) or m2o_name(source_move.get('sales_channel_id')),
+                    'move_id/sales_type_id': m2o_name(move.get('sale_type_id')) or m2o_name(source_move.get('sale_type_id')),
                     'move_id/payment_state': move.get('payment_state', ''),
-                    'team_id': m2o_name(move.get('team_id')),
+                    'team_id': m2o_name(move.get('team_id')) or m2o_name(source_move.get('team_id')),
                     'partner_groups': partner_groups_display,
                     'grupo_comercial': partner_groups_display,
                     'agr.credit.customer/patner_groups_ids': partner_groups_display,
@@ -939,11 +1208,13 @@ class CollectionsService:
             account_codes = kwargs.get('account_codes')
             sales_channel_id = kwargs.get('sales_channel_id')
             doc_type_id = kwargs.get('doc_type_id')
+            sub_channel = kwargs.get('sub_channel')
             cutoff_date = kwargs.get('cutoff_date')
             include_reconciled = kwargs.get('include_reconciled', False)
 
-            if cutoff_date:
+            if cutoff_date or sub_channel:
                 # Si hay fecha de corte, read_group no es suficiente para calcular paid_after_cutoff
+                # Si hay sub canal, el filtro se calcula en post-proceso y tampoco aplica a read_group
                 # Retornamos None para indicar que debe usarse el método tradicional
                 return None
 
@@ -954,6 +1225,7 @@ class CollectionsService:
                 account_codes=account_codes,
                 sales_channel_id=sales_channel_id,
                 doc_type_id=doc_type_id,
+                sub_channel=sub_channel,
                 include_reconciled=include_reconciled
             )
             

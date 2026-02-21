@@ -36,6 +36,7 @@ def report_account12():
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
         customer = request.args.get('customer')
+        sub_channel = request.args.get('sub_channel')
         account_codes = request.args.get('account_codes')
         sales_channel_id = request.args.get('sales_channel_id', type=int)
         doc_type_id = request.args.get('doc_type_id', type=int)
@@ -57,6 +58,7 @@ def report_account12():
                 start_date=date_from,
                 end_date=date_to,
                 customer=customer,
+                sub_channel=sub_channel,
                 account_codes=account_codes,
                 sales_channel_id=sales_channel_id,
                 doc_type_id=doc_type_id,
@@ -85,17 +87,56 @@ def report_account12():
                 }), 200
         
         # Obtener datos (método tradicional si es necesario)
-        data = collections_service.get_report_lines(
-            start_date=date_from,
-            end_date=date_to,
-            customer=customer,
-            limit=limit,
-            account_codes=account_codes,
-            sales_channel_id=sales_channel_id,
-            doc_type_id=doc_type_id,
-            cutoff_date=cutoff_date,
-            include_reconciled=include_reconciled
-        )
+        # Caso especial de performance + consistencia:
+        # si hay sub_canal y limit de preview, ejecutamos una sola corrida completa
+        # para evitar doble llamada pesada y para que "count" y "data" sean coherentes.
+        full_filtered_rows = None
+        if sub_channel and limit and limit > 0:
+            full_filtered_rows = collections_service.get_report_lines(
+                start_date=date_from,
+                end_date=date_to,
+                customer=customer,
+                limit=0,
+                sub_channel=sub_channel,
+                account_codes=account_codes,
+                sales_channel_id=sales_channel_id,
+                doc_type_id=doc_type_id,
+                cutoff_date=cutoff_date,
+                include_reconciled=include_reconciled
+            )
+            total_count = len(full_filtered_rows)
+            data = full_filtered_rows[:limit]
+        else:
+            data = collections_service.get_report_lines(
+                start_date=date_from,
+                end_date=date_to,
+                customer=customer,
+                limit=limit,
+                sub_channel=sub_channel,
+                account_codes=account_codes,
+                sales_channel_id=sales_channel_id,
+                doc_type_id=doc_type_id,
+                cutoff_date=cutoff_date,
+                include_reconciled=include_reconciled
+            )
+            # Calcular total de registros post-filtros (sin afectar el límite de visualización)
+            total_count = len(data)
+            try:
+                base_domain = collections_service._build_report_domain(
+                    start_date=date_from,
+                    end_date=date_to,
+                    customer=customer,
+                    account_codes=account_codes,
+                    sales_channel_id=sales_channel_id,
+                    doc_type_id=doc_type_id,
+                    sub_channel=sub_channel,
+                    cutoff_date=cutoff_date,
+                    include_reconciled=include_reconciled
+                )
+                total_count = collections_service.repository.search_count('account.move.line', base_domain)
+            except Exception:
+                # Fallback al tamaño del preview en caso de error puntual de conteo.
+                total_count = len(data)
 
         def _summarize(rows):
             overall = {
@@ -158,6 +199,8 @@ def report_account12():
             for acc_code, acc_data in accounts.items():
                 acc_data['saldo'] = acc_data['saldo_total']
             overall['saldo'] = overall['saldo_total']
+            # El KPI de registros debe reflejar el total post-filtros, no solo el preview.
+            overall['count'] = total_count
 
             by_account = list(accounts.values())
             by_account.sort(key=lambda x: x['account_code'])
@@ -166,13 +209,15 @@ def report_account12():
                 'by_account': by_account
             }
 
-        summary = _summarize(data)
+        summary_rows = full_filtered_rows if full_filtered_rows is not None else data
+        summary = _summarize(summary_rows)
         
         # Preparar filtros aplicados para la respuesta
         filters_applied = {
             'date_from': date_from,
             'date_to': date_to,
             'customer': customer,
+            'sub_channel': sub_channel,
             'account_codes': account_codes,
             'sales_channel_id': sales_channel_id,
             'doc_type_id': doc_type_id,
@@ -185,10 +230,11 @@ def report_account12():
         return jsonify({
             'success': True,
             'data': [] if summary_only else data,
-            'count': 0 if summary_only else len(data),
+            'count': 0 if summary_only else total_count,
+            'shown_count': 0 if summary_only else len(data),
             'summary': summary,
             'filters': filters_applied,
-            'message': f'Reporte generado exitosamente con {len(data)} registros'
+            'message': f'Reporte generado exitosamente. Mostrando {len(data)} de {total_count} registros.'
         }), 200
         
     except ValueError as ve:
@@ -376,12 +422,28 @@ def filter_options():
         }
     """
     try:
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+        customer = request.args.get('customer')
+        account_codes = request.args.get('account_codes')
+        sales_channel_id = request.args.get('sales_channel_id', type=int)
+        cutoff_date = request.args.get('date_cutoff')
+        include_reconciled = request.args.get('include_reconciled') == 'true'
+
         # Crear repositorio y servicio
         odoo_repo = _get_odoo_repository()
         collections_service = CollectionsService(odoo_repo)
         
         # Obtener opciones de filtros
-        filter_data = collections_service.get_filter_options()
+        filter_data = collections_service.get_filter_options(
+            start_date=date_from,
+            end_date=date_to,
+            customer=customer,
+            account_codes=account_codes,
+            sales_channel_id=sales_channel_id,
+            cutoff_date=cutoff_date,
+            include_reconciled=include_reconciled
+        )
         
         return jsonify({
             'success': True,
@@ -393,7 +455,7 @@ def filter_options():
         return jsonify({
             'success': False,
             'message': f'Error al obtener opciones de filtros: {str(e)}',
-            'data': {'sales_channels': [], 'document_types': []}
+            'data': {'sales_channels': [], 'document_types': [], 'sub_channels': []}
         }), 500
 
 

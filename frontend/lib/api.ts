@@ -16,6 +16,7 @@ export interface ApiResponse<T> {
   success: boolean
   data: T
   count?: number
+  shown_count?: number
   message?: string
   summary?: {
     overall: {
@@ -49,6 +50,7 @@ export interface ReportParams {
   date_to?: string
   date_cutoff?: string
   customer?: string
+  sub_channel?: string
   supplier?: string
   account_codes?: string
   sales_channel_id?: number
@@ -136,6 +138,7 @@ export interface Letter {
 export interface FilterOptions {
   sales_channels: Array<{ id: number; name: string }>
   document_types: Array<{ id: number; name: string }>
+  sub_channels: Array<{ value: string; name: string }>
 }
 
 export interface EmailResult {
@@ -164,8 +167,8 @@ export const collectionsApi = {
   getReport: (params: ReportParams) => 
     flaskApi.get<ApiResponse<CollectionLine[]>>('/api/v1/collections/report/account12', { params }),
   
-  getFilterOptions: () =>
-    flaskApi.get<ApiResponse<FilterOptions>>('/api/v1/collections/filter-options'),
+  getFilterOptions: (params?: Partial<ReportParams>) =>
+    flaskApi.get<ApiResponse<FilterOptions>>('/api/v1/collections/filter-options', { params }),
 }
 
 // Endpoints de Treasury
