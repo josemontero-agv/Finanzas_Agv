@@ -142,6 +142,7 @@ export default function CollectionsPage() {
     { key: "condicion_pago", label: "Condición Pago", get: (row: any) => firstValue(row, ["account.move/invoice_payment_term_id", "invoice_payment_term_id"]), maxWidth: "max-w-[180px]" },
     { key: "descripcion", label: "Descripción", get: (row: any) => firstValue(row, ["account.move.line/name", "name"]), maxWidth: "max-w-[260px]" },
     { key: "vendedor", label: "Vendedor", get: (row: any) => firstValue(row, ["account.move/invoice_user_id", "invoice_user_name", "move_id/invoice_user_id"]), maxWidth: "max-w-[220px]" },
+    { key: "estado_documento", label: "Estado Documento", get: (row: any) => firstValue(row, ["move_id/state", "state"]), maxWidth: "max-w-[160px]" },
     { key: "linea_comercial", label: "Línea Comercial", get: (row: any) => firstValue(row, ["account.move/linea_comercial", "linea_comercial", "team_name"]), maxWidth: "max-w-[220px]" },
     { key: "grupo_comercial", label: "Grupo Comercial", get: (row: any) => firstValue(row, ["grupo_comercial", "agr.credit.customer/partner_groups_ids", "agr.credit.customer/patner_groups_ids", "partner_groups"]), maxWidth: "max-w-[220px]" },
     { key: "sub_canal", label: "Sub Canal", get: (row: any) => firstValue(row, ["agr.credit.customer/sub_channel_id", "sub_channel_id"]), maxWidth: "max-w-[160px]" },

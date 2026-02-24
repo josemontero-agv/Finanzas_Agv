@@ -9,6 +9,24 @@ Migrado desde dashboard-Cobranzas/services/report_service.py
 from datetime import datetime
 from app.core.calculators import calcular_mora, calcular_dias_vencido, clasificar_antiguedad
 
+# Etiquetas en español para account.move.state (Estado Documento)
+DOCUMENT_STATE_LABELS_ES = {
+    'draft': 'Borrador',
+    'posted': 'Publicado',
+    'cancel': 'Cancelado',
+    'to_accept': 'Por aceptar',
+    'to_reconcile': 'Para Conciliar',
+    'to_disburse': 'Por Desembolsar',
+    'portfolio': 'Cartera',
+    'accepted': 'Aceptada',
+    'collection': 'Cobranza',
+    'discount': 'Descuento',
+    'warranty': 'Garantía',
+    'disbursed': 'Desembolsado',
+    'pending': 'Pendiente renovación',
+    'protested': 'Protestado',
+}
+
 
 class CollectionsService:
     """
@@ -717,8 +735,8 @@ class CollectionsService:
                     'payment_state': move.get('payment_state', ''),
                     'parent_state': line.get('parent_state', ''),
                     'move_id/parent_state': line.get('parent_state', ''),
-                    'move_id/state': move.get('state', ''),
-                    'state': move.get('state', ''),
+                    'move_id/state': DOCUMENT_STATE_LABELS_ES.get(move.get('state'), move.get('state') or ''),
+                    'state': DOCUMENT_STATE_LABELS_ES.get(move.get('state'), move.get('state') or ''),
                     'invoice_date': move.get('invoice_date', ''),
                     'move_id/invoice_date': move.get('invoice_date', ''),
                     'account.move/invoice_date': move.get('date', ''),
@@ -771,11 +789,38 @@ class CollectionsService:
                     'account.move.line/name': line.get('name', ''),
                     'invoice_user_name': m2o_name(move.get('invoice_user_id')) or m2o_name(source_move.get('invoice_user_id')),
                     'account.move/invoice_user_id': m2o_name(move.get('invoice_user_id')) or m2o_name(source_move.get('invoice_user_id')),
-                    'sales_channel_name': m2o_name(move.get('sales_channel_id')) or m2o_name(source_move.get('sales_channel_id')),
-                    'account.move/sales_channel_id': m2o_name(move.get('sales_channel_id')) or m2o_name(source_move.get('sales_channel_id')),
-                    'sales_type_name': m2o_name(move.get('sale_type_id')) or m2o_name(source_move.get('sale_type_id')),
-                    'account.move/sales_type_id': m2o_name(move.get('sale_type_id')) or m2o_name(source_move.get('sale_type_id')),
-                    'account.move/sale_type_id': m2o_name(move.get('sale_type_id')) or m2o_name(source_move.get('sale_type_id')),
+                    # Canal de venta: prioridad 1 sales_channel_id (move → source_move), prioridad 2 bill_form_invoices_order_channel_id
+                    'sales_channel_name': (
+                        m2o_name(move.get('sales_channel_id'))
+                        or m2o_name(source_move.get('sales_channel_id'))
+                        or m2o_name(move.get('bill_form_invoices_order_channel_id'))
+                        or m2o_name(source_move.get('bill_form_invoices_order_channel_id'))
+                    ),
+                    'account.move/sales_channel_id': (
+                        m2o_name(move.get('sales_channel_id'))
+                        or m2o_name(source_move.get('sales_channel_id'))
+                        or m2o_name(move.get('bill_form_invoices_order_channel_id'))
+                        or m2o_name(source_move.get('bill_form_invoices_order_channel_id'))
+                    ),
+                    # Tipo de venta: prioridad 1 sale_type_id (move → source_move), prioridad 2 bill_form_invoices_order_sales_type_id
+                    'sales_type_name': (
+                        m2o_name(move.get('sale_type_id'))
+                        or m2o_name(source_move.get('sale_type_id'))
+                        or m2o_name(move.get('bill_form_invoices_order_sales_type_id'))
+                        or m2o_name(source_move.get('bill_form_invoices_order_sales_type_id'))
+                    ),
+                    'account.move/sales_type_id': (
+                        m2o_name(move.get('sale_type_id'))
+                        or m2o_name(source_move.get('sale_type_id'))
+                        or m2o_name(move.get('bill_form_invoices_order_sales_type_id'))
+                        or m2o_name(source_move.get('bill_form_invoices_order_sales_type_id'))
+                    ),
+                    'account.move/sale_type_id': (
+                        m2o_name(move.get('sale_type_id'))
+                        or m2o_name(source_move.get('sale_type_id'))
+                        or m2o_name(move.get('bill_form_invoices_order_sales_type_id'))
+                        or m2o_name(source_move.get('bill_form_invoices_order_sales_type_id'))
+                    ),
                     'linea_comercial': (
                         m2o_name(move.get('bill_form_invoices_order_sales_line_commercial_zone_id'))
                         or m2o_name(move.get('team_id'))
@@ -790,8 +835,18 @@ class CollectionsService:
                     ),
                     'team_name': m2o_name(move.get('team_id')) or m2o_name(source_move.get('team_id')),
                     'move_id/invoice_user_id': m2o_name(move.get('invoice_user_id')) or m2o_name(source_move.get('invoice_user_id')), # Alias legacy para exportación
-                    'move_id/sales_channel_id': m2o_name(move.get('sales_channel_id')) or m2o_name(source_move.get('sales_channel_id')), # Alias legacy
-                    'move_id/sales_type_id': m2o_name(move.get('sale_type_id')) or m2o_name(source_move.get('sale_type_id')), # Alias legacy
+                    'move_id/sales_channel_id': (
+                        m2o_name(move.get('sales_channel_id'))
+                        or m2o_name(source_move.get('sales_channel_id'))
+                        or m2o_name(move.get('bill_form_invoices_order_channel_id'))
+                        or m2o_name(source_move.get('bill_form_invoices_order_channel_id'))
+                    ), # Alias legacy
+                    'move_id/sales_type_id': (
+                        m2o_name(move.get('sale_type_id'))
+                        or m2o_name(source_move.get('sale_type_id'))
+                        or m2o_name(move.get('bill_form_invoices_order_sales_type_id'))
+                        or m2o_name(source_move.get('bill_form_invoices_order_sales_type_id'))
+                    ), # Alias legacy
                     'move_id/payment_state': move.get('payment_state', ''), # Alias legacy
                     'team_id': m2o_name(move.get('team_id')) or m2o_name(source_move.get('team_id')), # Alias legacy para exportación
                     'partner_groups': partner_groups_display,
@@ -1069,8 +1124,8 @@ class CollectionsService:
                     'payment_state': move.get('payment_state', ''),
                     'parent_state': line.get('parent_state', ''),
                     'move_id/parent_state': line.get('parent_state', ''),
-                    'move_id/state': move.get('state', ''),
-                    'state': move.get('state', ''),
+                    'move_id/state': DOCUMENT_STATE_LABELS_ES.get(move.get('state'), move.get('state') or ''),
+                    'state': DOCUMENT_STATE_LABELS_ES.get(move.get('state'), move.get('state') or ''),
                     'invoice_date': move.get('invoice_date', ''),
                     'move_id/invoice_date': move.get('invoice_date', ''),
                     'account.move/invoice_date': move.get('date', ''),
@@ -1127,13 +1182,44 @@ class CollectionsService:
                     'name': line.get('name', ''),
                     'account.move.line/name': line.get('name', ''),
                     'invoice_user_name': m2o_name(move.get('invoice_user_id')) or m2o_name(source_move.get('invoice_user_id')),
-                    'sales_channel_name': m2o_name(move.get('sales_channel_id')) or m2o_name(source_move.get('sales_channel_id')),
-                    'sales_type_name': m2o_name(move.get('sale_type_id')) or m2o_name(source_move.get('sale_type_id')),
                     'team_name': m2o_name(move.get('team_id')) or m2o_name(source_move.get('team_id')),
                     'account.move/invoice_user_id': m2o_name(move.get('invoice_user_id')) or m2o_name(source_move.get('invoice_user_id')),
-                    'account.move/sales_channel_id': m2o_name(move.get('sales_channel_id')) or m2o_name(source_move.get('sales_channel_id')),
-                    'account.move/sales_type_id': m2o_name(move.get('sale_type_id')) or m2o_name(source_move.get('sale_type_id')),
-                    'account.move/sale_type_id': m2o_name(move.get('sale_type_id')) or m2o_name(source_move.get('sale_type_id')),
+
+                    # Canal de venta (misma prioridad que en get_report_lines)
+                    'sales_channel_name': (
+                        m2o_name(move.get('sales_channel_id'))
+                        or m2o_name(source_move.get('sales_channel_id'))
+                        or m2o_name(move.get('bill_form_invoices_order_channel_id'))
+                        or m2o_name(source_move.get('bill_form_invoices_order_channel_id'))
+                    ),
+                    'account.move/sales_channel_id': (
+                        m2o_name(move.get('sales_channel_id'))
+                        or m2o_name(source_move.get('sales_channel_id'))
+                        or m2o_name(move.get('bill_form_invoices_order_channel_id'))
+                        or m2o_name(source_move.get('bill_form_invoices_order_channel_id'))
+                    ),
+
+                    # Tipo de venta (misma prioridad que en get_report_lines)
+                    'sales_type_name': (
+                        m2o_name(move.get('sale_type_id'))
+                        or m2o_name(source_move.get('sale_type_id'))
+                        or m2o_name(move.get('bill_form_invoices_order_sales_type_id'))
+                        or m2o_name(source_move.get('bill_form_invoices_order_sales_type_id'))
+                    ),
+                    'account.move/sales_type_id': (
+                        m2o_name(move.get('sale_type_id'))
+                        or m2o_name(source_move.get('sale_type_id'))
+                        or m2o_name(move.get('bill_form_invoices_order_sales_type_id'))
+                        or m2o_name(source_move.get('bill_form_invoices_order_sales_type_id'))
+                    ),
+                    'account.move/sale_type_id': (
+                        m2o_name(move.get('sale_type_id'))
+                        or m2o_name(source_move.get('sale_type_id'))
+                        or m2o_name(move.get('bill_form_invoices_order_sales_type_id'))
+                        or m2o_name(source_move.get('bill_form_invoices_order_sales_type_id'))
+                    ),
+
+                    # Línea comercial (lógica original restaurada)
                     'linea_comercial': (
                         m2o_name(move.get('bill_form_invoices_order_sales_line_commercial_zone_id'))
                         or m2o_name(move.get('team_id'))
@@ -1146,9 +1232,20 @@ class CollectionsService:
                         or m2o_name(source_move.get('bill_form_invoices_order_sales_line_commercial_zone_id'))
                         or m2o_name(source_move.get('team_id'))
                     ),
+
                     'move_id/invoice_user_id': m2o_name(move.get('invoice_user_id')) or m2o_name(source_move.get('invoice_user_id')),
-                    'move_id/sales_channel_id': m2o_name(move.get('sales_channel_id')) or m2o_name(source_move.get('sales_channel_id')),
-                    'move_id/sales_type_id': m2o_name(move.get('sale_type_id')) or m2o_name(source_move.get('sale_type_id')),
+                    'move_id/sales_channel_id': (
+                        m2o_name(move.get('sales_channel_id'))
+                        or m2o_name(source_move.get('sales_channel_id'))
+                        or m2o_name(move.get('bill_form_invoices_order_channel_id'))
+                        or m2o_name(source_move.get('bill_form_invoices_order_channel_id'))
+                    ),
+                    'move_id/sales_type_id': (
+                        m2o_name(move.get('sale_type_id'))
+                        or m2o_name(source_move.get('sale_type_id'))
+                        or m2o_name(move.get('bill_form_invoices_order_sales_type_id'))
+                        or m2o_name(source_move.get('bill_form_invoices_order_sales_type_id'))
+                    ),
                     'move_id/payment_state': move.get('payment_state', ''),
                     'team_id': m2o_name(move.get('team_id')) or m2o_name(source_move.get('team_id')),
                     'partner_groups': partner_groups_display,
