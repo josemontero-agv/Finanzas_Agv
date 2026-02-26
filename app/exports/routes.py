@@ -11,6 +11,7 @@ from app.exports.excel_service import ExcelExportService
 from app.collections.services import CollectionsService
 from app.treasury.services import TreasuryService
 from app.core.odoo import OdooRepository
+from app.auth.security import require_login
 
 
 def _get_odoo_repository():
@@ -27,6 +28,7 @@ def _get_odoo_repository():
 
 
 @exports_bp.route('/collections/excel', methods=['GET'])
+@require_login
 def export_collections_excel():
     """
     Exporta reporte de cobranzas a Excel.

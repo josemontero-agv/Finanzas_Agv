@@ -9,6 +9,7 @@ from flask import request, jsonify, current_app
 from app.collections import collections_bp
 from app.collections.services import CollectionsService
 from app.core.odoo import OdooRepository
+from app.auth.security import require_login
 from app import cache
 
 
@@ -26,6 +27,7 @@ def _get_odoo_repository():
 
 
 @collections_bp.route('/report/account12', methods=['GET'])
+@require_login
 @cache.cached(timeout=300, query_string=True)
 def report_account12():
     """
@@ -252,6 +254,7 @@ def report_account12():
 
 
 @collections_bp.route('/report/national', methods=['GET'])
+@require_login
 def report_national():
     """
     Endpoint para reporte de cuentas por cobrar NACIONALES.
@@ -332,6 +335,7 @@ def report_national():
 
 
 @collections_bp.route('/report/international', methods=['GET'])
+@require_login
 def report_international():
     """
     Endpoint para reporte de cuentas por cobrar INTERNACIONALES.
@@ -408,6 +412,7 @@ def report_international():
 
 
 @collections_bp.route('/filter-options', methods=['GET'])
+@require_login
 def filter_options():
     """
     Endpoint para obtener las opciones de filtros (canales de venta, tipos de documento).
@@ -460,6 +465,7 @@ def filter_options():
 
 
 @collections_bp.route('/report/account12/rows', methods=['GET'])
+@require_login
 @cache.cached(timeout=300, query_string=True)
 def report_account12_rows():
     """
@@ -473,6 +479,7 @@ def report_account12_rows():
 
 
 @collections_bp.route('/report/account12/stats', methods=['GET'])
+@require_login
 @cache.cached(timeout=300, query_string=True)
 def report_account12_stats():
     """
@@ -558,6 +565,7 @@ def report_account12_stats():
 
 
 @collections_bp.route('/status', methods=['GET'])
+@require_login
 def status():
     """
     Endpoint para verificar el estado del módulo de cobranzas.

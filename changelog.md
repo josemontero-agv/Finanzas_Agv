@@ -46,6 +46,12 @@ Todas las modificaciones notables a este proyecto serán documentadas en este ar
 - **Corte Histórico (Dominio Base)**: En consultas con fecha de corte se dejó de filtrar por `amount_residual != 0` para no perder documentos ya cancelados hoy pero pendientes al corte.
 - **UX Filtros Web**: El campo `Códigos de Cuenta` ahora inicia vacío y muestra el placeholder `Ingresa su cuenta contable`.
 
+### Seguridad (2026-02-26)
+- **Cobranzas protegido por sesión**: Todos los endpoints de Collections y la exportación Excel de cobranzas ahora exigen `@require_login`; sin sesión se devuelve 401.
+- **Frontend Cobranzas**: La página `/collections` valida sesión al cargar (getUserInfo) y redirige a `/login` si no hay sesión; ya no es posible ver datos entrando por URL directa sin autenticación.
+- **Cerrar sesión en toda la app**: El botón "Cerrar sesión" se movió al Sidebar (compartido por Letras y Cobranzas), de modo que está disponible en todos los módulos.
+- **Checklist de seguridad**: Se añadió `docs/CHECKLIST_SEGURIDAD.md` como estándar de revisión (autenticación, URLs, sesión, secretos, API) para despliegue y auditorías.
+
 ### Pendiente (2026-02-20)
 - **Cuadre de Data Cobranzas**: Aún falta cuadrar al 100% la data contra ERP; al consultar cuenta 12 se están incluyendo letras y el resultado no coincide totalmente con el esperado operativo.
 - **Paginación Cobranzas**: Se requiere optimizar/mejorar la paginación del módulo para evitar sobrecarga de registros y facilitar validaciones de cuadre por bloques.
