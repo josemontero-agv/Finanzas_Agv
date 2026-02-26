@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { lettersApi, authApi } from "@/lib/api"
+import { AuthLoadingScreen } from "@/components/auth-loading-screen"
 import { Mail, Search, X, Send, Eye, RotateCcw, FileText, CheckCircle2 } from "lucide-react"
 import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
@@ -189,11 +190,10 @@ export default function LettersPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#714B67]"></div>
-        <p className="mt-4 text-lg font-semibold text-slate-700 font-bold">Cargando letras...</p>
-        <p className="text-sm text-slate-500 font-medium">Sincronizando con Odoo ERP</p>
-      </div>
+      <AuthLoadingScreen
+        message="Cargando letras..."
+        subtitle="Sincronizando con Odoo ERP"
+      />
     )
   }
 

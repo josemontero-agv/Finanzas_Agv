@@ -1,14 +1,21 @@
 "use client"
 
 /**
- * Pantalla de carga estándar para flujos de autenticación.
- * Mismo diseño en: guard de rutas protegidas (Validando sesión) y envío de login (Iniciando sesión).
+ * Única pantalla de carga de la app: fondo oscuro, spinner morado, texto centrado.
+ * Se usa en: guard de sesión, login, y carga de Letras (con mensaje + subtítulo).
  */
-export function AuthLoadingScreen({ message = "Validando sesión..." }: { message?: string }) {
+export function AuthLoadingScreen({
+  message = "Validando sesión...",
+  subtitle,
+}: {
+  message?: string
+  subtitle?: string
+}) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 transition-all duration-300">
-      <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#714B67] dark:border-purple-400 border-t-transparent" />
-      <p className="mt-4 text-lg font-semibold text-slate-700 dark:text-slate-300">{message}</p>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[#1A1A2E]">
+      <div className="animate-spin rounded-full h-12 w-12 border-2 border-purple-400 border-t-transparent" />
+      <p className="mt-4 text-lg font-semibold text-white">{message}</p>
+      {subtitle && <p className="mt-1 text-sm text-slate-400">{subtitle}</p>}
     </div>
   )
 }
