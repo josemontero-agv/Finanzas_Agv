@@ -1,10 +1,8 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
-import axios from "axios"
-import { collectionsApi, authApi, ReportParams, flaskApi } from "@/lib/api"
+import { collectionsApi, ReportParams, flaskApi } from "@/lib/api"
 import { FileText, Search, RotateCcw, Download, Filter } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,7 +23,6 @@ const DEFAULT_FILTERS: ReportParams = {
 }
 
 export default function CollectionsPage() {
-  const router = useRouter()
   const [draftFilters, setDraftFilters] = useState<ReportParams>(DEFAULT_FILTERS)
   const [appliedFilters, setAppliedFilters] = useState<ReportParams>(DEFAULT_FILTERS)
   const [hasAppliedFilters, setHasAppliedFilters] = useState(false)
@@ -33,46 +30,22 @@ export default function CollectionsPage() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(true)
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
 
-  // Validar sesión (mismo patrón que Letras)
-  const {
-    data: authData,
-    isLoading: isAuthLoading,
-    isError: isAuthError,
-    error: authError,
-  } = useQuery({
-    queryKey: ["auth", "user-info"],
-    queryFn: async () => {
-      const response = await authApi.getUserInfo()
-      return response.data
-    },
-    retry: false,
-  })
-
-  useEffect(() => {
-    if (!isAuthError) return
-    if (axios.isAxiosError(authError) && authError.response?.status === 401) {
-      router.replace("/login")
-    }
-  }, [isAuthError, authError, router])
-
-  // Opciones de filtros (solo con sesión válida)
+  // AppShell ya validó sesión; esta página solo se monta si hay auth OK
   const { data: filterOptions } = useQuery({
     queryKey: ["collections", "filter-options", appliedFilters],
     queryFn: async () => {
       const response = await collectionsApi.getFilterOptions(appliedFilters)
       return response.data.data
     },
-    enabled: authData?.success === true,
   })
 
-  // Consulta principal (solo con sesión válida)
   const { data: response, isLoading, error, refetch } = useQuery({
     queryKey: ["collections", "report", appliedFilters],
     queryFn: async () => {
       const response = await collectionsApi.getReport({ ...appliedFilters, limit: 500 })
       return response.data
     },
-    enabled: authData?.success === true && hasAppliedFilters,
+    enabled: hasAppliedFilters,
     retry: 1,
     staleTime: 60_000,
   })
@@ -179,25 +152,6 @@ export default function CollectionsPage() {
     { key: "dias", label: "Días Venc.", get: (row: any) => row.dias_vencido || 0 },
     { key: "estado", label: "Estado", get: (row: any) => firstValue(row, ["estado_deuda"]) },
   ]), [])
-
-  if (isAuthLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4">
-        <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#714B67] dark:border-purple-400 border-t-transparent" />
-        <p className="text-lg font-semibold text-slate-700 dark:text-slate-300">Validando sesión...</p>
-      </div>
-    )
-  }
-
-  if (isAuthError) {
-    return (
-      <ErrorFallback
-        error={authError instanceof Error ? authError : null}
-        title="Sesión no válida"
-        message="No se pudo validar la sesión. Serás redirigido al inicio de sesión."
-      />
-    )
-  }
 
   if (error) {
     return <ErrorFallback 

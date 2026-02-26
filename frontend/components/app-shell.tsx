@@ -1,7 +1,11 @@
 "use client"
 
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import { useQuery } from "@tanstack/react-query"
+import { useEffect } from "react"
 import { Sidebar } from "@/components/sidebar"
+import { AuthLoadingScreen } from "@/components/auth-loading-screen"
+import { authApi } from "@/lib/api"
 import { ReactNode } from "react"
 
 type AppShellProps = {
@@ -10,7 +14,30 @@ type AppShellProps = {
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const isLoginRoute = pathname === "/login"
+
+  const {
+    data: authData,
+    isLoading: isAuthLoading,
+    isError: isAuthError,
+    error: authError,
+  } = useQuery({
+    queryKey: ["auth", "user-info"],
+    queryFn: async () => {
+      const res = await authApi.getUserInfo()
+      return res.data
+    },
+    retry: false,
+    staleTime: 60_000,
+    enabled: !isLoginRoute,
+  })
+
+  useEffect(() => {
+    if (!isLoginRoute && isAuthError && authError && (authError as { response?: { status?: number } })?.response?.status === 401) {
+      router.replace("/login")
+    }
+  }, [isLoginRoute, isAuthError, authError, router])
 
   if (isLoginRoute) {
     return (
@@ -18,6 +45,29 @@ export function AppShell({ children }: AppShellProps) {
         {children}
       </main>
     )
+  }
+
+  if (isAuthLoading || (isAuthError && (authError as { response?: { status?: number } })?.response?.status === 401)) {
+    return <AuthLoadingScreen message="Validando sesión..." />
+  }
+
+  if (isAuthError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+        <p className="text-lg font-semibold text-red-600 dark:text-red-400">No se pudo validar la sesión.</p>
+        <button
+          type="button"
+          onClick={() => router.replace("/login")}
+          className="mt-4 px-4 py-2 rounded-lg bg-[#714B67] dark:bg-purple-600 text-white hover:opacity-90"
+        >
+          Ir a inicio de sesión
+        </button>
+      </div>
+    )
+  }
+
+  if (!authData?.success) {
+    return <AuthLoadingScreen message="Validando sesión..." />
   }
 
   return (

@@ -11,6 +11,21 @@ export const flaskApi = axios.create({
   timeout: 120000, // 2 minutos para procesos largos como envío masivo de correos
 })
 
+// Redirigir a login ante 401 (sesión expirada o no autenticado), salvo si la petición era al login
+// o si ya estamos en /login (evita bucle: la propia página de login llama getUserInfo y recibe 401)
+flaskApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error.response?.status
+    const url = error.config?.url ?? ''
+    const alreadyOnLogin = typeof window !== 'undefined' && window.location.pathname.startsWith('/login')
+    if (status === 401 && typeof url === 'string' && !url.includes('auth/login') && !alreadyOnLogin) {
+      window.location.replace('/login')
+    }
+    return Promise.reject(error)
+  }
+)
+
 // Tipos de respuesta
 export interface ApiResponse<T> {
   success: boolean

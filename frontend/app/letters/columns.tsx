@@ -1,5 +1,7 @@
 "use client"
 
+// NO REFERENCIADO: app/letters/page.tsx define columnas inline (useMemo). Este archivo no se importa.
+// Evaluar eliminación o migrar la página a usar estas columnas para evitar duplicación.
 import { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"

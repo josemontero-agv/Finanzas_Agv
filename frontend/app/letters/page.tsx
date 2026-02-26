@@ -1,12 +1,10 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { lettersApi, Letter, authApi } from "@/lib/api"
-import { supabase } from "@/lib/supabase"
+import { lettersApi, authApi } from "@/lib/api"
 import { Mail, Search, X, Send, Eye, RotateCcw, FileText, CheckCircle2 } from "lucide-react"
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import axios from "axios"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -28,35 +26,13 @@ export default function LettersPage() {
   const [isSending, setIsSending] = useState(false)
   const isDev = process.env.NODE_ENV === 'development'
 
-  const {
-    data: authData,
-    isLoading: isAuthLoading,
-    isError: isAuthError,
-    error: authError,
-  } = useQuery({
-    queryKey: ["auth", "user-info"],
-    queryFn: async () => {
-      const response = await authApi.getUserInfo()
-      return response.data
-    },
-    retry: false,
-  })
-
-  useEffect(() => {
-    if (!isAuthError) return
-    if (axios.isAxiosError(authError) && authError.response?.status === 401) {
-      router.replace("/login")
-    }
-  }, [isAuthError, authError, router])
-
-  // Consulta a Flask API (tiene los datos completos de Odoo)
+  // AppShell ya validó sesión; esta página solo se monta si hay auth OK
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["letters", "to-accept"],
     queryFn: async () => {
       const response = await lettersApi.getToAccept()
       return response.data.data
     },
-    enabled: authData?.success === true,
     retry: 1,
   })
 
@@ -201,23 +177,6 @@ export default function LettersPage() {
       return "bg-blue-100 text-blue-700 border-blue-200"
     }
     return "bg-slate-100 text-slate-700 border-slate-200"
-  }
-
-  if (isAuthLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#714B67]"></div>
-        <p className="mt-4 text-lg font-semibold text-slate-700 font-bold">Validando sesión...</p>
-      </div>
-    )
-  }
-
-  if (isAuthError && !(axios.isAxiosError(authError) && authError.response?.status === 401)) {
-    return <ErrorFallback
-      error={authError instanceof Error ? authError : null}
-      title="Error de autenticación"
-      message="No se pudo validar la sesión actual."
-    />
   }
 
   if (error) {

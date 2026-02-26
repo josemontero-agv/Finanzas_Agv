@@ -1,5 +1,7 @@
 "use client"
 
+// NO REFERENCIADO: ninguna página usa DataTable; letters/collections/treasury renderizan tablas a mano.
+// Evaluar eliminación si no se planea estandarizar tablas con este componente.
 import {
   ColumnDef,
   flexRender,

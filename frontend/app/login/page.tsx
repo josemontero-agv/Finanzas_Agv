@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import axios from "axios"
 import Image from "next/image"
 import { authApi } from "@/lib/api"
+import { AuthLoadingScreen } from "@/components/auth-loading-screen"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -29,6 +30,10 @@ export default function LoginPage() {
 
     verifySession()
   }, [router])
+
+  if (isLoading) {
+    return <AuthLoadingScreen message="Iniciando sesión..." />
+  }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -106,10 +111,9 @@ export default function LoginPage() {
 
           <Button
             type="submit"
-            disabled={isLoading}
             className="w-full bg-[#714B67] hover:bg-[#5a3c52] text-white font-bold"
           >
-            {isLoading ? "Validando..." : "Ingresar"}
+            Ingresar
           </Button>
         </form>
       </div>

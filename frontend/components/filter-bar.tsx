@@ -1,5 +1,7 @@
 "use client"
 
+// NO REFERENCIADO: ningún componente importa FilterBar. Las páginas (collections, treasury) usan filtros inline.
+// Evaluar eliminación si no se planea reutilizar esta barra genérica.
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Search, X } from "lucide-react"

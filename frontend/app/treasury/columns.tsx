@@ -1,5 +1,6 @@
 "use client"
 
+// NO REFERENCIADO: app/treasury/page.tsx no importa estas columnas. Evaluar eliminación o reutilizar aquí.
 import { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { TreasuryLine } from "@/lib/api"
