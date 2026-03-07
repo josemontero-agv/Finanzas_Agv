@@ -185,7 +185,7 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     """Configuración de producción."""
     
-    DEBUG = False
+    DEBUG = True
     TESTING = False
     
     @classmethod

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRD & Roadmap: Ecosistema Finanzas AGV</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Mermaid.js para Diagramas Dinámicos -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+
+    <!-- Application Structure Plan: 
+        Esta versión evoluciona el PRD a una herramienta de documentación técnica viva.
+        - Se utiliza Mermaid para renderizar los procesos de Bizagi de forma nativa en la web.
+        - Se mantiene el enfoque de presentación ejecutiva pero con profundidad de "Blueprint" de ingeniería.
+        - Se integran las reglas de negocio de tiempo (7/15 días) y conciliación bancaria directamente en el código del diagrama.
+    -->
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        agv: {
+                            primary: '#714B67',
+                            secondary: '#875A7B',
+                            accent: '#5a3c52',
+                            light: '#fdfaff'
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Inicialización de Mermaid
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#f3f4f6',
+                primaryTextColor: '#1e293b',
+                primaryBorderColor: '#714B67',
+                lineColor: '#714B67',
+                secondaryColor: '#fdfaff',
+                tertiaryColor: '#fff'
+            }
+        });
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
+        .chart-container { position: relative; width: 100%; height: 300px; }
+        .tab-active { border-bottom: 4px solid #714B67; color: #714B67; font-weight: 800; }
+        .glass-panel { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
+        .mermaid { display: flex; justify-content: center; background: white; padding: 1.5rem; border-radius: 1.5rem; border: 1px solid #e2e8f0; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #714B67; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+    <!-- Navbar -->
+    <nav class="sticky top-0 z-50 glass-panel">
+        <div class="max-w-7xl mx-auto px-4 h-20 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-agv-primary rounded-xl flex items-center justify-center text-white font-black text-xl">F</div>
+                <div>
+                    <span class="text-xl font-extrabold text-agv-primary tracking-tighter uppercase">Finanzas AGV</span>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none italic">Bizagi Integrated Docs</p>
+                </div>
+            </div>
+            <div class="hidden lg:flex gap-8 text-xs font-black uppercase tracking-widest text-slate-500">
+                <a href="#vision" class="hover:text-agv-primary transition">Visión</a>
+                <a href="#proceso" class="hover:text-agv-primary transition">Procesos</a>
+                <a href="#requisitos" class="hover:text-agv-primary transition">Funcionalidad</a>
+                <a href="#arquitectura" class="hover:text-agv-primary transition">Arquitectura</a>
+            </div>
+            <div class="flex gap-4">
+                <span class="hidden md:flex px-4 py-2 bg-emerald-50 text-emerald-700 text-[10px] font-black rounded-full items-center">SINCRO: OK</span>
+                <button class="bg-agv-primary text-white text-xs font-bold px-6 py-2.5 rounded-full hover:bg-agv-accent transition shadow-lg shadow-purple-200">
+                    REVISAR ROADMAP
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <header id="vision" class="pt-16 pb-20 px-4 bg-gradient-to-br from-white to-agv-light">
+        <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+            <div class="space-y-8 animate-in fade-in slide-in-from-left-6 duration-700">
+                <div class="inline-block px-4 py-1.5 bg-purple-100 text-agv-primary rounded-full text-[10px] font-black uppercase tracking-tighter">
+                    PRODUCT REQUIREMENTS DOCUMENT v2.5
+                </div>
+                <h1 class="text-5xl md:text-7xl font-black text-slate-900 leading-tight">
+                    Optimización del <br><span class="text-agv-primary italic">Cash-In</span> Flow.
+                </h1>
+                <p class="text-lg text-slate-600 max-w-xl leading-relaxed">
+                    Digitalización del flujo de cobranzas basado en los diagramas Bizagi oficiales. Integración asíncrona con Odoo para eliminar cuellos de botella operativos y financieros.
+                </p>
+                <div class="flex flex-wrap gap-4">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm min-w-[160px]">
+                        <p class="text-[10px] font-black text-slate-400 uppercase">Ahorro Estimado</p>
+                        <p class="text-3xl font-black text-agv-primary">65%</p>
+                        <p class="text-[9px] text-slate-400">Tiempo de gestión</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm min-w-[160px]">
+                        <p class="text-[10px] font-black text-slate-400 uppercase">Discrepancia</p>
+                        <p class="text-3xl font-black text-emerald-600">0.0%</p>
+                        <p class="text-[9px] text-slate-400">En cierres contables</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-8 rounded-[3rem] shadow-2xl border border-slate-100 space-y-6">
+                <h3 class="text-center font-black text-slate-800 uppercase tracking-widest text-xs">Performance: Satélite vs ERP</h3>
+                <div class="chart-container">
+                    <canvas id="heroChart"></canvas>
+                </div>
+                <p class="text-[10px] text-slate-400 text-center italic leading-relaxed">El uso del Satélite reduce la carga de Odoo en un 90% para consultas masivas.</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Secciones de Mermaid -->
+    <section id="proceso" class="py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 space-y-20">
+            
+            <!-- Diagrama 1: Flujo Bizagi de Letra -->
+            <div class="space-y-8">
+                <div class="text-center md:text-left">
+                    <h2 class="text-4xl font-black text-slate-900 tracking-tighter">1. Flujo End-to-End: Gestión de Letras</h2>
+                    <p class="text-slate-500 mt-2 max-w-2xl">Mapeo lógico de "Bizagi Letras por Recuperar y Pago". Define la transición desde la emisión hasta el cobro bancario.</p>
+                </div>
+                
+                <div class="mermaid">
+                    graph LR
+                        A[Pedido en Odoo] --> B{Créditos}
+                        B -- Aprueba --> C[Factura / NC]
+                        B -- Rechaza --> A
+                        C --> D[Planilla Canje<br/>account.bill.form]
+                        D --> E[Emisión de Letra]
+                        E --> F{Firma Cliente?}
+                        F -- No --> G[Alertas US-01]
+                        F -- Si --> H[Gestión Bancaria]
+                        H --> I{Tipo}
+                        I -- Descuento --> J[Abono Cuenta 45]
+                        I -- Cobranza --> K[Abono al Cobro]
+                        J --> L[Conciliación Final]
+                        K --> L
+                        G -- Reintento --> F
+                </div>
+            </div>
+
+            <!-- Diagrama 2: Lógica de Notificaciones -->
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div class="space-y-6">
+                    <h2 class="text-4xl font-black text-slate-900 tracking-tighter">2. Lógica del Motor de Notificación</h2>
+                    <p class="text-slate-600 leading-relaxed">
+                        El sistema implementa una lógica de semáforo basada en la ubicación del cliente para maximizar la tasa de recupero sin intervención humana.
+                    </p>
+                    <div class="bg-agv-primary p-8 rounded-3xl text-white shadow-xl">
+                        <div class="flex justify-between border-b border-white/20 pb-4 mb-4">
+                            <span class="font-bold">UBICACIÓN LIMA</span>
+                            <span class="px-3 py-1 bg-white/20 rounded-full text-[10px] font-black">7 DÍAS</span>
+                        </div>
+                        <div class="flex justify-between border-b border-white/20 pb-4 mb-4">
+                            <span class="font-bold">UBICACIÓN PROVINCIA</span>
+                            <span class="px-3 py-1 bg-white/20 rounded-full text-[10px] font-black">15 DÍAS</span>
+                        </div>
+                        <p class="text-[11px] text-purple-200 italic leading-relaxed">
+                            * El motor valida la existencia de 'partner_email' y evita envíos duplicados mediante una tabla de logs en Supabase.
+                        </p>
+                    </div>
+                </div>
+                <div class="mermaid">
+                    graph TD
+                        Start[Scan Letras Pendientes] --> Filter[Estado: to_accept]
+                        Filter --> Loc{Ubicación?}
+                        Loc -- Lima --> LimaTime{Día Emisión + 7?}
+                        Loc -- Provincia --> ProvTime{Día Emisión + 15?}
+                        LimaTime -- Si --> Send[Enviar Correo Masivo]
+                        ProvTime -- Si --> Send
+                        LimaTime -- No --> Wait[Espero Siguiente Ciclo]
+                        ProvTime -- No --> Wait
+                        Send --> Log[Registrar en Auditoría]
+                        Log --> End[Fin del Ciclo]
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Functional Specs -->
+    <section id="requisitos" class="py-24 bg-slate-900 text-white">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="mb-16 flex flex-col md:flex-row justify-between items-end gap-6">
+                <div class="space-y-2">
+                    <h2 class="text-4xl font-black tracking-tighter italic">Centro de Especificaciones (DoD)</h2>
+                    <p class="text-slate-400">Requisitos funcionales listos para desarrollo.</p>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="updateSpecs('letras')" class="px-6 py-2 bg-agv-primary rounded-full text-xs font-black uppercase tracking-widest border border-white/10 hover:bg-agv-accent transition">Letras</button>
+                    <button onclick="updateSpecs('corte')" class="px-6 py-2 bg-slate-800 rounded-full text-xs font-black uppercase tracking-widest border border-white/10 hover:bg-agv-accent transition">Corte</button>
+                </div>
+            </div>
+
+            <div id="specContainer" class="grid md:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <!-- Se pobla dinámicamente con JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Section -->
+    <section id="arquitectura" class="py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 space-y-16">
+            <div class="text-center">
+                <h2 class="text-4xl font-black text-slate-900 tracking-tighter uppercase">Blueprint Arquitectónico</h2>
+                <p class="text-slate-500 mt-2">Diagrama de flujo de datos asíncronos para Alta Disponibilidad.</p>
+            </div>
+
+            <div class="mermaid">
+                sequenceDiagram
+                    participant O as Odoo v17
+                    participant P as Python ETL (Flask)
+                    participant S as Supabase (PG)
+                    participant N as Frontend (Next.js)
+
+                    O->>P: Petición XML-RPC (Facturas/Letras)
+                    P->>P: Cálculo Antigüedad / Reversión Corte
+                    P->>S: Upsert Data Sincronizada
+                    S->>N: Realtime Subscription Update
+                    N->>N: Renderizado React (Shadcn UI)
+                    Note over P,S: Sincronización cada 15 min via Celery
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-12 pt-12 border-t border-slate-100">
+                <div class="space-y-4">
+                    <h4 class="font-black text-agv-primary text-xs uppercase tracking-[0.3em]">Stack Tecnológico</h4>
+                    <ul class="text-sm space-y-4 text-slate-600">
+                        <li class="flex items-center gap-3"><span class="w-2 h-2 bg-agv-primary rounded-full"></span> <strong>Backend:</strong> Python 3.11 + Flask (Modular Blueprints).</li>
+                        <li class="flex items-center gap-3"><span class="w-2 h-2 bg-agv-primary rounded-full"></span> <strong>Database:</strong> PostgreSQL (Supabase) para lectura rápida.</li>
+                        <li class="flex items-center gap-3"><span class="w-2 h-2 bg-agv-primary rounded-full"></span> <strong>Workers:</strong> Celery + Redis para tareas pesadas de Odoo.</li>
+                    </ul>
+                </div>
+                <div class="bg-slate-50 p-8 rounded-3xl border border-slate-200">
+                    <h4 class="font-black text-slate-800 text-xs uppercase tracking-widest mb-6 italic text-center">Distribución de Carga Operativa</h4>
+                    <div class="chart-container">
+                        <canvas id="loadChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer / Roadmap -->
+    <footer class="py-24 bg-agv-light border-t border-purple-100 text-center">
+        <div class="max-w-4xl mx-auto px-4 space-y-12">
+            <h2 class="text-5xl font-black text-agv-primary tracking-tighter italic">Digitalización AGV 2026</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="p-6 bg-white rounded-3xl shadow-xl border border-slate-100">
+                    <div class="text-3xl mb-4">🚀</div>
+                    <h5 class="font-black text-agv-primary text-xs uppercase tracking-widest">Q1: MVP Letras</h5>
+                    <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">Automatización de correos y trazabilidad Planilla -> Letra.</p>
+                </div>
+                <div class="p-6 bg-white rounded-3xl shadow-xl border border-slate-100">
+                    <div class="text-3xl mb-4">📈</div>
+                    <h5 class="font-black text-agv-primary text-xs uppercase tracking-widest">Q2: Reportes 42</h5>
+                    <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">Cortes históricos contables y dashboards de gerencia.</p>
+                </div>
+                <div class="p-6 bg-agv-primary text-white rounded-3xl shadow-2xl scale-110">
+                    <div class="text-3xl mb-4">✨</div>
+                    <h5 class="font-black text-xs uppercase tracking-widest">Q3: Bancos AI</h5>
+                    <p class="text-[11px] text-purple-200 mt-2 leading-relaxed">Conciliación bancaria automática BCP/BBVA.</p>
+                </div>
+            </div>
+            <p class="text-slate-400 text-[10px] font-black uppercase tracking-[0.5em] pt-12">© 2026 Agrovet Market S.A. | Reservado Confidencial</p>
+        </div>
+    </footer>
+
+    <script>
+        // Logic for Dynamic Specs
+        const specs = {
+            letras: [
+                { id: "RF-101", title: "Trazabilidad Planilla", desc: "Vincular account.move con bill_form_id para encontrar el origen de deuda." },
+                { id: "RF-201", title: "Envío Masivo PDF", desc: "Motor Jinja2 para plantillas de email con adjuntos PDF de Odoo." },
+                { id: "RF-203", title: "Prevención Duplicados", desc: "Lock de envío por partner_id en ventana de 24 horas." }
+            ],
+            corte: [
+                { id: "RF-301", title: "Retro-Corte Saldo", desc: "Algoritmo de reversión basado en pagos posteriores a la fecha seleccionada." },
+                { id: "RF-302", title: "Exportación Nativa", desc: "Generación Excel con tipos Date y Numeric reales para tablas dinámicas." },
+                { id: "RF-305", title: "Conciliación Mayor", desc: "Matching con Balance de Comprobación de Odoo al 100%." }
+            ]
+        };
+
+        function updateSpecs(type) {
+            const container = document.getElementById('specContainer');
+            container.innerHTML = specs[type].map(s => `
+                <div class="p-8 bg-white/5 border border-white/10 rounded-3xl hover:border-agv-primary transition group">
+                    <span class="text-[10px] font-black text-agv-secondary">${s.id}</span>
+                    <h4 class="text-lg font-bold mt-2 text-white italic">${s.title}</h4>
+                    <p class="text-xs text-slate-400 mt-4 leading-relaxed">${s.desc}</p>
+                    <div class="mt-6 h-1 w-12 bg-agv-primary group-hover:w-full transition-all duration-500"></div>
+                </div>
+            `).join('');
+        }
+
+        // Charts
+        window.onload = function() {
+            updateSpecs('letras');
+
+            // Hero Performance Chart
+            new Chart(document.getElementById('heroChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['Odoo Nativo', 'AGV Satélite'],
+                    datasets: [{
+                        data: [12.5, 0.4],
+                        backgroundColor: ['#e2e8f0', '#714B67'],
+                        borderRadius: 15,
+                        barThickness: 60
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } }
+                }
+            });
+
+            // Workload Pie Chart
+            new Chart(document.getElementById('loadChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Envío Emails', 'Cuadre Contable', 'Reportería', 'Otros'],
+                    datasets: [{
+                        data: [45, 30, 20, 5],
+                        backgroundColor: ['#714B67', '#875A7B', '#5a3c52', '#cbd5e1'],
+                        borderWidth: 0,
+                        hoverOffset: 25
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '80%',
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10, weight: 'bold' } } } }
+                }
+            });
+        };
+    </script>
+</body>
+</html>

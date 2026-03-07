@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presentación & Documentación PRD: Finanzas AGV</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Application Structure Plan: 
+        Esta aplicación híbrida funciona como 'Interactive Slide Deck' y 'Technical Documentation'.
+        Estructura:
+        1. Portada: Visión general.
+        2. Diagnóstico Técnico: Por qué Odoo necesita este satélite (latencia, bloqueos).
+        3. Arquitectura del Sistema: Flujo ETL (Odoo -> Supabase -> Next.js).
+        4. Detalle de Módulos (12, 42 y Letras): Especificaciones técnicas.
+        5. Lógica de Negocio: Reglas de oro (Lima+7, Prov+15, Corte Histórico).
+        6. Historias de Usuario & Criterios: Documentación para desarrollo (Jira-ready).
+        7. Impacto & KPIs: Métricas de éxito.
+        8. Roadmap Detallado: Fases de implementación.
+        Se eliminaron slides redundantes para priorizar la profundidad de la información solicitada.
+    -->
+    
+    <!-- Chosen Palette: Financial Deep Blue - Fondo stone-50, Acento Indigo-900 (Banca), Éxito Emerald-600, Aviso Amber-500. -->
+    
+    <!-- Visualization & Content Choices: 
+        - Diagrama de Arquitectura: Representación visual usando CSS Grid (sin SVG).
+        - Gráficos: Chart.js para comparar performance y carga de trabajo.
+        - Documentación: Secciones expandibles y tablas de criterios de aceptación.
+    -->
+    
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#1e1b4b',
+                        accent: '#059669',
+                        warn: '#d97706',
+                        info: '#2563eb',
+                        surface: '#fcfcfc'
+                    },
+                    animation: {
+                        'slide-up': 'slideUp 0.4s ease-out forwards',
+                        'fade-in': 'fadeIn 0.6s ease-in forwards',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .slide { display: none; height: calc(100vh - 80px); overflow-y: auto; scrollbar-width: thin; }
+        .slide.active { display: flex; animation: slideUp 0.4s ease-out; }
+        
+        .chart-container { position: relative; width: 100%; height: 280px; max-width: 550px; margin: auto; }
+        .dot-nav.active { background-color: #1e1b4b; transform: scale(1.4); }
+
+        .tech-box { background: white; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 1.5rem; transition: all 0.3s ease; }
+        .tech-box:hover { border-color: #6366f1; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        
+        .acceptance-table tr { border-bottom: 1px solid #f1f5f9; }
+        .acceptance-table td { padding: 0.75rem 0.5rem; font-size: 0.875rem; }
+    </style>
+</head>
+<body class="bg-stone-50 text-slate-900 overflow-hidden font-sans">
+
+    <!-- Header / Nav -->
+    <nav class="h-20 bg-white border-b border-slate-200 px-8 flex justify-between items-center z-50 relative">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-brand rounded-lg flex items-center justify-center text-white font-bold">AGV</div>
+            <span class="text-xl font-bold text-brand tracking-tight">Finanzas <span class="text-indigo-600 font-black">Satellite</span></span>
+        </div>
+        <div class="flex space-x-4 items-center">
+            <button onclick="prevSlide()" class="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-brand transition">
+                <span class="text-xl">◀</span>
+            </button>
+            <div id="nav-dots" class="flex space-x-2"></div>
+            <button onclick="nextSlide()" class="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-brand transition">
+                <span class="text-xl">▶</span>
+            </button>
+        </div>
+    </nav>
+
+    <div id="presentation" class="relative">
+
+        <!-- Slide 0: Portada & Visión -->
+        <section class="slide active flex-col items-center justify-center text-center px-6" id="slide-0">
+            <div class="max-w-4xl space-y-8">
+                <div class="inline-flex items-center space-x-2 px-4 py-2 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-full text-xs font-black uppercase tracking-widest animate-fade-in">
+                    <span class="flex h-2 w-2 rounded-full bg-indigo-600 mr-2"></span>
+                    Documento de Requisitos del Producto (PRD)
+                </div>
+                <h1 class="text-5xl md:text-7xl font-black text-brand leading-[1.1]">
+                    Ecosistema Financiero <br> 
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-blue-600 to-emerald-600">
+                        High-Performance v1.0
+                    </span>
+                </h1>
+                <p class="text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed">
+                    Un satélite de inteligencia de datos diseñado para escalar la gestión de tesorería y cobranzas de Agrovet Market sin las limitaciones de Odoo v17.
+                </p>
+                <div class="grid grid-cols-3 gap-8 py-10 max-w-3xl mx-auto border-t border-slate-200">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-brand tracking-tighter">Cta 12</div>
+                        <div class="text-xs text-slate-400 uppercase font-black">Cobranzas</div>
+                    </div>
+                    <div class="text-center border-x border-slate-200">
+                        <div class="text-3xl font-bold text-brand tracking-tighter">Cta 42</div>
+                        <div class="text-xs text-slate-400 uppercase font-black">Tesorería</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-brand tracking-tighter">Letras</div>
+                        <div class="text-xs text-slate-400 uppercase font-black">Automatización</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 1: Diagnóstico Técnico (El Porqué) -->
+        <section class="slide flex-col items-center justify-center px-6" id="slide-1">
+            <div class="max-w-6xl w-full space-y-10">
+                <div class="text-center md:text-left space-y-2">
+                    <h2 class="text-4xl font-black text-brand">Diagnóstico & Justificación</h2>
+                    <p class="text-slate-500">¿Por qué este proyecto es crítico para la operación actual?</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+                    <div class="space-y-6">
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                            <div class="absolute top-0 right-0 w-1 h-full bg-warn"></div>
+                            <h4 class="font-bold text-brand mb-2">Limitación de Odoo v17</h4>
+                            <p class="text-sm text-slate-600 leading-relaxed">
+                                El procesamiento de reportes de antigüedad (aging) en Odoo causa bloqueos en la base de datos de producción debido a cálculos complejos de SQL en tiempo real sobre miles de registros.
+                            </p>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                            <div class="absolute top-0 right-0 w-1 h-full bg-indigo-600"></div>
+                            <h4 class="font-bold text-brand mb-2">Rigidez en Auditoría</h4>
+                            <p class="text-sm text-slate-600 leading-relaxed">
+                                La imposibilidad de generar reportes con <strong>"Fecha de Corte"</strong> histórica exacta (reversión de pagos) obliga al equipo a realizar cierres manuales en Excel que toman hasta 6 horas.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl">
+                        <h4 class="font-black text-slate-800 mb-6 text-center">Latencia de Reportes Masivos</h4>
+                        <div class="chart-container">
+                            <canvas id="latencyChart"></canvas>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-4 text-center italic">* Medición basada en reportes de +5,000 líneas de factura.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 2: Arquitectura Técnica (Documentación) -->
+        <section class="slide flex-col items-center justify-center px-8" id="slide-2">
+            <div class="max-w-6xl w-full space-y-12">
+                <div class="text-center">
+                    <h2 class="text-4xl font-black text-brand">Arquitectura del Ecosistema</h2>
+                    <p class="text-slate-500">Flujo de datos y stack tecnológico del satélite financiero.</p>
+                </div>
+                
+                <div class="flex flex-col md:flex-row justify-between items-center space-y-8 md:space-y-0 md:space-x-4">
+                    <!-- Layer 1: Fuente -->
+                    <div class="tech-box text-center w-full md:w-1/4">
+                        <div class="text-2xl mb-2">☁️</div>
+                        <div class="font-black text-brand uppercase text-xs">Odoo v17 Cloud</div>
+                        <p class="text-[10px] text-slate-400 mt-1">Fuente de Verdad (ERP)</p>
+                        <div class="mt-4 p-2 bg-slate-100 rounded text-[10px] font-mono">XML-RPC API</div>
+                    </div>
+                    <div class="text-slate-300 font-black text-xl hidden md:block">➞</div>
+                    <!-- Layer 2: ETL -->
+                    <div class="tech-box text-center w-full md:w-1/4 border-indigo-200 bg-indigo-50">
+                        <div class="text-2xl mb-2">⚙️</div>
+                        <div class="font-black text-indigo-900 uppercase text-xs">Python ETL</div>
+                        <p class="text-[10px] text-indigo-600 mt-1">Flask + Celery + Redis</p>
+                        <div class="mt-4 space-y-1">
+                            <div class="p-1 bg-white rounded text-[9px] border border-indigo-100 italic">Sincro cada 15m</div>
+                            <div class="p-1 bg-white rounded text-[9px] border border-indigo-100 italic">Cálculos en Memoria</div>
+                        </div>
+                    </div>
+                    <div class="text-slate-300 font-black text-xl hidden md:block">➞</div>
+                    <!-- Layer 3: Persistence -->
+                    <div class="tech-box text-center w-full md:w-1/4">
+                        <div class="text-2xl mb-2">⚡</div>
+                        <div class="font-black text-brand uppercase text-xs">Supabase</div>
+                        <p class="text-[10px] text-slate-400 mt-1">PostgreSQL + Realtime</p>
+                        <div class="mt-4 p-2 bg-slate-100 rounded text-[10px] font-mono">Row Level Security</div>
+                    </div>
+                    <div class="text-slate-300 font-black text-xl hidden md:block">➞</div>
+                    <!-- Layer 4: Front -->
+                    <div class="tech-box text-center w-full md:w-1/4 bg-brand text-white">
+                        <div class="text-2xl mb-2">💻</div>
+                        <div class="font-black uppercase text-xs">Next.js 15</div>
+                        <p class="text-[10px] text-indigo-200 mt-1">Dashboard Interactivo</p>
+                        <div class="mt-4 p-2 bg-white/10 rounded text-[10px] font-mono">Tailwind + Shadcn</div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-slate-200">
+                    <h4 class="font-bold text-brand mb-4">Consideraciones Técnicas de Seguridad (NFRs)</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                        <div class="flex space-x-3">
+                            <span class="text-indigo-600 font-bold">01.</span>
+                            <p class="text-slate-600"><strong>Auth:</strong> Integración vía Supabase Auth con niveles de acceso por rol (Admin, Analista, Gerente).</p>
+                        </div>
+                        <div class="flex space-x-3">
+                            <span class="text-indigo-600 font-bold">02.</span>
+                            <p class="text-slate-600"><strong>Logs:</strong> Auditoría de todas las acciones de envío de correos y exportación de data.</p>
+                        </div>
+                        <div class="flex space-x-3">
+                            <span class="text-indigo-600 font-bold">03.</span>
+                            <p class="text-slate-600"><strong>DRP:</strong> Capacidad de operar en modo 'Read-Only' si Odoo está fuera de línea.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 3: Lógica de Negocio Detallada (Letras) -->
+        <section class="slide flex-col items-center justify-center px-8" id="slide-3">
+            <div class="max-w-6xl w-full space-y-12">
+                <div class="text-center">
+                    <h2 class="text-4xl font-black text-brand">Motor de Automatización de Letras</h2>
+                    <p class="text-slate-500">Reglas de negocio y flujos de comunicación automatizada.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    <div class="space-y-8">
+                        <div>
+                            <h4 class="text-lg font-bold text-brand mb-4 flex items-center">
+                                <span class="bg-indigo-100 p-2 rounded-lg mr-3">📅</span>
+                                Lógica de Notificación por Ubicación
+                            </h4>
+                            <div class="space-y-4">
+                                <div class="p-4 bg-white border border-slate-200 rounded-xl flex justify-between items-center shadow-sm">
+                                    <div>
+                                        <div class="font-bold">Clientes en Lima</div>
+                                        <div class="text-xs text-slate-500">Recordatorio de recuperación</div>
+                                    </div>
+                                    <div class="text-indigo-600 font-black text-xl">Día +7</div>
+                                </div>
+                                <div class="p-4 bg-white border border-slate-200 rounded-xl flex justify-between items-center shadow-sm">
+                                    <div>
+                                        <div class="font-bold">Clientes Provincia</div>
+                                        <div class="text-xs text-slate-500">Margen extendido por logística</div>
+                                    </div>
+                                    <div class="text-amber-600 font-black text-xl">Día +15</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-indigo-900 p-6 rounded-2xl text-white">
+                            <h4 class="font-bold mb-3">Prevención de Spam (RF-203)</h4>
+                            <p class="text-xs text-indigo-100 leading-relaxed">
+                                El sistema bloquea envíos duplicados al mismo contacto en una ventana de 24 horas. Los estados se marcan como "Notificado" en Supabase Realtime para visibilidad de todo el equipo.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+                        <h4 class="font-bold text-brand">Ciclo de Vida de la Letra en Satélite</h4>
+                        <div class="space-y-4">
+                            <div class="flex items-start space-x-4">
+                                <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center font-bold text-xs">1</div>
+                                <div>
+                                    <div class="font-bold text-sm">Identificación (RF-101)</div>
+                                    <p class="text-xs text-slate-500">Mapeo `account.bill.form` para encontrar origen.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-4">
+                                <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center font-bold text-xs">2</div>
+                                <div>
+                                    <div class="font-bold text-sm">Clasificación Automática</div>
+                                    <p class="text-xs text-slate-500">Separación: Por Aceptar / Banco (Descuento/Cobranza).</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-4">
+                                <div class="w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-xs">3</div>
+                                <div>
+                                    <div class="font-bold text-sm">Disparador de Notificación</div>
+                                    <p class="text-xs text-slate-500">Envío masivo con adjuntos PDF desde Odoo.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-4">
+                                <div class="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center font-bold text-xs text-emerald-700">✓</div>
+                                <div>
+                                    <div class="font-bold text-sm">Confirmación y Log</div>
+                                    <p class="text-xs text-slate-500">Registro histórico de gestión en el satélite.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 4: Historias de Usuario & Criterios (Documentación para Devs) -->
+        <section class="slide flex-col items-center justify-start py-12 px-8" id="slide-4">
+            <div class="max-w-6xl w-full space-y-10">
+                <div class="text-center">
+                    <h2 class="text-4xl font-black text-brand">Documentación de Desarrollo</h2>
+                    <p class="text-slate-500">Historias de Usuario y Criterios de Aceptación detallados.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- User Story 1 -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full">
+                        <div class="mb-4">
+                            <span class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-[10px] font-black uppercase">US-01: Notificación Masiva</span>
+                            <h3 class="text-lg font-bold mt-2">Envío Masivo de Letras Vencidas</h3>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-lg text-xs italic text-slate-600 mb-6">
+                            "Como analista de cobranzas, quiero enviar estados de cuenta masivos a clientes con letras vencidas para automatizar mi proceso de recupero."
+                        </div>
+                        <table class="w-full text-left acceptance-table">
+                            <thead class="bg-slate-100 text-[10px] font-black text-slate-500">
+                                <tr><th>Criterio de Aceptación</th><th>Estado</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>El sistema debe filtrar por estado 'Por Recuperar' y ubicación.</td><td>✅</td></tr>
+                                <tr><td>Adjuntar PDFs originales de Odoo automáticamente.</td><td>✅</td></tr>
+                                <tr><td>Validar formato de email y existencia en ERP.</td><td>✅</td></tr>
+                                <tr><td>Impedir el envío doble en la misma sesión operativa.</td><td>✅</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- User Story 2 -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full">
+                        <div class="mb-4">
+                            <span class="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-black uppercase">US-02: Reporte Histórico</span>
+                            <h3 class="text-lg font-bold mt-2">Corte Financiero Retroactivo</h3>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-lg text-xs italic text-slate-600 mb-6">
+                            "Como gerente financiero, quiero visualizar el saldo de la cartera a una fecha pasada ignorando movimientos futuros."
+                        </div>
+                        <table class="w-full text-left acceptance-table">
+                            <thead class="bg-slate-100 text-[10px] font-black text-slate-500">
+                                <tr><th>Criterio de Aceptación</th><th>Estado</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>Selector de fecha (date picker) con bloqueo de fechas futuras.</td><td>✅</td></tr>
+                                <tr><td>Algoritmo de reversión de pagos basado en `date_payment`.</td><td>✅</td></tr>
+                                <tr><td>Exportación a Excel manteniendo tipos de dato (Date/Numeric).</td><td>✅</td></tr>
+                                <tr><td>Conciliación total con balance de comprobación de Odoo.</td><td>✅</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 5: Análisis de Impacto & KPIs -->
+        <section class="slide flex-col items-center justify-center px-8" id="slide-5">
+            <div class="max-w-6xl w-full space-y-12">
+                <div class="text-center">
+                    <h2 class="text-4xl font-black text-brand text-center">Impacto & Métricas de Éxito</h2>
+                    <p class="text-slate-500">Valor de negocio proyectado post-implementación.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                    <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-center">
+                        <h3 class="text-center font-bold text-slate-700 mb-6">Optimización Carga de Trabajo (Semanal)</h3>
+                        <div class="chart-container">
+                            <canvas id="workloadChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="p-6 bg-emerald-600 text-white rounded-2xl shadow-lg">
+                            <div class="text-3xl font-black mb-1">0%</div>
+                            <div class="font-bold text-sm">Discrepancia Data</div>
+                            <p class="text-[10px] text-emerald-100 mt-2">Integridad total entre Satélite y ERP oficial.</p>
+                        </div>
+                        <div class="p-6 bg-brand text-white rounded-2xl shadow-lg">
+                            <div class="text-3xl font-black mb-1">< 200ms</div>
+                            <div class="font-bold text-sm">Query Speed</div>
+                            <p class="text-[10px] text-indigo-300 mt-2">Velocidad de carga en reportes de tesorería.</p>
+                        </div>
+                        <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                            <div class="text-3xl font-black mb-1 text-indigo-600">+45h</div>
+                            <div class="font-bold text-sm text-slate-700">Ahorro Mensual</div>
+                            <p class="text-[10px] text-slate-400 mt-2">Horas hombre liberadas para análisis estratégico.</p>
+                        </div>
+                        <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                            <div class="text-3xl font-black mb-1 text-emerald-600">24/7</div>
+                            <div class="font-bold text-sm text-slate-700">Sincronización</div>
+                            <p class="text-[10px] text-slate-400 mt-2">Data disponible siempre, sin bloqueos de Odoo.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 6: Roadmap & Cierre -->
+        <section class="slide flex-col items-center justify-center px-8" id="slide-6">
+            <div class="max-w-5xl w-full space-y-16">
+                <div class="text-center">
+                    <h2 class="text-5xl font-black text-brand">Plan de Lanzamiento</h2>
+                    <p class="text-slate-500 mt-2">Cronograma detallado de implementación por fases.</p>
+                </div>
+                
+                <div class="relative">
+                    <div class="absolute top-1/2 left-0 w-full h-1 bg-slate-200 -translate-y-1/2 hidden md:block"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 relative">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center z-10">
+                            <div class="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 font-black">1</div>
+                            <h4 class="font-bold text-brand">Fase 1</h4>
+                            <p class="text-[10px] text-slate-500 mt-2">Configuración ETL & Supabase Sincro (Core Data).</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center z-10">
+                            <div class="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 font-black">2</div>
+                            <h4 class="font-bold text-brand">Fase 2</h4>
+                            <p class="text-[10px] text-slate-500 mt-2">Dashboard Cobranzas & Motor de Letras (MVP).</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center z-10">
+                            <div class="w-10 h-10 bg-slate-200 text-slate-500 rounded-full flex items-center justify-center mx-auto mb-4 font-black">3</div>
+                            <h4 class="font-bold text-brand">Fase 3</h4>
+                            <p class="text-[10px] text-slate-500 mt-2">Módulo Tesorería Cta 42 & Bancos.</p>
+                        </div>
+                        <div class="bg-brand p-6 rounded-2xl shadow-xl text-white text-center z-10 transform scale-105">
+                            <div class="w-10 h-10 bg-white text-brand rounded-full flex items-center justify-center mx-auto mb-4 font-black">4</div>
+                            <h4 class="font-bold">Lanzamiento</h4>
+                            <p class="text-[10px] text-indigo-200 mt-2">Auditoría Total & Onboarding Equipo AGV.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-center space-x-6 pt-12">
+                    <button onclick="goToSlide(0)" class="px-8 py-3 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition">Reiniciar</button>
+                    <a href="mailto:jmontero@agrovet.com" class="px-8 py-3 bg-brand text-white font-bold rounded-xl hover:bg-indigo-950 transition shadow-lg">Enviar Feedback PRD</a>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Logic -->
+    <script>
+        let currentSlide = 0;
+        const totalSlides = 7;
+
+        function initDots() {
+            const dotsContainer = document.getElementById('nav-dots');
+            for (let i = 0; i < totalSlides; i++) {
+                const dot = document.createElement('button');
+                dot.className = `w-2.5 h-2.5 rounded-full bg-slate-300 transition-all duration-300 dot-nav ${i === 0 ? 'active' : ''}`;
+                dot.onclick = () => goToSlide(i);
+                dotsContainer.appendChild(dot);
+            }
+        }
+
+        function updateDots() {
+            document.querySelectorAll('.dot-nav').forEach((dot, idx) => {
+                if (idx === currentSlide) dot.classList.add('active');
+                else dot.classList.remove('active');
+            });
+        }
+
+        function goToSlide(n) {
+            document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+            currentSlide = n;
+            const slide = document.getElementById(`slide-${currentSlide}`);
+            slide.classList.add('active');
+            slide.scrollTop = 0; // Reset scroll
+            updateDots();
+        }
+
+        function nextSlide() { if (currentSlide < totalSlides - 1) goToSlide(currentSlide + 1); }
+        function prevSlide() { if (currentSlide > 0) goToSlide(currentSlide - 1); }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+            if (e.key === 'ArrowLeft') prevSlide();
+        });
+
+        function initCharts() {
+            // Chart 1: Latency Chart
+            const ctxLatency = document.getElementById('latencyChart').getContext('2d');
+            new Chart(ctxLatency, {
+                type: 'line',
+                data: {
+                    labels: ['1k regs', '3k regs', '5k regs', '10k regs'],
+                    datasets: [
+                        { label: 'Odoo v17 Native', data: [1.2, 3.5, 6.8, 14.5], borderColor: '#f59e0b', tension: 0.3, fill: false, borderWidth: 3 },
+                        { label: 'AGV Satellite', data: [0.1, 0.2, 0.35, 0.6], borderColor: '#4f46e5', tension: 0.3, fill: false, borderWidth: 3 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } },
+                    scales: { y: { title: { display: true, text: 'Segundos' } } }
+                }
+            });
+
+            // Chart 2: Workload
+            const ctxWork = document.getElementById('workloadChart').getContext('2d');
+            new Chart(ctxWork, {
+                type: 'bar',
+                data: {
+                    labels: ['Cobranza Masiva', 'Corte Histórico', 'Consolidación'],
+                    datasets: [
+                        { label: 'Actual (Manual/Excel)', data: [5, 4, 3], backgroundColor: '#cbd5e1', borderRadius: 8 },
+                        { label: 'Futuro (Satélite)', data: [0.5, 0.2, 0.1], backgroundColor: '#10b981', borderRadius: 8 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10 } } },
+                    scales: { y: { title: { display: true, text: 'Horas/Semana' } } }
+                }
+            });
+        }
+
+        window.onload = () => {
+            initDots();
+            initCharts();
+        };
+    </script>
+</body>
+</html>

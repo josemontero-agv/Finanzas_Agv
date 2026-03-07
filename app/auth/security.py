@@ -16,7 +16,8 @@ def require_login(view_func):
         if not session.get('logged_in'):
             return jsonify({
                 'success': False,
-                'message': 'Usuario no autenticado'
+                'message': 'Usuario no autenticado',
+                'redirect': '/login'  # Enviamos una pista al frontend
             }), 401
         return view_func(*args, **kwargs)
     return wrapper
