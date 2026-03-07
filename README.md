@@ -1,154 +1,184 @@
-# Finanzas AGV - API REST
+# Finanzas AGV
 
-API REST para gestión financiera - Cobranzas y Tesorería
+Aplicacion financiera para cobranzas, letras y reporteria conectada con Odoo, con backend Flask y frontend Next.js.
 
-## 📋 Descripción
+## Descripcion
 
-Aplicación Flask con arquitectura AP (Alta Disponibilidad) basada en Docker, Celery y Redis.
-Permite la gestión de:
-- **Cobranzas (Collections)**: Reportes de cuentas por cobrar, nacionales e internacionales
-- **Tesorería (Treasury)**: Reportes de flujo de caja, CxP y cuentas bancarias
-- **Ingeniería de Datos**: ETLs asíncronos Odoo -> Supabase
+El repositorio cubre dos frentes funcionales principales:
 
-## 🏗️ Arquitectura
+- `P1`: reporteria financiera de cuentas 12/42, exportaciones y validacion operativa.
+- `P2`: automatizacion de letras, seguimiento y envio de correos con trazabilidad.
 
-- **Frontend**: Flask + Jinja2 (Server Side Rendering) + HTMX/Alpine.js
-- **Backend**: Flask API REST
-- **Async Tasks**: Celery + Redis
-- **Data Engineering**: ETLs Python con Threads
-- **Infraestructura**: Docker Compose
+El estado actual del proyecto es hibrido:
 
-## 🚀 Inicio Rápido (Docker)
+- backend de negocio en Flask;
+- frontend principal en Next.js;
+- autenticacion por sesion Flask contra Odoo;
+- integracion de datos via Odoo XML-RPC con evolucion progresiva hacia Supabase.
 
-La forma recomendada de ejecutar el proyecto es usando Docker.
+## Stack vigente
 
-### 1. Requisitos Previos
-- Docker Desktop instalado y corriendo
-- Archivo `.env.desarrollo` configurado
+### Backend
+- Flask
+- Gunicorn
+- Flask-Caching
+- Flask-Compress
+- Flask-Mail
+- Celery inicializado en la aplicacion
 
-### 2. Ejecutar
+### Frontend
+- Next.js 16
+- React 19
+- Axios
+- React Query
+
+### Integraciones
+- Odoo via XML-RPC
+- Supabase PostgreSQL
+
+### Seguridad
+- sesion Flask;
+- `withCredentials` en frontend;
+- guard central de autenticacion;
+- manejo de `401` con redireccion a `/login`.
+
+## Arquitectura operativa resumida
+
+```mermaid
+flowchart LR
+    next[Frontend Next.js]
+    flask[Backend Flask]
+    odoo[Odoo XML-RPC]
+    supabase[Supabase]
+
+    next --> flask
+    flask --> odoo
+    flask --> supabase
+```
+
+Notas importantes:
+
+- Flask mantiene rutas historicas y funciones de gateway.
+- Next.js es la experiencia principal de UI.
+- La lectura de negocio aun depende parcialmente de Odoo.
+- La direccion objetivo es mover lectura operativa hacia Supabase mediante ETL incremental.
+
+## Arranque local
+
+### Backend con Docker
+
 ```powershell
-docker-compose up --build
+docker compose up --build
 ```
 
-Esto levantará automáticamente:
-- 🌐 **Web**: Aplicación Flask en http://localhost:5000
-- 🧠 **Redis**: Broker de mensajería y caché
-- 👷 **Worker**: Procesador de tareas en segundo plano (ETLs)
+Servicio principal esperado:
 
-Para detener: `Ctrl+C` o `docker-compose down`
+- `backend` en `http://localhost:5000`
 
----
+### Frontend con perfil compose
 
-## ⚙️ Instalación Manual (Legacy / Desarrollo sin Docker)
-
-### 1. Crear entorno virtual
-```bash
-python -m venv venv
-# Activar:
-venv\Scripts\activate  # Windows
-source venv/bin/activate # Linux/Mac
+```powershell
+docker compose --profile frontend up
 ```
 
-### 2. Instalar dependencias
-```bash
-pip install -r requirements.txt
-```
+### Backend local sin Docker
 
-### 3. Ejecutar
-```bash
+```powershell
 python run.py
 ```
-*Nota: Requiere servidor Redis externo corriendo si se usa la configuración por defecto.*
 
-## 🔧 Variables de Entorno
-
-El proyecto usa `.env.desarrollo` (en la raíz) para desarrollo. Por seguridad está en `.gitignore`.
-
-Puedes generarlo desde la plantilla:
+### Frontend local
 
 ```powershell
-.\scripts\setup_env_dev.ps1
-notepad .env.desarrollo
+cd frontend
+npm install
+npm run dev
 ```
 
-Contenido esperado de `.env.desarrollo`:
+## Variables de entorno relevantes
 
-```ini
-# Flask
-SECRET_KEY=dev-secret
-FLASK_ENV=development
+### Odoo
+- `ODOO_URL`
+- `ODOO_DB`
+- `ODOO_USER`
+- `ODOO_PASSWORD`
 
-# Odoo
-ODOO_URL=https://tu-odoo.com
-ODOO_DB=base_datos
-ODOO_USER=usuario
-ODOO_PASSWORD=clave
+### Sesion y seguridad Flask
+- `SECRET_KEY`
+- `SESSION_COOKIE_NAME`
+- `SESSION_COOKIE_HTTPONLY`
+- `SESSION_COOKIE_SECURE`
+- `SESSION_COOKIE_SAMESITE`
+- `SESSION_LIFETIME_MINUTES`
 
-# Supabase (Data Warehouse)
-SUPABASE_URL=https://xyz.supabase.co
-SUPABASE_KEY=tu_clave_anonima
-SUPABASE_DB_URI=postgresql://...
+### Frontend
+- `FRONTEND_URL`
+- `NEXT_PUBLIC_FLASK_API_URL`
 
-# Redis & Celery (Docker internos)
-REDIS_URL=redis://redis:6379/0
-CELERY_BROKER_URL=redis://redis:6379/0
+### Supabase
+- variables definidas segun `config.py`
+- archivos por entorno como `.env.supabase.desarrollo` y `.env.supabase.produccion`
 
-# Email (Gmail SMTP)
-MAIL_SERVER=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USE_TLS=True
-MAIL_USERNAME=tu-email@gmail.com
-MAIL_PASSWORD=tu-app-password
-MAIL_DEFAULT_SENDER=jose.montero@agrovetmarket.com
+### Correo
+- `MAIL_SERVER`
+- `MAIL_PORT`
+- `MAIL_USE_TLS`
+- `MAIL_USERNAME`
+- `MAIL_PASSWORD`
 
-# Modo Desarrollo para Correos (Recomendado para Testing)
-DEV_EMAIL_MODE=True
-DEV_EMAIL_RECIPIENT=josemontero2415@gmail.com
-```
+## Autenticacion
 
-### 🔧 Modo Desarrollo de Correos
+La autenticacion vigente es por sesion, no por JWT:
 
-El proyecto incluye un **Modo Desarrollo** que redirige todos los correos a un email de prueba, evitando envíos accidentales a clientes reales.
+1. el frontend envia credenciales al backend;
+2. el backend autentica contra Odoo;
+3. Flask guarda la sesion;
+4. el frontend consulta estado de usuario;
+5. ante `401`, el cliente redirige a `/login`.
 
-**Características:**
-- ✅ Redirige automáticamente todos los correos a `josemontero2415@gmail.com`
-- ✅ Banner visual en la interfaz indicando el modo activo
-- ✅ Confirmación antes de enviar correos
-- ✅ Logs detallados con destinatario original
-- ✅ Activado por defecto en desarrollo
+## Documentacion oficial
 
-**Para probar:**
-```bash
-# Verificar configuración
-python test_dev_email_mode.py
+La fuente de verdad documental ya no debe ser el portal HTML legado en `docs/`.
 
-# Ver documentación completa
-docs/MODO_DESARROLLO_CORREOS.md
-```
+Documentacion vigente:
 
-## 📚 Documentación Completa
+- wiki del proyecto como repositorio documental principal;
+- `README.md` como resumen ejecutivo del repo de aplicacion.
 
-Toda la documentación técnica se encuentra en la carpeta `docs/`:
-- [Estructura del Proyecto](docs/ESTRUCTURA_PROYECTO.md)
-- [Arquitectura Docker](docs/arquitectura/ARQUITECTURA_ACTUAL_DOCKER.md)
-- [Guía de Instalación Docker](GUIA_INSTALACION_DOCKER.md)
+Documentacion historica o absorbida:
 
-## 📡 Endpoints Principales
+- `docs/legacy/*`
+- `docs/*.html`
+- `docs/presentacion_prd/*.html`
 
-### Cobranzas
-- `GET /api/v1/collections/report/account12` - Reporte General
-- `GET /api/v1/collections/report/national` - Reporte Nacional
+Si `docs/` aun existe en una copia local, debe tratarse como snapshot transitorio o material historico, no como referencia oficial.
 
-### Tesorería
-- `GET /api/v1/treasury/report/account42` - Reporte CxP
-- `GET /api/v1/treasury/report/supplier-banks` - Cuentas Bancarias
+## Referencias internas utiles
 
-## 🤝 Contribución
+- `docker-compose.yml`
+- `config.py`
+- `app/__init__.py`
+- `app/auth/security.py`
+- `app/web/routes.py`
+- `frontend/package.json`
+- `frontend/lib/api.ts`
+- `frontend/components/app-shell.tsx`
 
-1. Crear rama `feature/nueva-funcionalidad`
-2. Desarrollar y probar localmente con Docker
-3. Crear Pull Request
+## Flujo de trabajo recomendado
 
----
-**Finanzas AGV** - 2024
+1. crear una rama por cambio;
+2. separar cambios funcionales de migraciones documentales cuando sea posible;
+3. usar commits convencionales como `feat:`, `fix:`, `docs:` y `chore:`;
+4. mantener la wiki del proyecto sincronizada cuando cambie arquitectura, seguridad u operacion.
+
+## Estado documental de este repo
+
+Este repositorio conserva codigo y un resumen operativo.  
+La wiki del proyecto concentra:
+
+- arquitectura actual vs target;
+- seguridad y checklist OWASP;
+- modelos Odoo y trazabilidad;
+- manuales vigentes;
+- bitacora, guia visual y estrategia de datos;
+- inventario de absorcion para decomisionar `docs/`.
