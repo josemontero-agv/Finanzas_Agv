@@ -39,11 +39,13 @@ ENV/
 
 # IDE
 .vscode/
+.cursor/
+
 .idea/
 *.swp
 *.swo
 *~
-
+*/auditoria/
 # OS
 .DS_Store
 Thumbs.db

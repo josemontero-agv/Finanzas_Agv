@@ -14,8 +14,10 @@ const DEFAULT_FILTERS: ReportParams = {
   date_from: '',
   date_to: '',
   date_cutoff: '',
+  date_cutoff_start: '',
   customer: '',
   sub_channel: '',
+  payment_method: '',
   account_codes: '',
   sales_channel_id: undefined,
   doc_type_id: undefined,
@@ -29,6 +31,7 @@ export default function CollectionsPage() {
 
   const [isFiltersOpen, setIsFiltersOpen] = useState(true)
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  const [docNumberSearch, setDocNumberSearch] = useState("")
 
   // AppShell ya validó sesión; esta página solo se monta si hay auth OK
   const { data: filterOptions } = useQuery({
@@ -53,6 +56,17 @@ export default function CollectionsPage() {
   const data = response?.data || []
   const summary = response?.summary
 
+  const filteredData = useMemo(() => {
+    if (!docNumberSearch.trim()) return data
+    const q = docNumberSearch.trim().toLowerCase()
+    return data.filter((row: any) => {
+      const docName = (row["account.move/name"] || row["move_name"] || "").toLowerCase()
+      const origin = (row["account.move/invoice_origin"] || row["invoice_origin"] || "").toLowerCase()
+      const letra = (row["account.move/l10n_latam_boe_number"] || row["l10n_latam_boe_number"] || "").toLowerCase()
+      return docName.includes(q) || origin.includes(q) || letra.includes(q)
+    })
+  }, [data, docNumberSearch])
+
   const handleFilterChange = (key: keyof ReportParams, value: any) => {
     setDraftFilters(prev => ({ ...prev, [key]: value }))
   }
@@ -61,6 +75,7 @@ export default function CollectionsPage() {
     setDraftFilters(DEFAULT_FILTERS)
     setAppliedFilters(DEFAULT_FILTERS)
     setHasAppliedFilters(false)
+    setDocNumberSearch("")
   }
 
   const applyFilters = () => {
@@ -141,9 +156,11 @@ export default function CollectionsPage() {
     { key: "condicion_pago", label: "Condición Pago", get: (row: any) => firstValue(row, ["account.move/invoice_payment_term_id", "invoice_payment_term_id"]), maxWidth: "max-w-[180px]" },
     { key: "descripcion", label: "Descripción", get: (row: any) => firstValue(row, ["account.move.line/name", "name"]), maxWidth: "max-w-[260px]" },
     { key: "vendedor", label: "Vendedor", get: (row: any) => firstValue(row, ["account.move/invoice_user_id", "invoice_user_name", "move_id/invoice_user_id"]), maxWidth: "max-w-[220px]" },
+    { key: "estado_pago", label: "Estado Pago", get: (row: any) => firstValue(row, ["payment_state_display", "payment_state", "move_id/payment_state"]), maxWidth: "max-w-[140px]" },
     { key: "estado_documento", label: "Estado Documento", get: (row: any) => firstValue(row, ["move_id/state", "state"]), maxWidth: "max-w-[160px]" },
     { key: "linea_comercial", label: "Línea Comercial", get: (row: any) => firstValue(row, ["account.move/linea_comercial", "linea_comercial", "team_name"]), maxWidth: "max-w-[220px]" },
     { key: "grupo_comercial", label: "Grupo Comercial", get: (row: any) => firstValue(row, ["grupo_comercial", "agr.credit.customer/partner_groups_ids", "agr.credit.customer/patner_groups_ids", "partner_groups"]), maxWidth: "max-w-[220px]" },
+    { key: "metodo_pago", label: "Método de Pago", get: (row: any) => firstValue(row, ["payment_method", "move_id/order_id/tag_ids"]), maxWidth: "max-w-[200px]" },
     { key: "sub_canal", label: "Sub Canal", get: (row: any) => firstValue(row, ["agr.credit.customer/sub_channel_id", "sub_channel_id"]), maxWidth: "max-w-[160px]" },
     { key: "canal_venta", label: "Canal Venta", get: (row: any) => firstValue(row, ["account.move/sales_channel_id", "sales_channel_name", "move_id/sales_channel_id"]), maxWidth: "max-w-[180px]" },
     { key: "tipo_venta", label: "Tipo Venta", get: (row: any) => firstValue(row, ["account.move/sale_type_id", "account.move/sales_type_id", "sales_type_name", "move_id/sales_type_id"]), maxWidth: "max-w-[180px]" },
@@ -210,6 +227,29 @@ export default function CollectionsPage() {
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Nro Documento / Comprobante
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                  <Input
+                    placeholder="Ej: F001-00123 · L001 · pedido"
+                    value={docNumberSearch}
+                    onChange={(e) => setDocNumberSearch(e.target.value)}
+                    className="pl-9 focus-visible:ring-[#714B67] dark:focus-visible:ring-purple-500 border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Fecha Inicio (Origen)</label>
+                <Input
+                  type="date"
+                  value={draftFilters.date_cutoff_start}
+                  onChange={(e) => handleFilterChange('date_cutoff_start', e.target.value)}
+                  className="focus-visible:ring-[#714B67] dark:focus-visible:ring-purple-500 border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                />
+              </div>
+              <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Fecha de Corte (Histórico)</label>
                 <Input 
                   type="date" 
@@ -218,26 +258,7 @@ export default function CollectionsPage() {
                   className="focus-visible:ring-[#714B67] dark:focus-visible:ring-purple-500 border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Fecha Desde</label>
-                <Input 
-                  type="date" 
-                  value={draftFilters.date_from} 
-                  onChange={(e) => handleFilterChange('date_from', e.target.value)}
-                  disabled={!!draftFilters.date_cutoff}
-                  className="focus-visible:ring-[#714B67] dark:focus-visible:ring-purple-500 border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Fecha Hasta</label>
-                <Input 
-                  type="date" 
-                  value={draftFilters.date_to} 
-                  onChange={(e) => handleFilterChange('date_to', e.target.value)}
-                  disabled={!!draftFilters.date_cutoff}
-                  className="focus-visible:ring-[#714B67] dark:focus-visible:ring-purple-500 border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                />
-              </div>
+              {/* Filtros Fecha Desde / Fecha Hasta ocultos - reemplazados por Fecha Inicio y Fecha de Corte */}
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Cliente</label>
                 <Input 
@@ -285,6 +306,19 @@ export default function CollectionsPage() {
                   <option value="">Todos los tipos</option>
                   {filterOptions?.document_types.map(t => (
                     <option key={t.id} value={t.id.toString()}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Método de Pago</label>
+                <select
+                  className="w-full h-10 px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#714B67] dark:focus:ring-purple-500 focus:ring-offset-0 disabled:opacity-50"
+                  value={draftFilters.payment_method || ""}
+                  onChange={(e) => handleFilterChange('payment_method', e.target.value)}
+                >
+                  <option value="">Todos los métodos</option>
+                  {filterOptions?.payment_methods?.map(pm => (
+                    <option key={pm.id} value={pm.id.toString()}>{pm.name}</option>
                   ))}
                 </select>
               </div>
@@ -384,14 +418,16 @@ export default function CollectionsPage() {
                     Aplica filtros para consultar y luego exportar a Excel.
                   </td>
                 </tr>
-              ) : data.length === 0 ? (
+              ) : filteredData.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className="px-4 py-12 text-center text-slate-500 dark:text-slate-400">
-                    No se encontraron resultados con los filtros aplicados.
+                    {docNumberSearch.trim()
+                      ? `Sin resultados para "${docNumberSearch}". Prueba con otro número de documento.`
+                      : "No se encontraron resultados con los filtros aplicados."}
                   </td>
                 </tr>
               ) : (
-                data.map((row, idx) => (
+                filteredData.map((row, idx) => (
                   <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                     {columns.map((col) => {
                       const value = col.get(row)
@@ -442,8 +478,10 @@ export default function CollectionsPage() {
         {!isLoading && data.length > 0 && (
           <div className="p-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 flex justify-between">
             <span>
-              Mostrando {response?.shown_count || data.length} de {response?.count || data.length} registros.
-              Para ver el total detallado, exporta a Excel.
+              {docNumberSearch.trim()
+                ? `${filteredData.length} de ${response?.shown_count || data.length} registros filtrados por "${docNumberSearch}" · Total en BD: ${response?.count || data.length}`
+                : `Mostrando ${response?.shown_count || data.length} de ${response?.count || data.length} registros. Para ver el total detallado, exporta a Excel.`
+              }
             </span>
             <span>* Montos en moneda local del sistema</span>
           </div>

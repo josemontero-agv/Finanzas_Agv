@@ -27,6 +27,15 @@ DOCUMENT_STATE_LABELS_ES = {
     'protested': 'Protestado',
 }
 
+PAYMENT_STATE_LABELS_ES = {
+    'not_paid': 'Sin Pagar',
+    'in_payment': 'En Proceso',
+    'paid': 'Pagado',
+    'partial': 'Pago Parcial',
+    'reversed': 'Revertido',
+    'invoicing_legacy': 'Legado',
+}
+
 
 class CollectionsService:
     """
@@ -259,7 +268,7 @@ class CollectionsService:
             
             if not self.repository.is_connected():
                 print("[ERROR] No hay conexión a Odoo disponible")
-                return {'sales_channels': [], 'document_types': [], 'sub_channels': []}
+                return {'sales_channels': [], 'document_types': [], 'sub_channels': [], 'payment_methods': []}
             
             # Obtener canales de venta
             sales_channels = []
@@ -338,19 +347,46 @@ class CollectionsService:
             except Exception as e:
                 print(f"[WARN] No se pudo obtener tipos de documento: {e}")
             
-            print(f"[OK] Filtros obtenidos: {len(sales_channels)} canales, {len(document_types)} tipos de documento, {len(sub_channels)} sub canales")
-            
+            # Obtener métodos de pago siguiendo la ruta move_id/order_id/tag_ids:
+            # 1. Buscar órdenes de venta que tengan etiquetas asignadas
+            # 2. Leer los registros crm.tag de esos IDs únicos
+            # Así solo se muestran etiquetas realmente usadas en órdenes de venta.
+            payment_methods = []
+            try:
+                order_tag_rows = self.repository.search_read(
+                    'sale.order',
+                    [('tag_ids', '!=', False)],
+                    ['tag_ids'],
+                    limit=5000
+                )
+                tag_ids_set = set()
+                for row in order_tag_rows:
+                    for tid in (row.get('tag_ids') or []):
+                        tag_ids_set.add(tid)
+                if tag_ids_set:
+                    tag_records = self.repository.read('crm.tag', list(tag_ids_set), ['id', 'name'])
+                    payment_methods = [
+                        {'id': t['id'], 'name': t.get('name', '')}
+                        for t in tag_records if t.get('name')
+                    ]
+                    payment_methods.sort(key=lambda x: x['name'])
+            except Exception as e:
+                print(f"[WARN] No se pudo obtener métodos de pago (move_id/order_id/tag_ids): {e}")
+
+            print(f"[OK] Filtros obtenidos: {len(sales_channels)} canales, {len(document_types)} tipos de documento, {len(sub_channels)} sub canales, {len(payment_methods)} métodos de pago")
+
             return {
                 'sales_channels': sales_channels,
                 'document_types': document_types,
-                'sub_channels': sub_channels
+                'sub_channels': sub_channels,
+                'payment_methods': payment_methods,
             }
             
         except Exception as e:
             print(f"[ERROR] Error obteniendo opciones de filtros: {e}")
             import traceback
             traceback.print_exc()
-            return {'sales_channels': [], 'document_types': [], 'sub_channels': []}
+            return {'sales_channels': [], 'document_types': [], 'sub_channels': [], 'payment_methods': []}
     
     # Funciones de filtro integradas
     @staticmethod
@@ -410,10 +446,157 @@ class CollectionsService:
                 return parsed
         return ['122', '1212', '123', '1312', '132', '13']
 
+    @staticmethod
+    def _collapse_1212_lines(rows: list, today) -> list:
+        """
+        Regla de negocio contable por cuenta contable:
+
+        - Cuenta 1212*  → COLAPSA cuotas en UNA línea por factura (monto unificado).
+                          Una factura con 5 cuotas aparece como 1 registro con
+                          el total consolidado.
+        - Cuenta 123*   → MANTIENE cada línea/letra individual tal como viene de Odoo.
+                          El desdoblamiento ya existe en la fuente (una línea por letra).
+        - Resto          → Sin cambio.
+        """
+        from collections import defaultdict
+        from datetime import datetime as _datetime
+
+        rows_1212: list = []
+        rows_other: list = []
+
+        for row in rows:
+            code = str(row.get('account_id/code') or '')
+            if code.startswith('1212'):
+                rows_1212.append(row)
+            else:
+                rows_other.append(row)
+
+        if not rows_1212:
+            return rows
+
+        # --- Agrupar 1212 por clave de factura ---
+        grouped: dict = defaultdict(list)
+        for row in rows_1212:
+            key = (
+                row.get('move_name')
+                or row.get('account.move/name')
+                or str(row.get('payment_state', '')) + str(id(row))
+            )
+            grouped[key].append(row)
+
+        # Campos que se suman entre cuotas de la misma factura
+        sum_fields = [
+            'debit', 'credit', 'balance',
+            'amount_currency', 'amount_residual_currency',
+            'amount_residual_historical', 'paid_after_cutoff', 'paid_before_cutoff',
+        ]
+
+        collapsed: list = []
+        for _key, cuotas in grouped.items():
+            base = dict(cuotas[0])  # cabecera: campos de factura (idénticos por cuota)
+
+            for f in sum_fields:
+                base[f] = sum(float(c.get(f) or 0.0) for c in cuotas)
+
+            # date_maturity efectivo:
+            #   - Si hay cuotas vencidas → MIN (primera cuota vencida)
+            #   - Si todas vigentes   → MAX (próximo vencimiento)
+            maturities = []
+            for c in cuotas:
+                dm = c.get('date_maturity')
+                if dm:
+                    try:
+                        d = (
+                            dm if not isinstance(dm, str)
+                            else _datetime.strptime(dm[:10], '%Y-%m-%d').date()
+                        )
+                        maturities.append(d)
+                    except (ValueError, TypeError):
+                        pass
+
+            overdue_dates = [d for d in maturities if d < today]
+            effective_maturity = (
+                min(overdue_dates) if overdue_dates
+                else (max(maturities) if maturities else None)
+            )
+            base['date_maturity'] = str(effective_maturity) if effective_maturity else ''
+
+            # Recalcular campos derivados desde el vencimiento efectivo
+            from app.core.calculators import calcular_dias_vencido, clasificar_antiguedad
+            dias = calcular_dias_vencido(base['date_maturity'], today) if base['date_maturity'] else 0
+            base['dias_vencido'] = dias
+            base['estado_deuda'] = 'VENCIDO' if dias > 0 else 'VIGENTE'
+            base['antiguedad'] = clasificar_antiguedad(max(0, dias))
+
+            if base.get('estado_historico') not in ('', None):
+                base['estado_historico'] = (
+                    'PAGADA' if float(base.get('amount_residual_historical') or 0.0) <= 0
+                    else 'NO PAGADA'
+                )
+
+            base['_cuotas_colapsadas'] = len(cuotas)
+            collapsed.append(base)
+
+        return collapsed + rows_other
+
+    @staticmethod
+    def _aplica_corte_historico(
+        fecha_emision: str,
+        fecha_pago,
+        amount_residual_historical: float,
+        cutoff_date: str,
+        include_reconciled: bool = False,
+    ) -> bool:
+        """
+        Regla de Corte Histórico.
+
+        Un registro se INCLUYE en el reporte si cumple AMBAS condiciones:
+
+          1. fecha_emision <= fecha_corte
+             El documento fue emitido (contabilizado) antes o en la fecha de corte.
+
+          2. fecha_pago IS NULL  (nunca pagado)
+             OR fecha_pago > fecha_corte  (se pagó DESPUÉS del corte)
+
+        Equivalencias contables:
+          - fecha_emision  = account.move.line.date  (campo 'date' de la línea)
+          - fecha_pago     = MAX(account.partial.reconcile.max_date) de la línea
+          - "pagado al corte" ↔ amount_residual_historical <= 0
+
+        Args:
+            fecha_emision (str): Fecha contable de la línea 'YYYY-MM-DD'.
+            fecha_pago (str | None): Fecha del último pago/conciliación.
+            amount_residual_historical (float): Saldo reconstruido a la fecha de corte.
+            cutoff_date (str): Fecha de corte 'YYYY-MM-DD'.
+            include_reconciled (bool): Si True, incluye también los documentos ya
+                pagados al corte (útil para auditorías históricas completas).
+
+        Returns:
+            bool: True si el registro debe aparecer en el reporte de corte.
+        """
+        # Condición 1: emitido antes o en la fecha de corte
+        # (ya garantizado por el domain SQL, pero se verifica como salvaguarda)
+        if fecha_emision and fecha_emision > cutoff_date:
+            return False
+
+        # Condición 2: no estaba pagado al corte
+        # "pagado al corte" = conciliado antes/en corte Y sin saldo residual histórico
+        pagado_al_corte = (
+            fecha_pago is not None
+            and fecha_pago <= cutoff_date
+            and amount_residual_historical <= 0
+        )
+
+        if pagado_al_corte:
+            # Excluir si el caller no pide ver documentos ya pagados al corte
+            return include_reconciled
+
+        return True
+
     def _build_report_domain(self, start_date=None, end_date=None, customer=None,
                             account_codes=None, sales_channel_id=None, doc_type_id=None,
-                            sub_channel=None,
-                            cutoff_date=None, include_reconciled=False):
+                            sub_channel=None, date_cutoff_start=None,
+                            cutoff_date=None, include_reconciled=False, doc_number=None):
         """
         Construye el domain de Odoo para filtrar líneas de movimiento.
         Método auxiliar para evitar duplicación de código.
@@ -457,7 +640,12 @@ class CollectionsService:
         
         # Filtros adicionales / histórico
         if cutoff_date:
+            # Foto histórica: sólo líneas contabilizadas hasta la fecha de corte.
             domain.append(('date', '<=', cutoff_date))
+            # Límite inferior: solo si el usuario especificó una Fecha Origen (date_cutoff_start).
+            # Si no se envía nada, no se limita (permite traer años anteriores como 2025, 2024, etc.).
+            if date_cutoff_start and str(date_cutoff_start).strip():
+                domain.append(('date', '>=', str(date_cutoff_start).strip()))
         else:
             domain.append(('amount_residual', '!=', 0))
             if start_date:
@@ -466,6 +654,19 @@ class CollectionsService:
                 domain.append(('date', '<=', end_date))
             if not include_reconciled:
                 domain.append(('reconciled', '=', False))
+
+        # Excluir la cuenta contable 1239001 (Saldos iniciales - no forma parte de CxC activa)
+        domain.append(('account_id.code', '!=', '1239001'))
+
+        # Excluir diarios de pago / transacciones bancarias (PAPANT, BCP, IBK, PTRP, SCTK, PSCT, BBVA, DAP)
+        # pero PERMITIRLOS si corresponden a la cuenta de anticipos 122* (representan anticipos libres de clientes).
+        payment_prefixes = ['PAPANT%', 'BCP%', 'IBK%', 'PTRP%', 'SCTK%', 'PSCT%', 'BBVA%', 'DAP%']
+        for prefix in payment_prefixes:
+            domain.extend([
+                '|',
+                ('account_id.code', '=like', '122%'),
+                ('move_id.name', 'not ilike', prefix)
+            ])
         if customer:
             domain.append(('partner_id.name', 'ilike', customer))
         if sales_channel_id:
@@ -474,6 +675,15 @@ class CollectionsService:
                 domain.append(('move_id.l10n_latam_document_type_id', '=', doc_type_id))
         elif doc_type_id:
             domain.append(('move_id.l10n_latam_document_type_id', '=', doc_type_id))
+
+        if doc_number and str(doc_number).strip():
+            q = str(doc_number).strip()
+            # Busca por número de factura/documento O por número de letra (BOE)
+            domain.extend([
+                '|',
+                ('move_id.name', 'ilike', q),
+                ('move_id.l10n_latam_boe_number', 'ilike', q),
+            ])
 
         return domain
     
@@ -520,11 +730,15 @@ class CollectionsService:
     
     def get_report_lines(self, start_date=None, end_date=None, customer=None, limit=0,
                          account_codes=None, sales_channel_id=None, doc_type_id=None,
-                         sub_channel=None,
-                         cutoff_date=None, include_reconciled=False):
+                         sub_channel=None, date_cutoff_start=None, payment_method=None,
+                         cutoff_date=None, include_reconciled=False, doc_number=None):
         """
         Obtener líneas de reporte de CxC siguiendo la cadena de relaciones.
-        
+
+        Aplica regla de negocio contable por cuenta:
+        - Cuenta 1212*: Colapsa cuotas en UNA línea por factura (monto unificado).
+        - Cuenta 123*:  Mantiene línea individual por letra (ya desglosado en origen).
+
         Args:
             start_date (str): Fecha inicial
             end_date (str): Fecha final
@@ -534,7 +748,8 @@ class CollectionsService:
             sales_channel_id (int): ID del canal de ventas
             doc_type_id (int): ID del tipo de documento
             sub_channel (str): Sub canal
-        
+            doc_number (str): Nro de documento/comprobante para búsqueda exacta
+
         Returns:
             list: Líneas de reporte CxC
         """
@@ -553,10 +768,12 @@ class CollectionsService:
                 sales_channel_id=sales_channel_id,
                 doc_type_id=doc_type_id,
                 sub_channel=sub_channel,
+                date_cutoff_start=date_cutoff_start,
                 cutoff_date=cutoff_date,
-                include_reconciled=include_reconciled
+                include_reconciled=include_reconciled,
+                doc_number=doc_number,
             )
-            
+
             # Campos a extraer
             line_fields = [
                 'id', 'move_id', 'partner_id', 'account_id', 'name', 'date',
@@ -598,11 +815,39 @@ class CollectionsService:
                     'ref', 'invoice_payment_term_id', 'invoice_user_id',
                     'sales_channel_id', 'sale_type_id', 'team_id',
                     'bill_form_invoices_order_sales_line_commercial_zone_id',
+                    'order_id',
                 ]
                 moves = self._read_in_batches('account.move', move_ids, move_fields, batch_size=300)
                 move_map = {m['id']: m for m in moves}
 
             trace_invoice_map = self._build_trace_invoice_map(move_map)
+
+            # Construir mapa de órdenes de venta para obtener sub_channel_id (move_id/order_id/sub_channel_id)
+            order_map = {}
+            order_ids_set = set()
+            for m in move_map.values():
+                oid = m.get('order_id')
+                if isinstance(oid, list) and oid and oid[0]:
+                    order_ids_set.add(oid[0])
+            if order_ids_set:
+                try:
+                    orders = self._read_in_batches('sale.order', list(order_ids_set), ['id', 'sub_channel_id', 'tag_ids'], batch_size=300)
+                    order_map = {o['id']: o for o in orders}
+                except Exception as e:
+                    print(f"[WARN] No se pudo obtener sale.order para sub_channel_id: {e}")
+
+            # Mapa de etiquetas (tag_ids → nombre) para método de pago
+            tag_map = {}
+            try:
+                all_tag_ids = set()
+                for o in order_map.values():
+                    for tid in (o.get('tag_ids') or []):
+                        all_tag_ids.add(tid)
+                if all_tag_ids:
+                    tags = self.repository.read('crm.tag', list(all_tag_ids), ['id', 'name'])
+                    tag_map = {t['id']: t.get('name', '') for t in tags}
+            except Exception as e:
+                print(f"[WARN] No se pudo obtener nombres de etiquetas (crm.tag): {e}")
 
             if partner_ids:
                 partner_fields = [
@@ -673,10 +918,19 @@ class CollectionsService:
                 account_id = line['account_id'][0] if line.get('account_id') else None
                 
                 move = move_map.get(move_id, {})
-                source_move_base = trace_invoice_map.get(move_id, {})
                 partner = partner_map.get(partner_id, {})
                 account = account_map.get(account_id, {})
                 credit = credit_map.get(partner_id, {})
+
+                # Excluir asientos de pago (PAPANT, BCP, IBK, PTRP, SCTK, PSCT, BBVA, DAP)
+                # EXCEPTO si es una cuenta de anticipos (122*), ya que representan abonos libres / dinero a favor de clientes.
+                account_code = str(account.get('code') or '')
+                move_name = str(move.get('name') or '').upper()
+                if not account_code.startswith('122'):
+                    if any(p in move_name for p in ['PAPANT', 'BCP', 'IBK', 'PTRP', 'SCTK', 'PSCT', 'BBVA', 'DAP']):
+                        continue
+
+                source_move_base = trace_invoice_map.get(move_id, {})
 
                 account_code = str(account.get('code') or '')
                 is_letters_account = account_code.startswith('123')
@@ -684,10 +938,15 @@ class CollectionsService:
                 if is_letters_account and source_move_base:
                     source_move = source_move_base
                 
-                # Determinar Sub Canal
-                sub_channel_raw = m2o_name(credit.get('sub_channel_id'))
+                # Determinar Sub Canal desde move_id/order_id/sub_channel_id
+                order_id_val = move.get('order_id') or source_move.get('order_id')
+                if isinstance(order_id_val, list) and order_id_val and order_id_val[0]:
+                    order = order_map.get(order_id_val[0], {})
+                    sub_channel_raw = m2o_name(order.get('sub_channel_id'))
+                else:
+                    sub_channel_raw = ''
                 country_code = partner.get('country_code', '')
-                
+
                 if not sub_channel_raw or sub_channel_raw == 'N/A' or sub_channel_raw.strip() == '':
                     if country_code == 'PE':
                         sub_channel_final = 'NACIONAL'
@@ -702,13 +961,29 @@ class CollectionsService:
                     if sub_channel_final.strip().upper() != str(sub_channel).strip().upper():
                         continue
 
+                # Determinar Método de Pago desde sale.order.tag_ids
+                order_for_tags = order_map.get(order_id_val[0], {}) if isinstance(order_id_val, list) and order_id_val else {}
+                order_tag_ids = order_for_tags.get('tag_ids') or []
+                payment_method_display = ', '.join(
+                    tag_map[tid] for tid in order_tag_ids if tid in tag_map
+                )
+
+                # Filtro post-proceso por método de pago (ID de crm.tag)
+                if payment_method and str(payment_method).strip():
+                    try:
+                        pm_id = int(payment_method)
+                        if pm_id not in order_tag_ids:
+                            continue
+                    except (ValueError, TypeError):
+                        pass
+
                 # Determinar grupos del partner
                 partner_groups_display = partner_groups_map.get(partner_id, '')
-                
+
                 # Calcular días de vencimiento
                 date_maturity = line.get('date_maturity', '')
                 dias_vencido = calcular_dias_vencido(date_maturity, today) if date_maturity else 0
-                
+
                 # Clasificar antigüedad
                 antiguedad = clasificar_antiguedad(max(0, dias_vencido))
                 
@@ -723,16 +998,35 @@ class CollectionsService:
 
                 current_residual = abs(line.get('amount_residual', 0.0) or 0.0)
                 amount_residual_historical = current_residual
+                estado_historico = ''
                 if cutoff_date:
+                    # Reconstruir saldo al corte: residual actual + lo que se pagó DESPUÉS del corte
                     amount_residual_historical = current_residual + paid_after_cutoff
-                    if reconcile_date and reconcile_date <= cutoff_date and include_reconciled:
+                    # Forzar cero cuando está completamente conciliado antes/en el corte
+                    if reconcile_date and reconcile_date <= cutoff_date and amount_residual_historical <= 0:
                         amount_residual_historical = 0.0
-                    
-                    if not include_reconciled and amount_residual_historical <= 0:
+
+                    estado_historico = 'PAGADA' if amount_residual_historical <= 0 else 'NO PAGADA'
+
+                    # Regla de Corte Histórico explícita:
+                    #   fecha_emision <= fecha_corte  AND
+                    #   (fecha_pago IS NULL  OR  fecha_pago > fecha_corte)
+                    fecha_emision_linea = line.get('date') or move.get('invoice_date') or ''
+                    if not self._aplica_corte_historico(
+                        fecha_emision=fecha_emision_linea,
+                        fecha_pago=reconcile_date,
+                        amount_residual_historical=amount_residual_historical,
+                        cutoff_date=cutoff_date,
+                        include_reconciled=include_reconciled,
+                    ):
                         continue
                 
                 row = {
                     'payment_state': move.get('payment_state', ''),
+                    'move_id/payment_state': move.get('payment_state', ''),
+                    'payment_state_display': PAYMENT_STATE_LABELS_ES.get(
+                        move.get('payment_state', ''), move.get('payment_state', '')
+                    ),
                     'parent_state': line.get('parent_state', ''),
                     'move_id/parent_state': line.get('parent_state', ''),
                     'move_id/state': DOCUMENT_STATE_LABELS_ES.get(move.get('state'), move.get('state') or ''),
@@ -855,15 +1149,21 @@ class CollectionsService:
                     'agr.credit.customer/partner_groups_ids': partner_groups_display,
                     'sub_channel_id': sub_channel_final,
                     'agr.credit.customer/sub_channel_id': sub_channel_final,
+                    'payment_method': payment_method_display,
+                    'move_id/order_id/tag_ids': payment_method_display,
                     # Campos calculados
                     'dias_vencido': dias_vencido,
                     'estado_deuda': estado_deuda,
+                    'estado_historico': estado_historico,
                     'antiguedad': antiguedad,
                     'reconciliation_date': reconcile_date,
                 }
-                
+
                 rows.append(row)
-            
+
+            # Regla de negocio contable: 1212 → colapsar cuotas; 123 → mantener individual
+            rows = self._collapse_1212_lines(rows, today)
+
             print(f"[OK] Procesadas {len(rows)} líneas de CxC con TODOS los campos")
             return rows
             
@@ -907,9 +1207,11 @@ class CollectionsService:
             sales_channel_id = kwargs.get('sales_channel_id')
             doc_type_id = kwargs.get('doc_type_id')
             sub_channel = kwargs.get('sub_channel')
+            date_cutoff_start = kwargs.get('date_cutoff_start')
+            payment_method = kwargs.get('payment_method')
             cutoff_date = kwargs.get('cutoff_date')
             include_reconciled = kwargs.get('include_reconciled', False)
-            
+
             # Construir domain usando el método auxiliar (ahora incluye filtro inteligente)
             line_domain = self._build_report_domain(
                 start_date=start_date,
@@ -919,6 +1221,7 @@ class CollectionsService:
                 sales_channel_id=sales_channel_id,
                 doc_type_id=doc_type_id,
                 sub_channel=sub_channel,
+                date_cutoff_start=date_cutoff_start,
                 cutoff_date=cutoff_date,
                 include_reconciled=include_reconciled
             )
@@ -986,11 +1289,39 @@ class CollectionsService:
                     'l10n_latam_boe_number', 'ref', 'invoice_payment_term_id', 'invoice_user_id',
                     'sales_channel_id', 'sale_type_id', 'team_id',
                     'bill_form_invoices_order_sales_line_commercial_zone_id',
+                    'order_id',
                 ]
                 moves = self._read_in_batches('account.move', move_ids, move_fields, batch_size=300)
                 move_map = {m['id']: m for m in moves}
 
             trace_invoice_map = self._build_trace_invoice_map(move_map)
+
+            # Construir mapa de órdenes de venta para obtener sub_channel_id (move_id/order_id/sub_channel_id)
+            order_map = {}
+            order_ids_set = set()
+            for m in move_map.values():
+                oid = m.get('order_id')
+                if isinstance(oid, list) and oid and oid[0]:
+                    order_ids_set.add(oid[0])
+            if order_ids_set:
+                try:
+                    orders = self._read_in_batches('sale.order', list(order_ids_set), ['id', 'sub_channel_id', 'tag_ids'], batch_size=300)
+                    order_map = {o['id']: o for o in orders}
+                except Exception as e:
+                    print(f"[WARN] No se pudo obtener sale.order para sub_channel_id: {e}")
+
+            # Mapa de etiquetas (tag_ids → nombre) para método de pago
+            tag_map = {}
+            try:
+                all_tag_ids = set()
+                for o in order_map.values():
+                    for tid in (o.get('tag_ids') or []):
+                        all_tag_ids.add(tid)
+                if all_tag_ids:
+                    tags = self.repository.read('crm.tag', list(all_tag_ids), ['id', 'name'])
+                    tag_map = {t['id']: t.get('name', '') for t in tags}
+            except Exception as e:
+                print(f"[WARN] No se pudo obtener nombres de etiquetas (crm.tag): {e}")
 
             if partner_ids:
                 partner_fields = [
@@ -1064,10 +1395,19 @@ class CollectionsService:
                 account_id = line['account_id'][0] if line.get('account_id') else None
                 
                 move = move_map.get(move_id, {})
-                source_move_base = trace_invoice_map.get(move_id, {})
                 partner = partner_map.get(partner_id, {})
                 account = account_map.get(account_id, {})
                 credit = credit_map.get(partner_id, {})
+
+                # Excluir asientos de pago (PAPANT, BCP, IBK, PTRP, SCTK, PSCT, BBVA, DAP)
+                # EXCEPTO si es una cuenta de anticipos (122*), ya que representan abonos libres / dinero a favor de clientes.
+                account_code = str(account.get('code') or '')
+                move_name = str(move.get('name') or '').upper()
+                if not account_code.startswith('122'):
+                    if any(p in move_name for p in ['PAPANT', 'BCP', 'IBK', 'PTRP', 'SCTK', 'PSCT', 'BBVA', 'DAP']):
+                        continue
+
+                source_move_base = trace_invoice_map.get(move_id, {})
 
                 account_code = str(account.get('code') or '')
                 is_letters_account = account_code.startswith('123')
@@ -1075,10 +1415,15 @@ class CollectionsService:
                 if is_letters_account and source_move_base:
                     source_move = source_move_base
                 
-                # Determinar Sub Canal
-                sub_channel_raw = m2o_name(credit.get('sub_channel_id'))
+                # Determinar Sub Canal desde move_id/order_id/sub_channel_id
+                order_id_val = move.get('order_id') or source_move.get('order_id')
+                if isinstance(order_id_val, list) and order_id_val and order_id_val[0]:
+                    order = order_map.get(order_id_val[0], {})
+                    sub_channel_raw = m2o_name(order.get('sub_channel_id'))
+                else:
+                    sub_channel_raw = ''
                 country_code = partner.get('country_code', '')
-                
+
                 if not sub_channel_raw or sub_channel_raw == 'N/A' or sub_channel_raw.strip() == '':
                     if country_code == 'PE':
                         sub_channel_final = 'NACIONAL'
@@ -1092,16 +1437,32 @@ class CollectionsService:
                 if sub_channel and str(sub_channel).strip():
                     if sub_channel_final.strip().upper() != str(sub_channel).strip().upper():
                         continue
-                
+
+                # Determinar Método de Pago desde sale.order.tag_ids
+                order_for_tags = order_map.get(order_id_val[0], {}) if isinstance(order_id_val, list) and order_id_val else {}
+                order_tag_ids = order_for_tags.get('tag_ids') or []
+                payment_method_display = ', '.join(
+                    tag_map[tid] for tid in order_tag_ids if tid in tag_map
+                )
+
+                # Filtro post-proceso por método de pago (ID de crm.tag)
+                if payment_method and str(payment_method).strip():
+                    try:
+                        pm_id = int(payment_method)
+                        if pm_id not in order_tag_ids:
+                            continue
+                    except (ValueError, TypeError):
+                        pass
+
                 partner_groups_display = partner_groups_map.get(partner_id, '')
-                
+
                 # Calcular días de vencimiento
                 date_maturity = line.get('date_maturity', '')
                 dias_vencido = calcular_dias_vencido(date_maturity, today) if date_maturity else 0
-                
+
                 # Clasificar antigüedad
                 antiguedad = clasificar_antiguedad(max(0, dias_vencido))
-                
+
                 # Estado de deuda
                 estado_deuda = 'VENCIDO' if dias_vencido > 0 else 'VIGENTE'
 
@@ -1112,16 +1473,35 @@ class CollectionsService:
 
                 current_residual = abs(line.get('amount_residual', 0.0) or 0.0)
                 amount_residual_historical = current_residual
+                estado_historico = ''
                 if cutoff_date:
+                    # Reconstruir saldo al corte: residual actual + lo que se pagó DESPUÉS del corte
                     amount_residual_historical = current_residual + paid_after_cutoff
-                    if reconcile_date and reconcile_date <= cutoff_date and include_reconciled:
+                    # Forzar cero cuando está completamente conciliado antes/en el corte
+                    if reconcile_date and reconcile_date <= cutoff_date and amount_residual_historical <= 0:
                         amount_residual_historical = 0.0
-                    
-                    if not include_reconciled and amount_residual_historical <= 0:
+
+                    estado_historico = 'PAGADA' if amount_residual_historical <= 0 else 'NO PAGADA'
+
+                    # Regla de Corte Histórico explícita:
+                    #   fecha_emision <= fecha_corte  AND
+                    #   (fecha_pago IS NULL  OR  fecha_pago > fecha_corte)
+                    fecha_emision_linea = line.get('date') or move.get('invoice_date') or ''
+                    if not self._aplica_corte_historico(
+                        fecha_emision=fecha_emision_linea,
+                        fecha_pago=reconcile_date,
+                        amount_residual_historical=amount_residual_historical,
+                        cutoff_date=cutoff_date,
+                        include_reconciled=include_reconciled,
+                    ):
                         continue
                 
                 row = {
                     'payment_state': move.get('payment_state', ''),
+                    'move_id/payment_state': move.get('payment_state', ''),
+                    'payment_state_display': PAYMENT_STATE_LABELS_ES.get(
+                        move.get('payment_state', ''), move.get('payment_state', '')
+                    ),
                     'parent_state': line.get('parent_state', ''),
                     'move_id/parent_state': line.get('parent_state', ''),
                     'move_id/state': DOCUMENT_STATE_LABELS_ES.get(move.get('state'), move.get('state') or ''),
@@ -1254,14 +1634,17 @@ class CollectionsService:
                     'agr.credit.customer/partner_groups_ids': partner_groups_display,
                     'sub_channel_id': sub_channel_final,
                     'agr.credit.customer/sub_channel_id': sub_channel_final,
+                    'payment_method': payment_method_display,
+                    'move_id/order_id/tag_ids': payment_method_display,
                     'dias_vencido': dias_vencido,
                     'estado_deuda': estado_deuda,
+                    'estado_historico': estado_historico,
                     'antiguedad': antiguedad,
                     'reconciliation_date': reconcile_date,
                 }
-                
+
                 rows.append(row)
-            
+
             # 5. Calcular metadatos de paginación
             total_pages = (total_count + per_page - 1) // per_page
             has_more = page < total_pages
@@ -1643,6 +2026,18 @@ class CollectionsService:
                 partner_id = line['partner_id'][0] if line.get('partner_id') else None
                 
                 move = move_map.get(move_id, {})
+                # Excluir asientos de pago (PAPANT, BCP, IBK, PTRP, SCTK, PSCT, BBVA, DAP)
+                # EXCEPTO si es una cuenta de anticipos (122*), ya que representan abonos libres / dinero a favor de clientes.
+                account_id_val = line.get('account_id')
+                account_code = ''
+                if isinstance(account_id_val, list) and len(account_id_val) >= 2:
+                    account_code = str(account_id_val[1]).split(' ')[0]
+
+                move_name = str(move.get('name') or '').upper()
+                if not account_code.startswith('122'):
+                    if any(p in move_name for p in ['PAPANT', 'BCP', 'IBK', 'PTRP', 'SCTK', 'PSCT', 'BBVA', 'DAP']):
+                        continue
+
                 partner = partner_map.get(partner_id, {})
                 
                 # Crear estructura de línea temporal para filtro

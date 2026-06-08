@@ -43,6 +43,9 @@ def report_account12():
         sales_channel_id = request.args.get('sales_channel_id', type=int)
         doc_type_id = request.args.get('doc_type_id', type=int)
         cutoff_date = request.args.get('date_cutoff')
+        date_cutoff_start = request.args.get('date_cutoff_start')
+        payment_method = request.args.get('payment_method')
+        doc_number = request.args.get('doc_number')
         include_reconciled = request.args.get('include_reconciled') == 'true'
         summary_only = request.args.get('summary_only') == 'true'
         if cutoff_date:
@@ -88,57 +91,26 @@ def report_account12():
                     'message': 'Resumen optimizado generado exitosamente'
                 }), 200
         
-        # Obtener datos (método tradicional si es necesario)
-        # Caso especial de performance + consistencia:
-        # si hay sub_canal y limit de preview, ejecutamos una sola corrida completa
-        # para evitar doble llamada pesada y para que "count" y "data" sean coherentes.
-        full_filtered_rows = None
-        if sub_channel and limit and limit > 0:
-            full_filtered_rows = collections_service.get_report_lines(
-                start_date=date_from,
-                end_date=date_to,
-                customer=customer,
-                limit=0,
-                sub_channel=sub_channel,
-                account_codes=account_codes,
-                sales_channel_id=sales_channel_id,
-                doc_type_id=doc_type_id,
-                cutoff_date=cutoff_date,
-                include_reconciled=include_reconciled
-            )
-            total_count = len(full_filtered_rows)
-            data = full_filtered_rows[:limit]
-        else:
-            data = collections_service.get_report_lines(
-                start_date=date_from,
-                end_date=date_to,
-                customer=customer,
-                limit=limit,
-                sub_channel=sub_channel,
-                account_codes=account_codes,
-                sales_channel_id=sales_channel_id,
-                doc_type_id=doc_type_id,
-                cutoff_date=cutoff_date,
-                include_reconciled=include_reconciled
-            )
-            # Calcular total de registros post-filtros (sin afectar el límite de visualización)
-            total_count = len(data)
-            try:
-                base_domain = collections_service._build_report_domain(
-                    start_date=date_from,
-                    end_date=date_to,
-                    customer=customer,
-                    account_codes=account_codes,
-                    sales_channel_id=sales_channel_id,
-                    doc_type_id=doc_type_id,
-                    sub_channel=sub_channel,
-                    cutoff_date=cutoff_date,
-                    include_reconciled=include_reconciled
-                )
-                total_count = collections_service.repository.search_count('account.move.line', base_domain)
-            except Exception:
-                # Fallback al tamaño del preview en caso de error puntual de conteo.
-                total_count = len(data)
+        # Obtener todas las líneas de reporte CxC (limit=0 para traer la totalidad del set filtrado)
+        # Esto garantiza consistencia absoluta de los KPIs y totales (Débito, Haber, Saldo) en el resumen,
+        # así como un conteo 100% exacto de registros reales.
+        full_filtered_rows = collections_service.get_report_lines(
+            start_date=date_from,
+            end_date=date_to,
+            customer=customer,
+            limit=0, # Traer todo para resumir y contar con exactitud matemática
+            sub_channel=sub_channel,
+            account_codes=account_codes,
+            sales_channel_id=sales_channel_id,
+            doc_type_id=doc_type_id,
+            cutoff_date=cutoff_date,
+            date_cutoff_start=date_cutoff_start,
+            payment_method=payment_method,
+            include_reconciled=include_reconciled,
+            doc_number=doc_number,
+        )
+        total_count = len(full_filtered_rows)
+        data = full_filtered_rows[:limit] if limit and limit > 0 else full_filtered_rows
 
         def _summarize(rows):
             overall = {
@@ -224,6 +196,9 @@ def report_account12():
             'sales_channel_id': sales_channel_id,
             'doc_type_id': doc_type_id,
             'date_cutoff': cutoff_date,
+            'date_cutoff_start': date_cutoff_start,
+            'payment_method': payment_method,
+            'doc_number': doc_number,
             'include_reconciled': include_reconciled,
             'summary_only': summary_only,
             'limit': limit

@@ -64,12 +64,15 @@ export interface ReportParams {
   date_from?: string
   date_to?: string
   date_cutoff?: string
+  date_cutoff_start?: string
   customer?: string
   sub_channel?: string
+  payment_method?: string
   supplier?: string
   account_codes?: string
   sales_channel_id?: number
   doc_type_id?: number
+  doc_number?: string
   payment_state?: string
   include_reconciled?: boolean
   summary_only?: boolean
@@ -154,6 +157,7 @@ export interface FilterOptions {
   sales_channels: Array<{ id: number; name: string }>
   document_types: Array<{ id: number; name: string }>
   sub_channels: Array<{ value: string; name: string }>
+  payment_methods: Array<{ id: number; name: string }>
 }
 
 export interface EmailResult {

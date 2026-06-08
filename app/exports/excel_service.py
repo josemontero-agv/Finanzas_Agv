@@ -62,25 +62,26 @@ class ExcelExportService:
             (('patner_id', 'partner_name'), 'Cliente'),
             (('account_id/currency_id', 'currency_id'), 'Moneda'),
             (('account.move/amount_total', 'amount_total', 'amount_currency'), 'Monto Total'),
-            (('account.move/amount_residual', 'amount_residual_with_retention', 'amount_residual_historical'), 'Monto Residual'),
+            (('account.move/amount_residual', 'amount_residual_with_retention'), 'Monto Residual'),
             (('debit',), 'Débito'),
             (('credit',), 'Haber'),
-            (('amount_residual_historical',), 'Monto Residual al Corte'),
-            (('paid_after_cutoff',), 'Pagos Posteriores al Corte'),
             (('dias_vencido',), 'Días Vencido'),
             (('estado_deuda',), 'Estado'),
             (('antiguedad',), 'Antigüedad'),
             (('account.move/invoice_payment_term_id', 'invoice_payment_term_id'), 'Condición Pago'),
             (('account.move.line/name', 'name'), 'Descripción'),
             (('account.move/invoice_user_id', 'invoice_user_name', 'move_id/invoice_user_id'), 'Vendedor'),
+            (('payment_state_display', 'payment_state', 'move_id/payment_state'), 'Estado Pago'),
             (('move_id/state', 'state'), 'Estado Documento'),
             (('account.move/linea_comercial', 'linea_comercial', 'team_name'), 'Línea Comercial'),
             (('grupo_comercial', 'agr.credit.customer/partner_groups_ids', 'agr.credit.customer/patner_groups_ids', 'partner_groups'), 'Grupo Comercial'),
+            (('payment_method', 'move_id/order_id/tag_ids'), 'Método de Pago'),
             (('agr.credit.customer/sub_channel_id', 'sub_channel_id'), 'Sub Canal'),
             (('account.move/sales_channel_id', 'sales_channel_name', 'move_id/sales_channel_id'), 'Canal de Venta'),
             (('account.move/sale_type_id', 'account.move/sales_type_id', 'sales_type_name', 'move_id/sales_type_id'), 'Tipo de Venta'),
             (('patner_id/state_id', 'partner_state'), 'Provincia'),
             (('patner_id/country_id', 'partner_country_name'), 'País'),
+            (('estado_historico',), 'Estado al Corte'),
         ]
 
         def get_value(record, key_candidates):
@@ -153,7 +154,7 @@ class ExcelExportService:
                 numeric_keys = {
                     'amount_currency', 'amount_residual_with_retention', 'amount_residual_signed',
                     'amount_total', 'account.move/amount_total', 'account.move/amount_residual',
-                    'debit', 'credit', 'amount_residual_historical', 'paid_after_cutoff', 'dias_vencido'
+                    'debit', 'credit', 'dias_vencido'
                 }
                 if any(k in numeric_keys for k in key_candidates):
                     try:
@@ -176,7 +177,7 @@ class ExcelExportService:
                 if any(k in {
                     'amount_currency', 'amount_residual_with_retention', 'amount_residual_signed',
                     'amount_total', 'account.move/amount_total', 'account.move/amount_residual',
-                    'debit', 'credit', 'amount_residual_historical', 'paid_after_cutoff'
+                    'debit', 'credit'
                 } for k in key_candidates):
                     cell.number_format = '#,##0.00'
                     cell.alignment = Alignment(horizontal='right')
@@ -192,6 +193,15 @@ class ExcelExportService:
                         cell.fill = PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
                     else:
                         cell.fill = PatternFill(start_color="CCFFCC", end_color="CCFFCC", fill_type="solid")
+                elif 'estado_historico' in key_candidates:
+                    cell.alignment = Alignment(horizontal='center')
+                    # Verde = PAGADA al corte, Rojo = NO PAGADA al corte
+                    if value == 'PAGADA':
+                        cell.fill = PatternFill(start_color="CCFFCC", end_color="CCFFCC", fill_type="solid")
+                        cell.font = Font(color="006100", bold=True)
+                    elif value == 'NO PAGADA':
+                        cell.fill = PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
+                        cell.font = Font(color="9C0006", bold=True)
                 elif any(k in date_keys for k in key_candidates):
                     if value != '':
                         cell.number_format = 'DD/MM/YYYY'
@@ -200,9 +210,9 @@ class ExcelExportService:
         # Ajustar anchos de columna según contenido
         column_widths = {
             1: 18, 2: 18, 3: 16, 4: 14, 5: 18, 6: 16, 7: 12, 8: 12, 9: 28, 10: 14,
-            11: 28, 12: 10, 13: 16, 14: 16, 15: 12, 16: 12, 17: 18, 18: 18, 19: 12,
-            20: 12, 21: 14, 22: 22, 23: 32, 24: 24, 25: 24, 26: 24, 27: 16, 28: 20,
-            29: 20, 30: 20, 31: 18
+            11: 28, 12: 10, 13: 16, 14: 16, 15: 12, 16: 12, 17: 12, 18: 12, 19: 14,
+            20: 22, 21: 32, 22: 24, 23: 16, 24: 24, 25: 24, 26: 24, 27: 20, 28: 16,
+            29: 20, 30: 20, 31: 20, 32: 18, 33: 16,
         }
         
         for col_num, width in column_widths.items():
@@ -255,8 +265,6 @@ class ExcelExportService:
             ('amount_total_signed', 'Total S/.'),
             ('debit', 'Débito'),
             ('credit', 'Haber'),
-            ('amount_residual_historical', 'Monto Residual al Corte'),
-            ('paid_after_cutoff', 'Pagos Posteriores al Corte'),
             ('invoice_date_due', 'Fecha Vencimiento'),
             ('dias_vencido', 'Días Vencido'),
             ('estado_deuda', 'Estado'),
@@ -292,7 +300,7 @@ class ExcelExportService:
                     value = ''
                 
                 # Formatear valores numéricos
-                if key in ['amount_total_in_currency_signed', 'amount_residual_with_retention', 'amount_total_signed', 'debit', 'credit', 'amount_residual_historical', 'paid_after_cutoff', 'dias_vencido']:
+                if key in ['amount_total_in_currency_signed', 'amount_residual_with_retention', 'amount_total_signed', 'debit', 'credit', 'dias_vencido']:
                     try:
                         value = float(value) if value else 0
                         if key == 'dias_vencido':
@@ -304,7 +312,7 @@ class ExcelExportService:
                 cell.border = ExcelExportService.CELL_BORDER
                 
                 # Formato especial para números
-                if key in ['amount_total_in_currency_signed', 'amount_residual_with_retention', 'amount_total_signed', 'debit', 'credit', 'amount_residual_historical', 'paid_after_cutoff']:
+                if key in ['amount_total_in_currency_signed', 'amount_residual_with_retention', 'amount_total_signed', 'debit', 'credit']:
                     cell.number_format = '#,##0.00'
                     cell.alignment = Alignment(horizontal='right')
                 elif key == 'dias_vencido':
@@ -321,7 +329,7 @@ class ExcelExportService:
                         cell.fill = PatternFill(start_color="CCFFCC", end_color="CCFFCC", fill_type="solid")
         
         # Ajustar anchos de columna
-        column_widths = [12, 14, 14, 16, 14, 12, 10, 25, 14, 30, 12, 18, 18, 18, 16, 25, 10, 18, 18, 18, 14, 12, 12, 20, 18, 14, 14, 20, 30]
+        column_widths = [12, 14, 14, 16, 14, 12, 10, 25, 14, 30, 12, 18, 18, 18, 16, 25, 10, 18, 18, 18, 14, 20, 18, 14, 14, 20, 30]
         for col, width in enumerate(column_widths, 1):
             ws.column_dimensions[get_column_letter(col)].width = width
         
