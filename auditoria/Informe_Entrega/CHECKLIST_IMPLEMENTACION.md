@@ -1,715 +1,397 @@
 # ✅ CHECKLIST DE REMEDIACIÓN - FINANZAS AGV
 ## Plan de Implementación para Development Team
 
-**Versión:** 1.0  
-**Fecha:** 26 Mayo 2026  
-**Sprint:** 4 semanas  
-**Equipo:** 2-3 Developers + 1 Security Lead  
+**Versión:** 2.0 (Actualización Mensual)  
+**Fecha original:** 26 Mayo 2026  
+**Fecha actualización:** 25 Junio 2026  
+**Estado general:** 🔴 CRÍTICO — 0/6 items críticos completados tras 30 días  
+**Próxima revisión:** 25 Julio 2026
 
 ---
 
-## 🔴 SEMANA 1: VULNERABILIDADES CRÍTICAS
+## 📊 Estado de Implementación — Resumen Ejecutivo
 
-### ✅ TASK 1.1: Implementar JWT Real (Token Validation)
+| Categoría | Items | Completados | Pendientes | Estado |
+|-----------|-------|-------------|------------|--------|
+| 🔴 CRÍTICOS | 6 | 0 | 6 | ❌ Sin avance |
+| 🔴 ALTOS | 6 | 0 | 6 | ❌ Sin avance |
+| 🟡 MEDIOS | 8 | 0 | 8 | ❌ Sin avance |
+| 🟢 BAJOS | 5 | 0 | 5 | ❌ Sin avance |
+| ✅ MEJORAS ARQUITECTÓNICAS | 6 | 6 | 0 | ✅ Completado |
+| 🚨 NUEVOS (Junio 2026) | 4 | 0 | 4 | ❌ Pendiente |
+| **TOTAL SEGURIDAD** | **25** | **0** | **25** | **0% completado** |
+
+---
+
+## 🔴 SEMANA 1: VULNERABILIDADES CRÍTICAS (30+ DÍAS PENDIENTES)
+
+### ❌ TASK 1.0: NUEVO — Eliminar Auth Bypass en OdooRepository
+**Prioridad:** 🔴 CRÍTICA (Introducida en Junio 2026)  
+**Esfuerzo:** 30 minutos  
+**Responsable:** Backend Developer  
+**Status:** ❌ Pendiente (nueva vulnerabilidad detectada en auditoría Junio)
+
+**Problema detectado:**
+El método `authenticate_user()` en `app/core/odoo.py` tiene un fallback inseguro que permite autenticarse con las credenciales del servicio si Odoo no está disponible.
+
+**Checklist:**
+- [ ] Abrir `app/core/odoo.py`
+- [ ] Localizar `authenticate_user()` — línea ~118
+- [ ] Eliminar el bloque `except` que hace fallback con `self.username/self.password`
+- [ ] Reemplazar con fail-safe (retornar `False` si Odoo no disponible)
+- [ ] Añadir logging estructurado en lugar de `print()`
+
+```python
+# CÓDIGO A REEMPLAZAR (app/core/odoo.py:L145-150)
+# ELIMINAR ESTO:
+except Exception as exc:
+    print(f"[ERROR] Error en autenticación contra Odoo: {exc}")
+    if username == self.username and password == self.password:
+        print("[OK] Autenticación exitosa usando credenciales del repositorio")
+        return True
+    return False
+
+# REEMPLAZAR CON:
+except Exception as exc:
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.error("Error de conexión a Odoo durante autenticación: tipo=%s", type(exc).__name__)
+    return False  # fail-safe: sin autenticación si Odoo no disponible
+```
+
+---
+
+### ❌ TASK 1.1: Implementar JWT Real (Token Validation)
 **Prioridad:** 🔴 CRÍTICA  
 **Esfuerzo:** 4 horas  
 **Responsable:** Backend Lead  
-**Status:** ⬜ Not Started
+**Status:** ❌ Sin iniciar — **MÁS DE 30 DÍAS PENDIENTE**
+
+**Evidencia de no resolución:** `app/auth/routes.py:L96` — `'token': 'dummy_token_12345'` sin cambios.
 
 **Checklist:**
 - [ ] Instalar Flask-JWT-Extended
   ```bash
-  pip install Flask-JWT-Extended==4.5.3
-  pip freeze > requirements.txt
+  pip install Flask-JWT-Extended==4.7.1
+  # Anclar en requirements.txt como: Flask-JWT-Extended==4.7.1
   ```
-- [ ] Configurar JWT en app/__init__.py
+- [ ] Configurar JWT en `app/__init__.py`
   ```python
   from flask_jwt_extended import JWTManager
   jwt = JWTManager()
   app.config['JWT_SECRET_KEY'] = app.config['SECRET_KEY']
-  app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
+  app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=8)
   jwt.init_app(app)
   ```
-- [ ] Actualizar auth/routes.py - endpoint /login
-  - [ ] Generar access_token con create_access_token()
-  - [ ] Incluir claims: email, role, permissions
-  - [ ] Devolver en respuesta JSON
-  
-- [ ] Crear endpoint /refresh para renovar token
-  - [ ] Usar refresh_token
-  - [ ] Devolver nuevo access_token
-  
-- [ ] Crear endpoint /verify para validar token
-  - [ ] Proteger con @jwt_required()
-  - [ ] Devolver claims del usuario
-  
-- [ ] Actualizar auth/security.py
-  - [ ] Crear require_jwt_login() decorator
-  - [ ] Usar @jwt_required() en lugar de session
-  
-- [ ] Actualizar todos los endpoints API
-  - [ ] collections/routes.py: Cambiar require_login a require_jwt_login
-  - [ ] treasury/routes.py: Aplicar mismo cambio
-  - [ ] letters/routes.py: Aplicar mismo cambio
-  - [ ] exports/routes.py: Aplicar mismo cambio
-  
-- [ ] Actualizar frontend Axios (frontend/lib/api.ts)
-  - [ ] Agregar interceptor para incluir token en headers
-  - [ ] Implementar refresh token en 401
-  
-- [ ] Testing
-  - [ ] Probar login y obtener token
-  - [ ] Probar acceso a endpoint con token válido
-  - [ ] Probar rechazo con token inválido
-  - [ ] Probar refresh token
-  - [ ] Verificar expiración en 1 hora
-  
-**Código de Referencia:**
-Ver INFORME_AUDITORIA_COMPLETA_2026-05-26.md → V3 (Token Dummy)
-
-**PR Review Checklist:**
-- [ ] Todos los endpoints usan @jwt_required()
-- [ ] No hay hardcoded tokens
-- [ ] JWT incluye role y permissions
-- [ ] Frontend maneja token refresh
-- [ ] Errores 401 redirigen a /login
+- [ ] Actualizar `app/auth/routes.py` — endpoint `/login`
+  - [ ] Consultar grupos/roles del usuario en Odoo durante el login
+  - [ ] Generar `access_token = create_access_token(identity=username, additional_claims={'email': user_email, 'roles': roles})`
+  - [ ] Devolver `access_token` en lugar de `'dummy_token_12345'`
+- [ ] Actualizar `app/auth/security.py`
+  - [ ] Reemplazar `require_login` con `@jwt_required()` de Flask-JWT-Extended
+  - [ ] Crear `get_current_user()` wrapper
+- [ ] Actualizar todos los endpoints que usan `@require_login`
+- [ ] Probar con pytest
 
 ---
 
-### ✅ TASK 1.2: Generar SECRET_KEY Fuerte
+### ❌ TASK 1.2: DEBUG=False en Producción
 **Prioridad:** 🔴 CRÍTICA  
+**Esfuerzo:** 15 minutos  
+**Responsable:** Backend Developer (cualquiera)  
+**Status:** ❌ Sin iniciar — **MÁS DE 30 DÍAS PENDIENTE**
+
+**Checklist:**
+- [ ] Editar `config.py:L188`
+  ```python
+  class ProductionConfig(Config):
+      DEBUG = False  # ← cambiar de True a False
+  ```
+- [ ] Editar `run.py:L66`
+  ```python
+  elif environment == 'production':
+      app.run(host='0.0.0.0', port=5000, debug=False)  # ← False
+  ```
+- [ ] Verificar con `python run.py production` que NO muestra el debugger de Werkzeug
+
+---
+
+### ❌ TASK 1.3: Implementar Rate Limiting en /login
+**Prioridad:** 🔴 ALTA  
 **Esfuerzo:** 1 hora  
-**Responsable:** DevOps / Backend Lead  
-**Status:** ⬜ Not Started
+**Responsable:** Backend Developer  
+**Status:** ❌ Sin iniciar — **MÁS DE 30 DÍAS PENDIENTE**
 
 **Checklist:**
-- [ ] Generar nueva SECRET_KEY
+- [ ] Instalar Flask-Limiter
   ```bash
-  python -c "import secrets; print('SECRET_KEY=' + secrets.token_hex(32))"
+  pip install Flask-Limiter==3.9.0
   ```
-- [ ] Agregar a .env (NO COMMITEAR)
-  ```bash
-  echo "SECRET_KEY=<generated-key>" >> .env
-  ```
-- [ ] Validar en config.py que exista
+- [ ] Configurar en `app/__init__.py`
   ```python
-  def get_secret_key():
-      key = os.getenv('SECRET_KEY')
-      if not key or len(key) < 32:
-          raise ValueError("SECRET_KEY no configurada o débil")
-      return key
+  from flask_limiter import Limiter
+  from flask_limiter.util import get_remote_address
+  limiter = Limiter(app=app, key_func=get_remote_address, default_limits=["500/day"])
   ```
-- [ ] Testing
-  - [ ] Verificar que config.py carga sin error
-  - [ ] Verificar que sesiones funcionan
-  - [ ] Verificar que JWT se valida correctamente
+- [ ] Aplicar límite en `app/auth/routes.py`
+  ```python
+  from app import limiter
   
-**Documentar:**
-- [ ] Guardar SECRET_KEY en AWS Secrets Manager
-- [ ] Documentar en .env.example (sin valor real)
-
----
-
-### ✅ TASK 1.3: Mover Credenciales de Odoo a Secrets Manager
-**Prioridad:** 🔴 CRÍTICA  
-**Esfuerzo:** 8 horas  
-**Responsable:** DevOps Lead + Backend Dev  
-**Status:** ⬜ Not Started
-
-**Subtasks:**
-
-#### 1.3.1: Crear Secretos en AWS Secrets Manager
-- [ ] Acceder a AWS Console
-- [ ] Crear secreto: `prod/finanzas-agv/odoo`
-  ```json
-  {
-    "url": "https://odoo.prod.com",
-    "db": "production_db",
-    "username": "api_user",
-    "password": "<strong-password>"
-  }
-  ```
-- [ ] Configurar rotación automática (30 días)
-- [ ] Permitir acceso desde ECS/Lambda/EC2
-
-#### 1.3.2: Implementar SecretsManager en Backend
-- [ ] Crear core/secrets.py
-  ```python
-  import boto3, json, logging
-  
-  class SecretsManager:
-      def __init__(self):
-          self.client = boto3.client('secretsmanager')
-          self.cache = {}
-      
-      def get_secret(self, secret_name):
-          if secret_name in self.cache:
-              return self.cache[secret_name]
-          response = self.client.get_secret_value(SecretId=secret_name)
-          secret = json.loads(response['SecretString'])
-          self.cache[secret_name] = secret
-          return secret
-  ```
-  
-- [ ] Actualizar config.py (ProductionConfig)
-  ```python
-  class ProductionConfig:
-      def __init__(self):
-          sm = SecretsManager()
-          creds = sm.get_secret('prod/finanzas-agv/odoo')
-          self.ODOO_URL = creds['url']
-          self.ODOO_DB = creds['db']
-          self.ODOO_USER = creds['username']
-          self.ODOO_PASSWORD = creds['password']
-  ```
-
-#### 1.3.3: Testing
-- [ ] Probar conexión a AWS Secrets Manager
-- [ ] Probar carga de credenciales
-- [ ] Probar conexión a Odoo con credenciales del secreto
-- [ ] Verificar que no hay credenciales en logs
-
-#### 1.3.4: CI/CD
-- [ ] Agregar política IAM para ECS task role
-- [ ] Documentar en terraform/secrets.tf
-- [ ] Validar en staging antes de prod
-
----
-
-### ✅ TASK 1.4: Implementar CSRF Protection
-**Prioridad:** 🔴 CRÍTICA  
-**Esfuerzo:** 2 horas  
-**Responsable:** Backend Dev  
-**Status:** ⬜ Not Started
-
-**Checklist:**
-- [ ] Instalar Flask-WTF
-  ```bash
-  pip install Flask-WTF==1.2.1
-  ```
-- [ ] Configurar CSRF en app/__init__.py
-  ```python
-  from flask_wtf.csrf import CSRFProtect
-  csrf = CSRFProtect()
-  csrf.init_app(app)
-  ```
-- [ ] Agregar decorador a endpoints POST/PUT/DELETE
-  ```python
   @auth_bp.route('/login', methods=['POST'])
-  @csrf.protect
-  def login():
-      ...
+  @limiter.limit("10/minute;50/hour")
+  def login(): ...
   ```
-- [ ] Crear endpoint para obtener CSRF token
-  ```python
-  @app.route('/api/v1/csrf-token', methods=['GET'])
-  def get_csrf_token():
-      return jsonify({'csrf_token': generate_csrf()})
-  ```
-- [ ] Actualizar frontend (lib/api.ts)
-  ```typescript
-  const token = await fetch('/api/v1/csrf-token').then(r => r.json());
-  axios.defaults.headers.common['X-CSRFToken'] = token.csrf_token;
-  ```
-- [ ] Testing
-  - [ ] Probar POST sin CSRF token (debe fallar)
-  - [ ] Probar POST con CSRF token válido (debe pasar)
-  - [ ] Verificar que token está en cookie
+- [ ] Añadir respuesta 429 apropiada en el error handler
 
 ---
 
-### ✅ TASK 1.5: QA y Testing de Semana 1
-**Prioridad:** 🔴 CRÍTICA  
-**Esfuerzo:** 4 horas  
-**Responsable:** QA / Backend Lead  
-**Status:** ⬜ Not Started
+### ❌ TASK 1.4: Security Headers (after_request)
+**Prioridad:** 🔴 ALTA  
+**Esfuerzo:** 1 hora  
+**Responsable:** Backend Developer  
+**Status:** ❌ Sin iniciar — **MÁS DE 30 DÍAS PENDIENTE**
 
 **Checklist:**
-- [ ] Ejecutar suite de tests
-  ```bash
-  pytest app/ -v --tb=short
+- [ ] Añadir en `app/__init__.py` después de registrar blueprints:
+  ```python
+  @app.after_request
+  def add_security_headers(response):
+      response.headers['X-Content-Type-Options'] = 'nosniff'
+      response.headers['X-Frame-Options'] = 'DENY'
+      response.headers['X-XSS-Protection'] = '1; mode=block'
+      response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+      response.headers['Permissions-Policy'] = 'geolocation=(), microphone=()'
+      # Solo en HTTPS (producción):
+      if not app.debug:
+          response.headers['Strict-Transport-Security'] = 'max-age=63072000; includeSubDomains'
+          response.headers['Content-Security-Policy'] = (
+              "default-src 'self'; "
+              "script-src 'self' 'unsafe-inline'; "
+              "style-src 'self' 'unsafe-inline';"
+          )
+      return response
   ```
-- [ ] Validar cobertura mínimo 80%
-  ```bash
-  pytest --cov=app app/ --cov-report=html
+
+---
+
+### ❌ TASK 1.5: Actualizar requests (CVE activo)
+**Prioridad:** 🔴 ALTA  
+**Esfuerzo:** 10 minutos  
+**Responsable:** Backend Developer  
+**Status:** ❌ Sin iniciar
+
+**Checklist:**
+- [ ] Actualizar en `requirements.txt`
   ```
-- [ ] Testing manual end-to-end
-  - [ ] Login → obtener JWT
-  - [ ] Acceder con JWT a /collections/report/account12
-  - [ ] Refresh token después de 1 hora
-  - [ ] Logout y perder acceso
-  
-- [ ] Testing de seguridad básico
-  - [ ] Intentar acceder sin token (debe fallar)
-  - [ ] Intentar con token expirado (debe fallar)
-  - [ ] Intentar con token falso (debe fallar)
-  
-- [ ] Code review con Security Lead
-  - [ ] Revisar auth/routes.py
-  - [ ] Revisar config.py
-  - [ ] Revisar secrets.py
+  requests==2.32.3  # era 2.31.0 — CVE-2024-35195
+  ```
+- [ ] Ejecutar `pip install -r requirements.txt`
+- [ ] Verificar que no hay breaking changes en el código (API es compatible)
 
 ---
 
 ## 🔴 SEMANA 2: VULNERABILIDADES ALTAS
 
-### ✅ TASK 2.1: Implementar RBAC Completo
+### ❌ TASK 2.1: Protección CSRF
+**Prioridad:** 🔴 ALTA  
+**Esfuerzo:** 2 horas  
+**Status:** ❌ Sin iniciar — **30+ DÍAS PENDIENTE**
+
+**Checklist:**
+- [ ] Instalar Flask-WTF
+  ```bash
+  pip install Flask-WTF==1.2.2
+  ```
+- [ ] Configurar `CSRFProtect` en `app/__init__.py`
+  ```python
+  from flask_wtf.csrf import CSRFProtect
+  csrf = CSRFProtect()
+  csrf.init_app(app)
+  ```
+- [ ] Excluir endpoints de API JSON que usan tokens Bearer (si se implementa JWT):
+  ```python
+  @csrf.exempt
+  @auth_bp.route('/login', methods=['POST'])
+  ```
+- [ ] Configurar el frontend para enviar el token CSRF en formularios
+
+---
+
+### ❌ TASK 2.2: Implementar RBAC Básico
 **Prioridad:** 🔴 ALTA  
 **Esfuerzo:** 12 horas  
-**Responsable:** 2 Backend Devs  
-**Status:** ⬜ Not Started
+**Status:** ❌ Sin iniciar — **30+ DÍAS PENDIENTE**
 
-**Subtasks:**
-
-#### 2.1.1: Definir Matriz de Roles y Permisos
-- [ ] Crear config/roles.py
+**Checklist:**
+- [ ] Definir roles del sistema:
+  - `admin` — acceso completo
+  - `collections` — solo módulo cobranzas
+  - `treasury` — solo módulo tesorería
+  - `letters` — solo módulo letras
+- [ ] Consultar grupos del usuario en Odoo durante el login
+- [ ] Almacenar roles en el JWT (claim `roles`) o en la sesión Flask
+- [ ] Crear decorador `require_role` en `app/auth/security.py`:
   ```python
-  RBAC_ROLES = {
-      'admin': {
-          'permissions': [
-              'view:collections', 'view:treasury', 'view:letters',
-              'send:letters', 'export:reports', 'manage:users'
-          ]
-      },
-      'cobrador': {
-          'permissions': [
-              'view:collections', 'view:letters', 'send:letters'
-          ]
-      },
-      'tesorero': {
-          'permissions': [
-              'view:collections', 'view:treasury', 'view:letters'
-          ]
-      },
-      'viewer': {
-          'permissions': ['view:collections', 'view:treasury']
-      }
-  }
-  ```
-
-#### 2.1.2: Obtener Roles de Odoo
-- [ ] Actualizar core/odoo.py - agregar get_user_role()
-  ```python
-  def get_user_role(self, user_id):
-      # Leer grupos del usuario desde Odoo
-      # Mapear a roles de aplicación
-  ```
-
-#### 2.1.3: Crear Decoradores de Autorización
-- [ ] Actualizar auth/security.py
-  ```python
-  def require_permission(permission: str):
+  def require_role(*roles):
       def decorator(view_func):
           @wraps(view_func)
           def wrapper(*args, **kwargs):
-              claims = get_jwt()
-              permissions = claims.get('permissions', [])
-              if permission not in permissions:
-                  return jsonify({'message': 'Acceso Denegado'}), 403
+              user_roles = session.get('roles', [])
+              if not any(r in user_roles for r in roles):
+                  return jsonify({'message': 'Acceso no autorizado'}), 403
               return view_func(*args, **kwargs)
           return wrapper
       return decorator
-  
-  def require_role(*allowed_roles):
-      def decorator(view_func):
-          # Similar implementación
-          return wrapper
-      return decorator
   ```
-
-#### 2.1.4: Actualizar Todos los Endpoints
-- [ ] collections/routes.py
-  ```python
-  @require_permission('view:collections')
-  def report_account12():
-  ```
-  
-- [ ] treasury/routes.py
-  ```python
-  @require_permission('view:treasury')
-  def report_account42():
-  ```
-  
-- [ ] letters/routes.py
-  ```python
-  @require_permission('send:letters')
-  def send_letter():
-  ```
-  
-- [ ] exports/routes.py
-  ```python
-  @require_permission('export:reports')
-  def export_collections():
-  ```
-
-#### 2.1.5: Testing
-- [ ] Crear test fixtures por rol
-- [ ] Probar cobrador → denied en treasury
-- [ ] Probar tesorero → denied en send_letters
-- [ ] Probar admin → allowed en todo
+- [ ] Aplicar `@require_role` en todos los blueprints por módulo
 
 ---
 
-### ✅ TASK 2.2: Implementar Rate Limiting
-**Prioridad:** 🔴 ALTA  
-**Esfuerzo:** 3 horas  
-**Responsable:** Backend Dev  
-**Status:** ⬜ Not Started
-
-**Checklist:**
-- [ ] Instalar Flask-Limiter
-  ```bash
-  pip install Flask-Limiter==3.5.0
-  ```
-- [ ] Configurar en app/__init__.py
-  ```python
-  from flask_limiter import Limiter
-  from flask_limiter.util import get_remote_address
-  
-  limiter = Limiter(
-      app=app,
-      key_func=get_remote_address,
-      storage_uri=app.config.get('REDIS_URL')
-  )
-  ```
-- [ ] Aplicar límites a endpoints críticos
-  ```python
-  @auth_bp.route('/login', methods=['POST'])
-  @limiter.limit("5 per minute")
-  def login():
-  
-  @auth_bp.route('/refresh', methods=['POST'])
-  @limiter.limit("10 per minute")
-  def refresh():
-  
-  @auth_bp.route('/verify', methods=['GET'])
-  @limiter.limit("20 per minute")
-  def verify():
-  ```
-- [ ] Testing
-  - [ ] Hacer 5 requests al /login
-  - [ ] Sexto request debe fallar con 429 (Too Many Requests)
-
----
-
-### ✅ TASK 2.3: Sanitizar Errores (No Exponer Detalles)
-**Prioridad:** 🔴 ALTA  
+### ❌ TASK 2.3: Logging Estructurado
+**Prioridad:** 🟡 MEDIA  
 **Esfuerzo:** 4 horas  
-**Responsable:** Backend Dev  
-**Status:** ⬜ Not Started
+**Status:** ❌ Sin iniciar
 
 **Checklist:**
-- [ ] Crear logger centralizado en core/logger.py
-  ```python
-  import logging
-  logger = logging.getLogger('finanzas_agv')
-  ```
-- [ ] Actualizar todos los try/except
-  ```python
-  try:
-      # ... código ...
-  except Exception as e:
-      logger.error(f"Detalles técnicos: {str(e)}", exc_info=True)
-      return jsonify({
-          'success': False,
-          'message': 'Error interno del servidor. Contacte soporte.'
-      }), 500
-  ```
-- [ ] Endpoints específicos a revisar:
-  - [ ] auth/routes.py (línea ~50)
-  - [ ] collections/routes.py (línea ~75)
-  - [ ] treasury/routes.py (línea ~60)
-  - [ ] exports/routes.py (línea ~40)
-  - [ ] emails/routes.py (línea ~35)
-  - [ ] letters/routes.py (línea ~45)
-  
-- [ ] Testing
-  - [ ] Enviar request malformado
-  - [ ] Verificar error genérico en respuesta
-  - [ ] Verificar detalles en logs del servidor
+- [ ] Configurar `logging` en `app/__init__.py` con formato JSON
+- [ ] Reemplazar todos los `print()` en `app/core/odoo.py` con `logger.info/error`
+- [ ] Añadir audit log para eventos de seguridad (login, logout, acceso denegado)
+- [ ] Nunca loggear contraseñas ni tokens completos
 
 ---
 
-### ✅ TASK 2.4: Diseñar MFA (2FA) - Phase Planning
-**Prioridad:** 🔴 ALTA  
-**Esfuerzo:** 4 horas (diseño/planning)  
-**Responsable:** Security Lead + Backend Lead  
-**Status:** ⬜ Not Started
-
-**Checklist:**
-- [ ] Decidir método MFA
-  - [ ] TOTP (Google Authenticator) ← Recomendado
-  - [ ] SMS (Twilio)
-  - [ ] Email
-  
-- [ ] Diseño de arquitectura
-  ```python
-  # Propuesta: TOTP con QR code
-  POST /api/v1/auth/mfa/setup
-  # Devuelve: QR code para Authenticator
-  
-  POST /api/v1/auth/mfa/verify
-  # Verifica código TOTP antes de completar login
-  ```
-  
-- [ ] Crear documento de diseño
-  - [ ] User journey de setup
-  - [ ] Backup codes (en caso de perder Authenticator)
-  - [ ] Recovery path (si usuario pierde acceso)
-  
-- [ ] Estimación: 16 horas implementación (Semana 3)
-
----
-
-### ✅ TASK 2.5: QA de Semana 2
-**Prioridad:** 🔴 ALTA  
-**Esfuerzo:** 4 horas  
-**Responsable:** QA / Security Lead  
-**Status:** ⬜ Not Started
-
-**Checklist:**
-- [ ] Testing de RBAC
-  - [ ] Crear usuarios con diferentes roles
-  - [ ] Verificar permisos por endpoint
-  
-- [ ] Testing de Rate Limiting
-  - [ ] Verificar límites de login
-  - [ ] Verificar límites de refresh
-  
-- [ ] Testing de Sanitización de Errores
-  - [ ] Verificar que no hay stack traces en respuesta
-  - [ ] Verificar que detalles están en logs
-  
-- [ ] Code review con Security Lead
-
----
-
-## 🟡 SEMANA 3: ENDURECIMIENTO
-
-### ✅ TASK 3.1: Security Headers
+### ❌ TASK 2.4: Fix Cache Cross-Session
 **Prioridad:** 🟡 MEDIA  
 **Esfuerzo:** 2 horas  
-**Responsable:** Backend Dev  
-**Status:** ⬜ Not Started
+**Status:** ❌ Sin iniciar (nueva vulnerabilidad detectada en Junio 2026)
 
 **Checklist:**
-- [ ] Crear middleware en app/__init__.py
-  ```python
-  @app.after_request
-  def add_security_headers(response):
-      # Strict Transport Security
-      response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-      # Content Security Policy
-      response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'"
-      # X-Frame-Options
-      response.headers['X-Frame-Options'] = 'DENY'
-      # X-Content-Type-Options
-      response.headers['X-Content-Type-Options'] = 'nosniff'
-      # X-XSS-Protection
-      response.headers['X-XSS-Protection'] = '1; mode=block'
-      return response
-  ```
-- [ ] Testing
-  - [ ] Verificar headers en respuesta HTTP
+- [ ] Modificar `app/collections/routes.py` — incluir usuario en la cache key
+- [ ] Modificar `app/letters/routes.py` — mismo fix
+- [ ] Remover el decorador `@cache.cached` de los endpoints e implementar cache manual con user-specific key
 
 ---
 
-### ✅ TASK 3.2: Logging Centralizado
+### ❌ TASK 2.5: Límite Máximo en Exportaciones
 **Prioridad:** 🟡 MEDIA  
-**Esfuerzo:** 8 horas  
-**Responsable:** DevOps + Backend Dev  
-**Status:** ⬜ Not Started
+**Esfuerzo:** 1 hora  
+**Status:** ❌ Sin iniciar (nueva vulnerabilidad detectada en Junio 2026)
 
 **Checklist:**
-- [ ] Instalar python-json-logger
-  ```bash
-  pip install python-json-logger==2.0.7
-  ```
-- [ ] Configurar logging en core/logging_config.py
+- [ ] Agregar en `config.py`: `MAX_EXPORT_LIMIT = 10000`
+- [ ] Aplicar en `app/collections/routes.py:L54` y `app/exports/routes.py:L52`:
   ```python
-  import logging
-  from pythonjsonlogger import jsonlogger
-  
-  logger = logging.getLogger()
-  logHandler = logging.StreamHandler()
-  formatter = jsonlogger.JsonFormatter()
-  logHandler.setFormatter(formatter)
-  logger.addHandler(logHandler)
-  ```
-- [ ] Agregar eventos de auditoría
-  - [ ] Login (usuario, timestamp, IP)
-  - [ ] Cambios de RBAC
-  - [ ] Acceso a datos sensibles
-  - [ ] Errores de autorización
-  
-- [ ] Integración con CloudWatch/ELK
-  - [ ] Enviar logs a CloudWatch (AWS)
-  - [ ] O ELK Stack (self-hosted)
-
----
-
-### ✅ TASK 3.3: CI/CD con Controles de Seguridad
-**Prioridad:** 🟡 MEDIA  
-**Esfuerzo:** 12 horas  
-**Responsable:** DevOps + Security Lead  
-**Status:** ⬜ Not Started
-
-**Checklist:**
-- [ ] Crear GitHub Actions workflow (.github/workflows/security.yml)
-  ```yaml
-  name: Security Checks
-  on: [push, pull_request]
-  jobs:
-    sast:
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v2
-        - name: Bandit SAST
-          run: |
-            pip install bandit
-            bandit -r app/ -f json > bandit-report.json
-        
-        - name: Safety Dependency Check
-          run: |
-            pip install safety
-            safety check --json
-        
-        - name: Pylint
-          run: |
-            pip install pylint
-            pylint app/
-  ```
-
-- [ ] Integración con SonarQube (opcional)
-- [ ] Bloqueador: Fallar si hay secretos detectados
-  ```yaml
-  - name: Detect Secrets
-    run: |
-      pip install detect-secrets
-      detect-secrets scan --all-files --baseline .secrets.baseline
+  MAX_LIMIT = current_app.config.get('MAX_EXPORT_LIMIT', 10000)
+  limit_raw = request.args.get('limit', type=int, default=0)
+  limit = min(limit_raw, MAX_LIMIT) if limit_raw > 0 else MAX_LIMIT
   ```
 
 ---
 
-## 🟢 SEMANA 4: VALIDACIÓN Y GO-LIVE
+## 🟡 SEMANA 3-4: HARDENING Y CALIDAD
 
-### ✅ TASK 4.1: Penetration Testing
-**Prioridad:** 🟢 IMPORTANTE  
-**Esfuerzo:** 16 horas  
-**Responsable:** Security Professional (externo)  
-**Status:** ⬜ Not Started
+### ❌ TASK 3.1: Refactorizar config.py (Eliminar Duplicación)
+**Esfuerzo:** 3 horas  
+**Status:** ❌ Sin iniciar
 
-**Scope:**
-- [ ] Validar JWT implementation
-- [ ] Validar RBAC
-- [ ] Validar CSRF protection
-- [ ] Prueba de rate limiting evasion
-- [ ] Validar secrets no están expuestos
-- [ ] Validar headers de seguridad
+- [ ] Extraer método `_load_common_env(cls, app)` en clase base `Config`
+- [ ] `DevelopmentConfig` y `ProductionConfig` solo definen `DEBUG` y llaman al método base
+- [ ] Reducir ~80 líneas duplicadas a ~10
 
 ---
 
-### ✅ TASK 4.2: Capacitación del Equipo
-**Prioridad:** 🟢 IMPORTANTE  
-**Esfuerzo:** 8 horas  
-**Responsable:** Security Lead  
-**Status:** ⬜ Not Started
+### ❌ TASK 3.2: Anclar Versiones en requirements.txt
+**Esfuerzo:** 30 minutos  
+**Status:** ❌ Sin iniciar
 
-**Contenido:**
-- [ ] OWASP Top 10
-- [ ] Principios de Secure Coding
-- [ ] Review de cambios de seguridad
-- [ ] Proceso de response a incidentes
+- [ ] Reemplazar `polars>=1.41.0` → `polars==1.41.0`
+- [ ] Reemplazar `XlsxWriter>=3.2.9` → `XlsxWriter==3.2.9`
+- [ ] Actualizar `gunicorn` a 23.0.0
+- [ ] Actualizar `celery` a 5.4.0
 
 ---
 
-### ✅ TASK 4.3: Documentación
-**Prioridad:** 🟢 IMPORTANTE  
-**Esfuerzo:** 6 horas  
-**Responsable:** Tech Lead + Security Lead  
-**Status:** ⬜ Not Started
+### ❌ TASK 3.3: pip-audit en CI/CD
+**Esfuerzo:** 2 horas  
+**Status:** ❌ Sin iniciar
 
-**Documentos a crear:**
-- [ ] Security Policy
-- [ ] Incident Response Plan
-- [ ] Runbooks (operacionales)
-- [ ] Architecture Security Review
+- [ ] Instalar `pip-audit`: `pip install pip-audit`
+- [ ] Agregar a pipeline CI: `pip-audit --requirement requirements.txt`
+- [ ] Configurar para fallar build si hay CVEs críticos
 
 ---
 
-## 📊 ESTADO DEL PROYECTO
+### ❌ TASK 3.4: Eliminar CORS self-origin
+**Esfuerzo:** 15 minutos  
+**Status:** ❌ Sin iniciar
 
-### Week 1 Progress
-```
-Task 1.1: [ ] [ ] [ ] [ ] [ ]  (0%)
-Task 1.2: [ ] [ ] [ ] [ ] [ ]  (0%)
-Task 1.3: [ ] [ ] [ ] [ ] [ ]  (0%)
-Task 1.4: [ ] [ ] [ ] [ ] [ ]  (0%)
-Task 1.5: [ ] [ ] [ ] [ ] [ ]  (0%)
-─────────────────────────────────
-Total:    0% ██░░░░░░░░ (0/19 hrs)
-```
-
-### Metrics to Track
-- [ ] Vulnerabilidades remediadas: ___/15
-- [ ] Tests pasados: ___/___
-- [ ] Code coverage: ___%
-- [ ] Security score: __/100
+- [ ] En `app/__init__.py:L44`, remover `http://localhost:5000` de `cors_origins`
+  ```python
+  # ANTES:
+  cors_origins = ["http://localhost:3000", "http://localhost:5000"]
+  # DESPUÉS:
+  cors_origins = ["http://localhost:3000"]
+  ```
 
 ---
 
-## 📋 REFERENCIA RÁPIDA
+## ✅ MEJORAS ARQUITECTÓNICAS COMPLETADAS (Junio 2026)
 
-### Comandos Útiles
-```bash
-# Testing
-pytest app/ -v
-pytest --cov=app app/
+| # | Mejora | Archivo | Completado |
+|---|--------|---------|-----------|
+| A1 | UID caching thread-safe | app/core/odoo.py | ✅ Jun 2026 |
+| A2 | call_parallel() ThreadPoolExecutor | app/core/odoo.py | ✅ Jun 2026 |
+| A3 | _read_in_batches helpers | app/collections/services.py | ✅ Jun 2026 |
+| A4 | RESTRICT_TO_LETTERS_ONLY middleware | app/__init__.py | ✅ Jun 2026 |
+| A5 | _apply_session_settings() cross-site | config.py | ✅ Jun 2026 |
+| A6 | _build_trace_invoice_map() | app/collections/services.py | ✅ Jun 2026 |
 
-# Security Scanning
-bandit -r app/
-safety check
-detect-secrets scan --all-files
+---
 
-# Linting
-flake8 app/
-pylint app/
+## 📅 Cronograma Actualizado
 
-# Requirements
-pip freeze > requirements.txt
 ```
+JULIO 2026
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-### Archivo Ubicaciones Clave
-```
-app/
-├── __init__.py        ← JWT init
-├── auth/
-│   ├── routes.py      ← JWT login/refresh
-│   └── security.py    ← RBAC decorators
-├── core/
-│   ├── secrets.py     ← NEW: SecretsManager
-│   └── logger.py      ← NEW: Logging
-└── ... (otros módulos con @require_permission)
+Semana 1 (Jul 1-7):
+  Lun:  🚨 Fix auth bypass (30 min) + DEBUG=False (15 min) ← MÍNIMO HOY
+  Mar:  JWT Real - Backend (4 hrs)
+  Mie:  JWT Real - Frontend integration (4 hrs)
+  Jue:  Rate Limiting + Security Headers (2 hrs)
+  Vie:  Actualizar requests + QA (2 hrs)
+  ─────────────────────────────────────────────────────
+  Total: ~13 horas | 1 Backend Dev
 
-config.py             ← SECRET_KEY, SecretsManager init
+Semana 2 (Jul 8-14):
+  CSRF Protection          | 2 hrs
+  RBAC Básico              | 12 hrs
+  Logging Estructurado     | 4 hrs
+  ─────────────────────────────────────────────────────
+  Total: ~18 horas | 1-2 Developers
 
-.env                  ← NO COMMITEAR
-.env.example          ← COMMITEAR (template)
+Semana 3-4 (Jul 15-28):
+  Fix cache cross-session  | 2 hrs
+  Límite máximo exports    | 1 hr
+  Refactorizar config.py   | 3 hrs
+  Anclar dependencias      | 30 min
+  pip-audit CI/CD          | 2 hrs
+  ─────────────────────────────────────────────────────
+  Total: ~9 horas | 1 Developer
 
-requirements.txt      ← Actualizar con nuevos packages
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TOTAL JULIO: ~40 horas | Meta: Score Seguridad 75+/100
 ```
 
 ---
 
-## 📞 ESCALATION / BLOCKERS
+## ⚠️ NOTA IMPORTANTE — RETRASO DE 30 DÍAS
 
-**Contacatalog para:**
-- 🔴 Decisión sobre MFA método
-- 🔴 AWS Secrets Manager setup
-- 🔴 Acceso para Penetration Testing
+Las **5 vulnerabilidades críticas originales** identificadas el 26 de Mayo de 2026 siguen sin resolverse. Adicionalmente, se ha **introducido una nueva vulnerabilidad crítica** (auth bypass) en el código nuevo.
+
+**Recomendación urgente:** Los items marcados como `← MÍNIMO HOY` en el cronograma son cambios de 30-60 minutos que pueden ejecutarse inmediatamente y tienen impacto de seguridad crítico. No requieren diseño ni planning adicional.
 
 ---
 
-**Última actualización:** 26 Mayo 2026  
-**Próxima revisión:** Viernes 29 Mayo (EOD)
-
+**Actualizado por:** Auditoría de Seguridad — Jun 25, 2026  
+**Próxima revisión del checklist:** Jul 25, 2026

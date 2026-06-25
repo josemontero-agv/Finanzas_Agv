@@ -658,15 +658,6 @@ class CollectionsService:
         # Excluir la cuenta contable 1239001 (Saldos iniciales - no forma parte de CxC activa)
         domain.append(('account_id.code', '!=', '1239001'))
 
-        # Excluir diarios de pago / transacciones bancarias (PAPANT, BCP, IBK, PTRP, SCTK, PSCT, BBVA, DAP)
-        # pero PERMITIRLOS si corresponden a la cuenta de anticipos 122* (representan anticipos libres de clientes).
-        payment_prefixes = ['PAPANT%', 'BCP%', 'IBK%', 'PTRP%', 'SCTK%', 'PSCT%', 'BBVA%', 'DAP%']
-        for prefix in payment_prefixes:
-            domain.extend([
-                '|',
-                ('account_id.code', '=like', '122%'),
-                ('move_id.name', 'not ilike', prefix)
-            ])
         if customer:
             domain.append(('partner_id.name', 'ilike', customer))
         if sales_channel_id:
@@ -922,13 +913,6 @@ class CollectionsService:
                 account = account_map.get(account_id, {})
                 credit = credit_map.get(partner_id, {})
 
-                # Excluir asientos de pago (PAPANT, BCP, IBK, PTRP, SCTK, PSCT, BBVA, DAP)
-                # EXCEPTO si es una cuenta de anticipos (122*), ya que representan abonos libres / dinero a favor de clientes.
-                account_code = str(account.get('code') or '')
-                move_name = str(move.get('name') or '').upper()
-                if not account_code.startswith('122'):
-                    if any(p in move_name for p in ['PAPANT', 'BCP', 'IBK', 'PTRP', 'SCTK', 'PSCT', 'BBVA', 'DAP']):
-                        continue
 
                 source_move_base = trace_invoice_map.get(move_id, {})
 
@@ -1399,13 +1383,6 @@ class CollectionsService:
                 account = account_map.get(account_id, {})
                 credit = credit_map.get(partner_id, {})
 
-                # Excluir asientos de pago (PAPANT, BCP, IBK, PTRP, SCTK, PSCT, BBVA, DAP)
-                # EXCEPTO si es una cuenta de anticipos (122*), ya que representan abonos libres / dinero a favor de clientes.
-                account_code = str(account.get('code') or '')
-                move_name = str(move.get('name') or '').upper()
-                if not account_code.startswith('122'):
-                    if any(p in move_name for p in ['PAPANT', 'BCP', 'IBK', 'PTRP', 'SCTK', 'PSCT', 'BBVA', 'DAP']):
-                        continue
 
                 source_move_base = trace_invoice_map.get(move_id, {})
 
@@ -2026,17 +2003,6 @@ class CollectionsService:
                 partner_id = line['partner_id'][0] if line.get('partner_id') else None
                 
                 move = move_map.get(move_id, {})
-                # Excluir asientos de pago (PAPANT, BCP, IBK, PTRP, SCTK, PSCT, BBVA, DAP)
-                # EXCEPTO si es una cuenta de anticipos (122*), ya que representan abonos libres / dinero a favor de clientes.
-                account_id_val = line.get('account_id')
-                account_code = ''
-                if isinstance(account_id_val, list) and len(account_id_val) >= 2:
-                    account_code = str(account_id_val[1]).split(' ')[0]
-
-                move_name = str(move.get('name') or '').upper()
-                if not account_code.startswith('122'):
-                    if any(p in move_name for p in ['PAPANT', 'BCP', 'IBK', 'PTRP', 'SCTK', 'PSCT', 'BBVA', 'DAP']):
-                        continue
 
                 partner = partner_map.get(partner_id, {})
                 

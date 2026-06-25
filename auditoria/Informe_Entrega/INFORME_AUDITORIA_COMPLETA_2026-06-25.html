@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Informe Auditoría de Seguridad — Finanzas AGV | Junio 2026</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; line-height: 1.6; color: #1a1a2e; background: #f4f6fb; }
+  a { color: #2563eb; }
+
+  /* Header */
+  .header { background: linear-gradient(135deg, #1e3a5f 0%, #0f2027 100%); color: #fff; padding: 40px 48px; }
+  .header h1 { font-size: 28px; margin-bottom: 6px; }
+  .header h2 { font-size: 16px; font-weight: 400; color: #a8c8f0; margin-bottom: 20px; }
+  .header-meta { display: flex; gap: 24px; flex-wrap: wrap; font-size: 13px; color: #d1e8ff; }
+  .header-meta span { background: rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 20px; }
+  .badge-new { background: #dc2626 !important; color: #fff; font-weight: 700; }
+  .badge-update { background: #059669 !important; color: #fff; font-weight: 700; }
+
+  /* Layout */
+  .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+  section { background: #fff; border-radius: 10px; padding: 28px 32px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+  h2.section-title { font-size: 20px; color: #1e3a5f; border-bottom: 3px solid #2563eb; padding-bottom: 10px; margin-bottom: 20px; }
+  h3 { font-size: 16px; color: #1e3a5f; margin: 20px 0 10px; }
+  p { margin-bottom: 12px; }
+
+  /* Score cards */
+  .score-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin: 20px 0; }
+  .score-card { text-align: center; padding: 20px 12px; border-radius: 10px; border: 2px solid; }
+  .score-card .score-value { font-size: 36px; font-weight: 800; display: block; }
+  .score-card .score-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .score-critical { border-color: #dc2626; background: #fef2f2; color: #dc2626; }
+  .score-warn { border-color: #d97706; background: #fffbeb; color: #d97706; }
+  .score-ok { border-color: #059669; background: #ecfdf5; color: #059669; }
+  .score-info { border-color: #2563eb; background: #eff6ff; color: #2563eb; }
+
+  /* Severity badges */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+  .critical { background: #dc2626; color: #fff; }
+  .high { background: #ea580c; color: #fff; }
+  .medium { background: #d97706; color: #fff; }
+  .low { background: #059669; color: #fff; }
+  .info-badge { background: #2563eb; color: #fff; }
+  .new-vuln { background: #7c3aed; color: #fff; }
+
+  /* Finding cards */
+  .finding { border-left: 5px solid; border-radius: 8px; padding: 20px 24px; margin-bottom: 20px; }
+  .finding-critical { border-color: #dc2626; background: #fff5f5; }
+  .finding-high { border-color: #ea580c; background: #fff8f4; }
+  .finding-medium { border-color: #d97706; background: #fffbeb; }
+  .finding-low { border-color: #059669; background: #f0fdf4; }
+  .finding-new { border-color: #7c3aed; background: #faf5ff; }
+  .finding-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .finding-title { font-size: 15px; font-weight: 700; color: #1a1a2e; }
+  .finding-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; font-size: 12px; }
+  .finding-meta span { background: rgba(0,0,0,0.06); padding: 2px 8px; border-radius: 3px; }
+
+  /* Code blocks */
+  pre { background: #0f172a; color: #e2e8f0; border-radius: 6px; padding: 16px; overflow-x: auto; margin: 12px 0; font-size: 12px; line-height: 1.5; }
+  code { font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace; }
+  .code-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .code-vuln .code-label { color: #dc2626; }
+  .code-fix .code-label { color: #059669; }
+  .highlight-line { background: rgba(220,38,38,0.3); display: block; }
+  .highlight-fix { background: rgba(5,150,105,0.3); display: block; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+  th { background: #1e3a5f; color: #fff; padding: 10px 12px; text-align: left; }
+  td { padding: 9px 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+  tr:nth-child(even) td { background: #f9fafb; }
+
+  /* Status items */
+  .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+  .status-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: 6px; font-size: 13px; }
+  .status-ok { background: #ecfdf5; border-left: 3px solid #059669; }
+  .status-fail { background: #fef2f2; border-left: 3px solid #dc2626; }
+  .status-warn { background: #fffbeb; border-left: 3px solid #d97706; }
+  .status-new { background: #faf5ff; border-left: 3px solid #7c3aed; }
+  .status-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+  /* Delta indicators */
+  .delta-up { color: #059669; font-weight: 700; }
+  .delta-same { color: #6b7280; }
+  .delta-down { color: #dc2626; font-weight: 700; }
+
+  /* Comparison box */
+  .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .comp-box { border-radius: 8px; padding: 16px; }
+  .comp-before { background: #fff5f5; border: 1px solid #fecaca; }
+  .comp-after { background: #f0fdf4; border: 1px solid #a7f3d0; }
+  .comp-box h4 { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+
+  /* Progress bar */
+  .progress-bar { background: #e5e7eb; border-radius: 20px; height: 10px; overflow: hidden; margin: 8px 0; }
+  .progress-fill { height: 100%; border-radius: 20px; transition: width 0.3s; }
+
+  /* Footer */
+  .footer { text-align: center; padding: 24px; color: #6b7280; font-size: 12px; }
+
+  /* Print */
+  @media print {
+    body { background: #fff; }
+    section { box-shadow: none; border: 1px solid #e5e7eb; page-break-inside: avoid; }
+    .header { background: #1e3a5f !important; -webkit-print-color-adjust: exact; }
+    pre { white-space: pre-wrap; }
+  }
+
+  @media (max-width: 600px) {
+    .comparison { grid-template-columns: 1fr; }
+    .header { padding: 20px; }
+    section { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <h1>🔒 Informe de Auditoría de Seguridad — Finanzas AGV</h1>
+  <h2>Análisis SAST · OWASP Top 10:2021 · ISO/IEC 27001:2022 · Actualización Mensual</h2>
+  <div class="header-meta">
+    <span>📅 25 de Junio de 2026</span>
+    <span>🏗️ Flask 3.0 + Next.js + Odoo XML-RPC</span>
+    <span>👤 Senior Security Analyst (SAST)</span>
+    <span class="badge-update">🔄 Revisión Mensual #2</span>
+    <span class="badge-new">🚨 Nueva vulnerabilidad detectada</span>
+    <span>📋 Auditoría anterior: 26/05/2026</span>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ==================== RESUMEN EJECUTIVO ==================== -->
+<section>
+  <h2 class="section-title">📊 Resumen Ejecutivo</h2>
+
+  <div class="score-grid">
+    <div class="score-card score-warn">
+      <span class="score-value">55</span>
+      <span class="score-label">Seguridad / 100</span>
+      <div style="font-size:11px;margin-top:6px;">Anterior: 58/100 ⬇️ -3</div>
+    </div>
+    <div class="score-card score-critical">
+      <span class="score-value">6</span>
+      <span class="score-label">Vulnerabilidades Críticas</span>
+      <div style="font-size:11px;margin-top:6px;">Anterior: 5 ⬆️ +1 nueva</div>
+    </div>
+    <div class="score-card score-critical">
+      <span class="score-value">6</span>
+      <span class="score-label">Vulns. Altas</span>
+      <div style="font-size:11px;margin-top:6px;">Sin cambio</div>
+    </div>
+    <div class="score-card score-warn">
+      <span class="score-value">7</span>
+      <span class="score-label">Vulns. Medias</span>
+      <div style="font-size:11px;margin-top:6px;">Anterior: 8 ⬇️ -1</div>
+    </div>
+    <div class="score-card score-ok">
+      <span class="score-value">9</span>
+      <span class="score-label">Controles OK</span>
+      <div style="font-size:11px;margin-top:6px;">Anterior: 7 ⬆️ +2</div>
+    </div>
+    <div class="score-card score-info">
+      <span class="score-value">48%</span>
+      <span class="score-label">Cumplimiento ISO 27001</span>
+      <div style="font-size:11px;margin-top:6px;">Anterior: 45% ⬆️ +3%</div>
+    </div>
+  </div>
+
+  <div style="margin-top:20px;">
+    <p><strong>Conclusión general:</strong> El proyecto ha mejorado en arquitectura y rendimiento, pero las <strong>5 vulnerabilidades críticas originales persisten sin resolverse después de 30 días</strong>. Adicionalmente, se detectó una nueva vulnerabilidad crítica de <strong>bypass de autenticación</strong> introducida en la refactorización de <code>OdooRepository</code>. El score de seguridad disminuye ligeramente de 58 a 55 por esta regresión.</p>
+    <p style="color:#dc2626;font-weight:700;">⚠️ El sistema NO debe desplegarse en producción en su estado actual.</p>
+  </div>
+
+  <h3>Stack Tecnológico</h3>
+  <table>
+    <tr><th>Capa</th><th>Tecnología</th><th>Versión</th><th>Estado</th></tr>
+    <tr><td>Framework Backend</td><td>Flask</td><td>3.0.0</td><td>✅ Actualizado</td></tr>
+    <tr><td>WSGI Server</td><td>Gunicorn</td><td>21.2.0</td><td>⚠️ Obsoleto (actual: 23.x)</td></tr>
+    <tr><td>ORM</td><td>SQLAlchemy</td><td>2.0.23</td><td>⚠️ Actualizar a 2.0.36+</td></tr>
+    <tr><td>Caching</td><td>Flask-Caching + Redis</td><td>2.1.0 / 5.0.1</td><td>✅ OK</td></tr>
+    <tr><td>Colas</td><td>Celery</td><td>5.3.6</td><td>⚠️ Actualizar a 5.4.x</td></tr>
+    <tr><td>HTTP client</td><td>requests</td><td>2.31.0</td><td>🔴 CVEs conocidos, actualizar a 2.32+</td></tr>
+    <tr><td>Data processing</td><td>polars</td><td>≥1.41.0</td><td>⚠️ Rango abierto (supply chain)</td></tr>
+    <tr><td>Excel export</td><td>XlsxWriter</td><td>≥3.2.9</td><td>⚠️ Rango abierto (supply chain)</td></tr>
+    <tr><td>Frontend</td><td>Next.js</td><td>16.1.3</td><td>✅ Reciente</td></tr>
+    <tr><td>Integración ERP</td><td>Odoo XML-RPC</td><td>Python built-in</td><td>✅ Sin CVEs</td></tr>
+    <tr><td>Base de Datos</td><td>Supabase (PostgreSQL)</td><td>2.3.0</td><td>✅ OK</td></tr>
+  </table>
+</section>
+
+<!-- ==================== COMPARATIVA ==================== -->
+<section>
+  <h2 class="section-title">📈 Comparativa Mayo vs Junio 2026</h2>
+
+  <table>
+    <tr><th>Indicador</th><th>Mayo 2026</th><th>Junio 2026</th><th>Cambio</th></tr>
+    <tr>
+      <td>Score Seguridad</td>
+      <td>58/100</td>
+      <td>55/100</td>
+      <td class="delta-down">⬇️ -3 (regresión)</td>
+    </tr>
+    <tr>
+      <td>Score Arquitectura</td>
+      <td>35/100</td>
+      <td>42/100</td>
+      <td class="delta-up">⬆️ +7 (mejora)</td>
+    </tr>
+    <tr>
+      <td>Vulnerabilidades Críticas</td>
+      <td>5</td>
+      <td><strong>6</strong></td>
+      <td class="delta-down">🚨 +1 nueva introducida</td>
+    </tr>
+    <tr>
+      <td>JWT Real implementado</td>
+      <td>❌</td>
+      <td>❌</td>
+      <td class="delta-same">Sin cambio (>30 días pendiente)</td>
+    </tr>
+    <tr>
+      <td>DEBUG=False en producción</td>
+      <td>❌</td>
+      <td>❌</td>
+      <td class="delta-same">Sin cambio</td>
+    </tr>
+    <tr>
+      <td>Rate Limiting</td>
+      <td>❌</td>
+      <td>❌</td>
+      <td class="delta-same">Sin cambio</td>
+    </tr>
+    <tr>
+      <td>CSRF Protection</td>
+      <td>❌</td>
+      <td>❌</td>
+      <td class="delta-same">Sin cambio</td>
+    </tr>
+    <tr>
+      <td>RBAC implementado</td>
+      <td>❌</td>
+      <td>❌</td>
+      <td class="delta-same">Sin cambio</td>
+    </tr>
+    <tr>
+      <td>Security Headers</td>
+      <td>❌</td>
+      <td>❌</td>
+      <td class="delta-same">Sin cambio</td>
+    </tr>
+    <tr>
+      <td>call_parallel() ThreadPoolExecutor</td>
+      <td>❌</td>
+      <td>✅</td>
+      <td class="delta-up">⬆️ Nuevo — rendimiento ↑↑</td>
+    </tr>
+    <tr>
+      <td>Batch reading XML-RPC</td>
+      <td>❌</td>
+      <td>✅</td>
+      <td class="delta-up">⬆️ Nuevo — robustez ↑</td>
+    </tr>
+    <tr>
+      <td>RESTRICT_TO_LETTERS_ONLY</td>
+      <td>❌</td>
+      <td>✅</td>
+      <td class="delta-up">⬆️ Nuevo — defensa en profundidad ↑</td>
+    </tr>
+    <tr>
+      <td>UID caching thread-safe</td>
+      <td>❌</td>
+      <td>✅</td>
+      <td class="delta-up">⬆️ Nuevo — rendimiento ↑</td>
+    </tr>
+    <tr>
+      <td>Auth bypass via fallback</td>
+      <td>No existía</td>
+      <td>🔴 <strong>Presente</strong></td>
+      <td class="delta-down">🚨 Regresión introducida</td>
+    </tr>
+    <tr>
+      <td>Dependencias con rango abierto (≥)</td>
+      <td>0</td>
+      <td>2 (polars, XlsxWriter)</td>
+      <td class="delta-down">⬇️ Supply chain risk</td>
+    </tr>
+  </table>
+</section>
+
+<!-- ==================== NUEVA VULNERABILIDAD ==================== -->
+<section>
+  <h2 class="section-title">🚨 Nueva Vulnerabilidad — Detectada en Junio 2026</h2>
+
+  <div class="finding finding-new">
+    <div class="finding-header">
+      <span class="badge new-vuln">🆕 NUEVA</span>
+      <span class="badge critical">CRÍTICA</span>
+      <span class="finding-title">Authentication Bypass via Service Credentials Fallback</span>
+    </div>
+    <div class="finding-meta">
+      <span>📁 app/core/odoo.py:L147-150</span>
+      <span>🔒 OWASP: A07:2021 - Identification and Authentication Failures</span>
+      <span>📋 ISO 27001: A.9.4.2 - Secure log-on procedures</span>
+      <span>⚠️ CWE-287: Improper Authentication</span>
+    </div>
+
+    <p><strong>Descripción:</strong> En el método <code>authenticate_user()</code>, cuando la conexión a Odoo falla por cualquier excepción (timeout, error de red, mantenimiento), el sistema utiliza un fallback que compara las credenciales del usuario con las credenciales de servicio del repositorio (<code>ODOO_USER</code>/<code>ODOO_PASSWORD</code> del <code>.env</code>). Esto permite que las credenciales del sistema actúen como "master password" para la aplicación.</p>
+
+    <div class="code-vuln">
+      <div class="code-label">⚠️ Código Vulnerable — app/core/odoo.py:L134-151</div>
+      <pre><code>def authenticate_user(self, username: str, password: str) -> bool:
+    try:
+        common = xmlrpc.client.ServerProxy(f'{self.url}/xmlrpc/2/common')
+        uid = common.authenticate(self.db, username, password, {})
+        if uid:
+            return True
+        return False
+
+    except Exception as exc:
+        print(f"[ERROR] Error en autenticación contra Odoo: {exc}")
+        # ⚠️ VULNERABLE: Fallback usando credenciales del SERVICIO
+        if username == self.username and password == self.password:
+            print("[OK] Autenticación exitosa usando credenciales del repositorio")
+            return True   # ← cualquier usuario puede loguearse con creds del .env
+        return False</code></pre>
+    </div>
+
+    <div class="code-fix">
+      <div class="code-label">✅ Corrección Recomendada</div>
+      <pre><code>def authenticate_user(self, username: str, password: str) -> bool:
+    try:
+        common = xmlrpc.client.ServerProxy(f'{self.url}/xmlrpc/2/common')
+        uid = common.authenticate(self.db, username, password, {})
+        if uid:
+            return True
+        return False
+
+    except Exception as exc:
+        # ✅ Fallar seguro: si Odoo no está disponible, la auth FALLA
+        # No usar credenciales de servicio como fallback
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error("Error de conexión a Odoo durante autenticación: tipo=%s",
+                     type(exc).__name__)  # no logear exc completo (info disclosure)
+        return False  # ← fail-safe: sin autenticación si Odoo no disponible</code></pre>
+    </div>
+
+    <p><strong>Impacto:</strong> Si un atacante conoce las credenciales del <code>.env.produccion</code> (expuestas en git, logs o acceso al servidor), puede autenticarse en la aplicación web con ese usuario. La disponibilidad de Odoo se convierte en un factor de seguridad no intencional.</p>
+    <p><strong>Vector de ataque:</strong> Ataque de mantenimiento programado — un atacante podría provocar indisponibilidad de Odoo (DoS al ERP) para activar el fallback y luego autenticarse.</p>
+  </div>
+</section>
+
+<!-- ==================== VULNERABILIDADES PERSISTENTES ==================== -->
+<section>
+  <h2 class="section-title">🔴 Vulnerabilidades Críticas Persistentes (>30 días)</h2>
+
+  <!-- VULN 1 -->
+  <div class="finding finding-critical">
+    <div class="finding-header">
+      <span class="badge critical">CRÍTICA</span>
+      <span class="badge" style="background:#6b7280;color:#fff;">30+ DÍAS SIN RESOLVER</span>
+      <span class="finding-title">1. Token Falso (Dummy Token) — JWT Real No Implementado</span>
+    </div>
+    <div class="finding-meta">
+      <span>📁 app/auth/routes.py:L96</span>
+      <span>🔒 OWASP: A07:2021 - Authentication Failures</span>
+      <span>📋 ISO 27001: A.9.4.2</span>
+    </div>
+    <p>El endpoint <code>/api/v1/auth/login</code> devuelve <code>"dummy_token_12345"</code> — un token estático, predecible y sin expiración. No hay implementación de JWT.</p>
+    <div class="code-vuln">
+      <div class="code-label">⚠️ Código Vulnerable (sin cambios desde mayo)</div>
+      <pre><code>return jsonify({
+    'success': True,
+    'message': 'Login exitoso',
+    'token': 'dummy_token_12345',  # ← CRÍTICO: token estático, predecible
+    'user': username,
+}), 200</code></pre>
+    </div>
+    <p><strong>Remediación pendiente:</strong> Instalar <code>Flask-JWT-Extended</code> y reemplazar con <code>create_access_token(identity=username, additional_claims={...})</code>. Esfuerzo estimado: 4 horas.</p>
+  </div>
+
+  <!-- VULN 2 -->
+  <div class="finding finding-critical">
+    <div class="finding-header">
+      <span class="badge critical">CRÍTICA</span>
+      <span class="badge" style="background:#6b7280;color:#fff;">30+ DÍAS SIN RESOLVER</span>
+      <span class="finding-title">2. DEBUG=True en Configuración de Producción</span>
+    </div>
+    <div class="finding-meta">
+      <span>📁 config.py:L188 + run.py:L66</span>
+      <span>🔒 OWASP: A05:2021 - Security Misconfiguration</span>
+      <span>📋 ISO 27001: A.12.1.1</span>
+    </div>
+    <p>Tanto <code>ProductionConfig</code> como el bloque de producción en <code>run.py</code> tienen <code>DEBUG=True</code>. En producción esto expone stacktraces completos, habilita el debugger interactivo de Werkzeug y puede permitir ejecución de código remoto.</p>
+    <div class="code-vuln">
+      <div class="code-label">⚠️ Código Vulnerable</div>
+      <pre><code># config.py:L185-189
+class ProductionConfig(Config):
+    DEBUG = True   # ← CRÍTICO
+
+# run.py:L64-68
+elif environment == 'production':
+    app.run(host='0.0.0.0', port=5000, debug=True)  # ← CRÍTICO</code></pre>
+    </div>
+    <div class="code-fix">
+      <div class="code-label">✅ Corrección (15 minutos)</div>
+      <pre><code>class ProductionConfig(Config):
+    DEBUG = False   # ← cambiar
+
+# run.py
+elif environment == 'production':
+    app.run(host='0.0.0.0', port=5000, debug=False)  # ← cambiar</code></pre>
+    </div>
+  </div>
+
+  <!-- VULN 3 -->
+  <div class="finding finding-critical">
+    <div class="finding-header">
+      <span class="badge critical">CRÍTICA</span>
+      <span class="badge" style="background:#6b7280;color:#fff;">30+ DÍAS SIN RESOLVER</span>
+      <span class="finding-title">3. Sin RBAC — Autorización de Un Solo Nivel</span>
+    </div>
+    <div class="finding-meta">
+      <span>📁 app/auth/security.py</span>
+      <span>🔒 OWASP: A01:2021 - Broken Access Control</span>
+      <span>📋 ISO 27001: A.9.1.2 - Access to networks and network services</span>
+    </div>
+    <p>El decorador <code>@require_login</code> solo verifica <code>session.get('logged_in')</code>. No hay roles, permisos ni segregación de funciones. Un usuario cobrador tiene el mismo acceso que un administrador de tesorería.</p>
+    <div class="code-vuln">
+      <div class="code-label">⚠️ Código Vulnerable</div>
+      <pre><code># app/auth/security.py:L10-23 — único control de acceso
+def require_login(view_func):
+    if not session.get('logged_in'):
+        return jsonify({'redirect': '/login'}), 401
+    return view_func(*args, **kwargs)  # sin verificar rol/permiso</code></pre>
+    </div>
+    <p><strong>Remediación:</strong> Implementar roles en la sesión durante el login (consultar grupos de Odoo) y crear decoradores <code>@require_role('treasury')</code>, <code>@require_role('collections')</code>. Esfuerzo: 12 horas.</p>
+  </div>
+
+  <!-- VULN 4 -->
+  <div class="finding finding-high">
+    <div class="finding-header">
+      <span class="badge high">ALTA</span>
+      <span class="badge" style="background:#6b7280;color:#fff;">30+ DÍAS SIN RESOLVER</span>
+      <span class="finding-title">4. Sin Rate Limiting — Fuerza Bruta en /login</span>
+    </div>
+    <div class="finding-meta">
+      <span>📁 app/auth/routes.py + requirements.txt</span>
+      <span>🔒 OWASP: A07:2021 - Authentication Failures</span>
+      <span>📋 ISO 27001: A.9.4.3 - Password management system</span>
+    </div>
+    <p><code>Flask-Limiter</code> no está instalado. El endpoint <code>/api/v1/auth/login</code> no tiene limitación de intentos. Un atacante puede intentar miles de combinaciones de contraseña por segundo.</p>
+    <div class="code-fix">
+      <div class="code-label">✅ Corrección Rápida (1 hora)</div>
+      <pre><code>pip install Flask-Limiter
+
+# app/__init__.py
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+limiter = Limiter(key_func=get_remote_address, default_limits=["200/day"])
+
+# app/auth/routes.py
+@auth_bp.route('/login', methods=['POST'])
+@limiter.limit("10/minute;50/hour")  # max 10 intentos por minuto
+def login(): ...</code></pre>
+    </div>
+  </div>
+
+  <!-- VULN 5 -->
+  <div class="finding finding-high">
+    <div class="finding-header">
+      <span class="badge high">ALTA</span>
+      <span class="badge" style="background:#6b7280;color:#fff;">30+ DÍAS SIN RESOLVER</span>
+      <span class="finding-title">5. Sin Protección CSRF en Endpoints POST</span>
+    </div>
+    <div class="finding-meta">
+      <span>📁 app/auth/routes.py, app/emails/routes.py</span>
+      <span>🔒 OWASP: A01:2021 - Broken Access Control</span>
+      <span>📋 ISO 27001: A.14.2.5 - Secure system engineering principles</span>
+    </div>
+    <p>Los endpoints POST (<code>/login</code>, <code>/logout</code>, envío de correos) no tienen tokens CSRF. Un sitio malicioso puede hacer que el navegador de un usuario autenticado ejecute acciones no autorizadas.</p>
+    <p><strong>Remediación:</strong> Instalar <code>Flask-WTF</code> y configurar <code>CSRFProtect(app)</code> o usar el header <code>X-Requested-With</code> como validación alternativa dado que la API es stateless REST. Esfuerzo: 2 horas.</p>
+  </div>
+
+</section>
+
+<!-- ==================== VULNERABILIDADES MEDIAS NUEVAS ==================== -->
+<section>
+  <h2 class="section-title">🟡 Nuevas Vulnerabilidades Medias (Junio 2026)</h2>
+
+  <!-- VULN CACHE -->
+  <div class="finding finding-medium">
+    <div class="finding-header">
+      <span class="badge medium">MEDIA</span>
+      <span class="badge new-vuln">NUEVA</span>
+      <span class="finding-title">6. Cache Cross-Session — Datos de Usuario A servidos a Usuario B</span>
+    </div>
+    <div class="finding-meta">
+      <span>📁 app/collections/routes.py:L30-32</span>
+      <span>🔒 OWASP: A01:2021 - Broken Access Control</span>
+    </div>
+    <p>Con <code>CACHE_TYPE = 'simple'</code> (caché en memoria de proceso), el caché es global y no está aislado por usuario. Dos usuarios con los mismos parámetros de query pueden compartir datos del caché.</p>
+    <div class="code-vuln">
+      <div class="code-label">⚠️ Código con riesgo</div>
+      <pre><code>@collections_bp.route('/report/account12', methods=['GET'])
+@require_login                                  # verifica sesión
+@cache.cached(timeout=300, query_string=True)   # caché global por params
+def report_account12():
+    # Si usuario A y usuario B tienen los mismos parámetros de filtro,
+    # el cache puede devolver datos del otro usuario (con simple cache)</code></pre>
+    </div>
+    <div class="code-fix">
+      <div class="code-label">✅ Corrección — Cache por usuario</div>
+      <pre><code>@collections_bp.route('/report/account12', methods=['GET'])
+@require_login
+def report_account12():
+    from app.auth.security import get_authenticated_user_email
+    user_email = get_authenticated_user_email()
+    # Cache key incluye el usuario
+    cache_key = f"report12_{user_email}_{request.query_string.decode()}"
+    cached = cache.get(cache_key)
+    if cached:
+        return jsonify(cached)
+    # ... procesar datos
+    cache.set(cache_key, result, timeout=300)
+    return jsonify(result)</code></pre>
+    </div>
+  </div>
+
+  <!-- VULN DoS LIMIT -->
+  <div class="finding finding-medium">
+    <div class="finding-header">
+      <span class="badge medium">MEDIA</span>
+      <span class="badge new-vuln">NUEVA</span>
+      <span class="finding-title">7. DoS Potencial — limit=0 Sin Restricción Máxima</span>
+    </div>
+    <div class="finding-meta">
+      <span>📁 app/collections/routes.py:L54 · app/exports/routes.py:L52</span>
+      <span>🔒 OWASP: A04:2021 - Insecure Design</span>
+    </div>
+    <div class="code-vuln">
+      <div class="code-label">⚠️ Sin límite máximo</div>
+      <pre><code># collections/routes.py:L54 y exports/routes.py:L52
+limit = request.args.get('limit', type=int, default=0)
+# limit=0 → Odoo search_read sin límite → puede traer millones de registros
+# Un usuario autenticado puede inducir carga masiva al servidor</code></pre>
+    </div>
+    <div class="code-fix">
+      <div class="code-label">✅ Corrección</div>
+      <pre><code>MAX_LIMIT = 10_000  # definir en config.py
+limit_raw = request.args.get('limit', type=int, default=0)
+limit = min(limit_raw, MAX_LIMIT) if limit_raw > 0 else MAX_LIMIT</code></pre>
+    </div>
+  </div>
+
+  <!-- VULN INFO DISCLOSURE -->
+  <div class="finding finding-medium">
+    <div class="finding-header">
+      <span class="badge medium">MEDIA</span>
+      <span class="badge new-vuln">NUEVA</span>
+      <span class="finding-title">8. Information Disclosure en Mensajes de Error</span>
+    </div>
+    <div class="finding-meta">
+      <span>📁 app/auth/routes.py:L113-115</span>
+      <span>🔒 OWASP: A05:2021 - Security Misconfiguration</span>
+    </div>
+    <div class="code-vuln">
+      <div class="code-label">⚠️ Expone detalles de infraestructura</div>
+      <pre><code>except Exception as e:
+    return jsonify({
+        'message': f'Error al conectar con Odoo: {str(e)}'
+        # Puede exponer: URL de Odoo, tipo de error de red,
+        # dirección IP interna, versión de Werkzeug, etc.
+    }), 500</code></pre>
+    </div>
+    <div class="code-fix">
+      <div class="code-label">✅ Corrección</div>
+      <pre><code>except Exception as e:
+    import logging
+    logging.getLogger(__name__).error("Error de conexión Odoo: %s", e)
+    return jsonify({
+        'message': 'Error de servicio. Intente nuevamente.'
+        # Mensaje genérico al cliente, detalles solo en logs del servidor
+    }), 503</code></pre>
+    </div>
+  </div>
+
+  <!-- VULN DEPENDENCY -->
+  <div class="finding finding-medium">
+    <div class="finding-header">
+      <span class="badge medium">MEDIA</span>
+      <span class="badge new-vuln">NUEVA</span>
+      <span class="finding-title">9. Dependencias con Rango Abierto — Supply Chain Risk</span>
+    </div>
+    <div class="finding-meta">
+      <span>📁 requirements.txt:L18-19</span>
+      <span>🔒 OWASP: A06:2021 - Vulnerable and Outdated Components</span>
+    </div>
+    <div class="code-vuln">
+      <div class="code-label">⚠️ Versiones sin anclar</div>
+      <pre><code>polars>=1.41.0      # puede instalar 2.x con breaking changes o vulnerabilidades
+XlsxWriter>=3.2.9  # puede instalar versiones futuras con CVEs</code></pre>
+    </div>
+    <div class="code-fix">
+      <div class="code-label">✅ Corrección — anclar versiones</div>
+      <pre><code>polars==1.41.0      # o la versión probada
+XlsxWriter==3.2.9  # versión probada y auditada</code></pre>
+    </div>
+    <p>También: <code>requests==2.31.0</code> tiene vulnerabilidades conocidas. Actualizar a <code>requests==2.32.3</code>.</p>
+  </div>
+
+</section>
+
+<!-- ==================== CONTROLES EXITOSOS ==================== -->
+<section>
+  <h2 class="section-title">✅ Controles de Seguridad Exitosos</h2>
+
+  <div class="status-grid">
+    <div class="status-item status-ok">
+      <span class="status-icon">✅</span>
+      <div><strong>SQLAlchemy ORM</strong> — previene SQL Injection. A03:2021 ✓</div>
+    </div>
+    <div class="status-item status-ok">
+      <span class="status-icon">✅</span>
+      <div><strong>HTTPOnly Cookies</strong> — <code>SESSION_COOKIE_HTTPONLY=True</code>. Previene acceso JS a cookies. A02:2021 ✓</div>
+    </div>
+    <div class="status-item status-ok">
+      <span class="status-icon">✅</span>
+      <div><strong>CORS Configurado</strong> — orígenes explícitos definidos. No wildcard. A05:2021 ✓</div>
+    </div>
+    <div class="status-item status-ok">
+      <span class="status-icon">✅</span>
+      <div><strong>Session SameSite=None (prod) / Lax (dev)</strong> — configuración cross-site correcta. A02:2021 ✓</div>
+    </div>
+    <div class="status-item status-ok">
+      <span class="status-icon">✅</span>
+      <div><strong>SESSION_COOKIE_SECURE=True en producción</strong> — solo HTTPS. A02:2021 ✓</div>
+    </div>
+    <div class="status-item status-ok">
+      <span class="status-icon">✅</span>
+      <div><strong>Error handlers 404/500 genéricos</strong> — no exponen paths o detalles de Flask. A05:2021 ✓</div>
+    </div>
+    <div class="status-item status-ok">
+      <span class="status-icon">✅</span>
+      <div><strong>RESTRICT_TO_LETTERS_ONLY</strong> — nuevo middleware de defensa en profundidad. A01:2021 ✓</div>
+    </div>
+    <div class="status-item status-ok">
+      <span class="status-icon">✅</span>
+      <div><strong>@require_login en todos los endpoints sensibles</strong> — colecciones, exports, letras. A01:2021 ✓</div>
+    </div>
+    <div class="status-item status-ok">
+      <span class="status-icon">✅</span>
+      <div><strong>Credenciales via variables de entorno</strong> — no hardcodeadas en código fuente. A02:2021 ✓</div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== MAPEO OWASP ==================== -->
+<section>
+  <h2 class="section-title">🗺️ Mapeo OWASP Top 10:2021</h2>
+
+  <table>
+    <tr><th>OWASP</th><th>Riesgo</th><th>Estado</th><th>Hallazgos</th></tr>
+    <tr>
+      <td><strong>A01</strong> Broken Access Control</td>
+      <td><span class="badge critical">CRÍTICO</span></td>
+      <td>🔴 No mitigado</td>
+      <td>Sin RBAC, sin CSRF, cache cross-session</td>
+    </tr>
+    <tr>
+      <td><strong>A02</strong> Cryptographic Failures</td>
+      <td><span class="badge medium">MEDIA</span></td>
+      <td>🟡 Parcial</td>
+      <td>HTTPOnly ✅, Secure ✅; dummy token ❌</td>
+    </tr>
+    <tr>
+      <td><strong>A03</strong> Injection</td>
+      <td><span class="badge low">BAJA</span></td>
+      <td>🟢 Mitigado</td>
+      <td>SQLAlchemy ORM previene SQL injection</td>
+    </tr>
+    <tr>
+      <td><strong>A04</strong> Insecure Design</td>
+      <td><span class="badge medium">MEDIA</span></td>
+      <td>🟡 Parcial</td>
+      <td>limit=0 sin restricción, auth fallback inseguro</td>
+    </tr>
+    <tr>
+      <td><strong>A05</strong> Security Misconfiguration</td>
+      <td><span class="badge critical">CRÍTICO</span></td>
+      <td>🔴 No mitigado</td>
+      <td>DEBUG=True en prod, sin security headers</td>
+    </tr>
+    <tr>
+      <td><strong>A06</strong> Vulnerable Components</td>
+      <td><span class="badge medium">MEDIA</span></td>
+      <td>🟡 Parcial</td>
+      <td>requests==2.31.0, rangos abiertos en deps</td>
+    </tr>
+    <tr>
+      <td><strong>A07</strong> Auth Failures</td>
+      <td><span class="badge critical">CRÍTICO</span></td>
+      <td>🔴 No mitigado</td>
+      <td>Dummy token, sin rate limiting, auth bypass fallback (NUEVO)</td>
+    </tr>
+    <tr>
+      <td><strong>A08</strong> Software Integrity Failures</td>
+      <td><span class="badge medium">MEDIA</span></td>
+      <td>🟡 Parcial</td>
+      <td>Sin pip-audit, sin hash verification en deps</td>
+    </tr>
+    <tr>
+      <td><strong>A09</strong> Security Logging Failures</td>
+      <td><span class="badge high">ALTA</span></td>
+      <td>🔴 No mitigado</td>
+      <td>Solo print(), sin logging estructurado, sin audit trail</td>
+    </tr>
+    <tr>
+      <td><strong>A10</strong> SSRF</td>
+      <td><span class="badge low">BAJA</span></td>
+      <td>🟢 Bajo riesgo</td>
+      <td>Llamadas externas solo a Odoo (URL fija del .env)</td>
+    </tr>
+  </table>
+</section>
+
+<!-- ==================== MAPEO ISO 27001 ==================== -->
+<section>
+  <h2 class="section-title">📋 Mapeo ISO/IEC 27001:2022</h2>
+
+  <table>
+    <tr><th>Control</th><th>Descripción</th><th>Estado</th><th>Evidencia</th></tr>
+    <tr><td>A.9.1.2</td><td>Acceso a redes y servicios de red</td><td>🔴 No cumple</td><td>Sin RBAC implementado</td></tr>
+    <tr><td>A.9.4.2</td><td>Procedimientos de inicio de sesión seguro</td><td>🔴 No cumple</td><td>Dummy token, sin MFA, auth bypass</td></tr>
+    <tr><td>A.9.4.3</td><td>Sistema de gestión de contraseñas</td><td>🔴 No cumple</td><td>Sin Rate Limiting, sin bloqueo de cuenta</td></tr>
+    <tr><td>A.12.1.1</td><td>Procedimientos de operación documentados</td><td>🟡 Parcial</td><td>DEBUG en producción, sin runbook</td></tr>
+    <tr><td>A.12.6.1</td><td>Gestión de vulnerabilidades técnicas</td><td>🟡 Parcial</td><td>Sin Dependabot, deps con CVEs</td></tr>
+    <tr><td>A.14.2.5</td><td>Principios de ingeniería de sistemas seguros</td><td>🟡 Parcial</td><td>Sin CSRF, sin security headers</td></tr>
+    <tr><td>A.14.2.8</td><td>Pruebas de seguridad del sistema</td><td>🔴 No cumple</td><td>Sin SAST, sin penetration testing</td></tr>
+    <tr><td>A.16.1.2</td><td>Reporte de eventos de seguridad</td><td>🔴 No cumple</td><td>Solo print(), sin logging estructurado</td></tr>
+    <tr><td>A.8.24</td><td>Uso de criptografía</td><td>🟡 Parcial</td><td>TLS en SMTP ✅; JWT no implementado ❌</td></tr>
+    <tr><td>A.6.3</td><td>Capacitación en seguridad</td><td>⬜ No evaluado</td><td>No se encontró documentación de training</td></tr>
+  </table>
+
+  <div style="margin-top:16px;">
+    <p><strong>Cumplimiento estimado ISO 27001:</strong> 48% (anterior: 45%)</p>
+    <div class="progress-bar"><div class="progress-fill" style="width:48%;background:#d97706;"></div></div>
+    <p style="font-size:12px;color:#6b7280;margin-top:4px;">Target recomendado para ir a producción: 70%+</p>
+  </div>
+</section>
+
+<!-- ==================== ANÁLISIS DEPENDENCIAS ==================== -->
+<section>
+  <h2 class="section-title">📦 Análisis de Dependencias</h2>
+
+  <table>
+    <tr><th>Paquete</th><th>Versión Actual</th><th>Versión Segura</th><th>Riesgo</th><th>Acción</th></tr>
+    <tr>
+      <td>requests</td>
+      <td>2.31.0</td>
+      <td>2.32.3</td>
+      <td><span class="badge high">ALTA</span></td>
+      <td>Actualizar — CVE-2024-35195</td>
+    </tr>
+    <tr>
+      <td>polars</td>
+      <td>≥1.41.0</td>
+      <td>==1.41.0 (anclar)</td>
+      <td><span class="badge medium">MEDIA</span></td>
+      <td>Anclar versión — supply chain risk</td>
+    </tr>
+    <tr>
+      <td>XlsxWriter</td>
+      <td>≥3.2.9</td>
+      <td>==3.2.9 (anclar)</td>
+      <td><span class="badge medium">MEDIA</span></td>
+      <td>Anclar versión — supply chain risk</td>
+    </tr>
+    <tr>
+      <td>gunicorn</td>
+      <td>21.2.0</td>
+      <td>23.0.0</td>
+      <td><span class="badge medium">MEDIA</span></td>
+      <td>Actualizar — mejoras de seguridad</td>
+    </tr>
+    <tr>
+      <td>Flask-JWT-Extended</td>
+      <td>❌ No instalado</td>
+      <td>4.7.1</td>
+      <td><span class="badge critical">CRÍTICO</span></td>
+      <td>Instalar — requerido para JWT real</td>
+    </tr>
+    <tr>
+      <td>Flask-Limiter</td>
+      <td>❌ No instalado</td>
+      <td>3.9.0</td>
+      <td><span class="badge high">ALTA</span></td>
+      <td>Instalar — requerido para rate limiting</td>
+    </tr>
+    <tr>
+      <td>Flask-WTF (CSRF)</td>
+      <td>❌ No instalado</td>
+      <td>1.2.2</td>
+      <td><span class="badge high">ALTA</span></td>
+      <td>Instalar — requerido para CSRF protection</td>
+    </tr>
+    <tr>
+      <td>celery</td>
+      <td>5.3.6</td>
+      <td>5.4.0</td>
+      <td><span class="badge low">BAJA</span></td>
+      <td>Actualizar — seguridad y bugfixes</td>
+    </tr>
+    <tr>
+      <td>SQLAlchemy</td>
+      <td>2.0.23</td>
+      <td>2.0.36</td>
+      <td><span class="badge low">BAJA</span></td>
+      <td>Actualizar — bugfixes</td>
+    </tr>
+  </table>
+
+  <p style="margin-top:12px;">
+    <strong>Recomendación:</strong> Ejecutar <code>pip-audit</code> semanalmente para detectar CVEs nuevos:
+    <code style="background:#f1f5f9;padding:2px 6px;border-radius:3px;">pip install pip-audit &amp;&amp; pip-audit</code>
+  </p>
+</section>
+
+<!-- ==================== PLAN DE ACCIÓN ==================== -->
+<section>
+  <h2 class="section-title">🚀 Plan de Remediación — Julio 2026</h2>
+
+  <h3>Semana 1 — Vulnerabilidades Críticas (Obligatorio antes de producción)</h3>
+  <table>
+    <tr><th>#</th><th>Tarea</th><th>Archivo</th><th>Esfuerzo</th><th>Impacto</th></tr>
+    <tr>
+      <td>1</td>
+      <td><strong>🚨 Eliminar auth bypass fallback</strong></td>
+      <td>app/core/odoo.py:L147-150</td>
+      <td>30 min</td>
+      <td><span class="badge critical">CRÍTICO</span></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><strong>DEBUG=False en producción</strong></td>
+      <td>config.py:L188 + run.py:L66</td>
+      <td>15 min</td>
+      <td><span class="badge critical">CRÍTICO</span></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><strong>Implementar JWT real</strong> (Flask-JWT-Extended)</td>
+      <td>app/auth/routes.py + security.py</td>
+      <td>4 horas</td>
+      <td><span class="badge critical">CRÍTICO</span></td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><strong>Rate Limiting en /login</strong> (Flask-Limiter)</td>
+      <td>app/auth/routes.py</td>
+      <td>1 hora</td>
+      <td><span class="badge high">ALTA</span></td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><strong>Security Headers</strong> (after_request)</td>
+      <td>app/__init__.py</td>
+      <td>1 hora</td>
+      <td><span class="badge high">ALTA</span></td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td><strong>Actualizar requests</strong> a 2.32.3</td>
+      <td>requirements.txt</td>
+      <td>10 min</td>
+      <td><span class="badge high">ALTA</span></td>
+    </tr>
+  </table>
+
+  <h3>Semana 2 — Vulnerabilidades Altas</h3>
+  <table>
+    <tr><th>#</th><th>Tarea</th><th>Esfuerzo</th></tr>
+    <tr><td>7</td><td>CSRF Protection (Flask-WTF)</td><td>2 horas</td></tr>
+    <tr><td>8</td><td>RBAC básico (roles en sesión desde grupos Odoo)</td><td>12 horas</td></tr>
+    <tr><td>9</td><td>Logging estructurado (reemplazar print() con logging)</td><td>4 horas</td></tr>
+    <tr><td>10</td><td>Fix cache cross-session (key por usuario)</td><td>2 horas</td></tr>
+    <tr><td>11</td><td>Límite máximo en exportaciones (MAX_LIMIT=10000)</td><td>1 hora</td></tr>
+  </table>
+
+  <h3>Semana 3-4 — Hardening</h3>
+  <table>
+    <tr><th>#</th><th>Tarea</th><th>Esfuerzo</th></tr>
+    <tr><td>12</td><td>Anclar versiones en requirements.txt</td><td>30 min</td></tr>
+    <tr><td>13</td><td>pip-audit en CI/CD</td><td>2 horas</td></tr>
+    <tr><td>14</td><td>Refactorizar config.py (eliminar duplicación)</td><td>3 horas</td></tr>
+    <tr><td>15</td><td>Penetration testing básico</td><td>8 horas</td></tr>
+  </table>
+</section>
+
+<!-- ==================== CONCLUSIÓN ==================== -->
+<section>
+  <h2 class="section-title">📝 Conclusión</h2>
+
+  <div class="comparison">
+    <div class="comp-box comp-before">
+      <h4>❌ Estado Actual (Junio 2026)</h4>
+      <ul style="padding-left:18px;font-size:13px;line-height:1.8;">
+        <li>Score seguridad: <strong>55/100</strong></li>
+        <li>6 vulnerabilidades críticas (5 heredadas + 1 nueva)</li>
+        <li>JWT falso (dummy_token) desde Mayo</li>
+        <li>DEBUG=True en producción desde Mayo</li>
+        <li>Nueva vuln: auth bypass via fallback</li>
+        <li>Sin rate limiting, sin CSRF, sin RBAC</li>
+        <li>Sin security headers</li>
+        <li>requests con CVE activo</li>
+      </ul>
+    </div>
+    <div class="comp-box comp-after">
+      <h4>✅ Objetivo Julio 2026</h4>
+      <ul style="padding-left:18px;font-size:13px;line-height:1.8;">
+        <li>Score seguridad: <strong>75+/100</strong></li>
+        <li>0 vulnerabilidades críticas</li>
+        <li>JWT real con expiración</li>
+        <li>DEBUG=False en producción</li>
+        <li>Auth fallback eliminado</li>
+        <li>Rate limiting + CSRF básico</li>
+        <li>Security headers completos</li>
+        <li>Dependencias auditadas y actualizadas</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:16px;margin-top:20px;">
+    <p style="color:#dc2626;font-weight:700;margin-bottom:6px;">⛔ Decisión de Despliegue en Producción</p>
+    <p style="font-size:13px;">El sistema <strong>NO debe desplegarse en producción</strong> hasta completar al menos las tareas 1-6 de la Semana 1. Las vulnerabilidades críticas actuales representan riesgo directo de: acceso no autorizado a datos financieros, exposición de infraestructura interna y posible ejecución remota de código via Werkzeug debugger.</p>
+  </div>
+
+  <p style="margin-top:20px;font-size:13px;color:#6b7280;">
+    <strong>Esfuerzo total estimado (Semana 1 críticos):</strong> ~7 horas — inversión mínima para desbloquear go-live.<br>
+    <strong>Próxima auditoría:</strong> Julio 25, 2026<br>
+    <strong>Auditor:</strong> Senior Security Analyst — SAST Review<br>
+    <strong>Metodología:</strong> OWASP Top 10:2021 + ISO/IEC 27001:2022 + Revisión estática de código<br>
+    <strong>Clasificación:</strong> Confidencial — Solo para equipo técnico y directivos autorizados
+  </p>
+</section>
+
+</div><!-- /container -->
+
+<div class="footer">
+  Informe de Auditoría de Seguridad — Finanzas AGV · Junio 25, 2026 · Auditor Senior SAST · Confidencial
+</div>
+
+</body>
+</html>

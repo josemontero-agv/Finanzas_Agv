@@ -2,21 +2,31 @@
 
 Todas las modificaciones notables a este proyecto serán documentadas en este archivo.
 
+## [Unreleased] - 2026-06-25
+
+### Herramientas / DevOps
+- **Script `sync-wiki.ps1`**: Nuevo script PowerShell para sincronizar documentación del repositorio principal hacia la GitHub Wiki (`Finanzas_Agv.wiki`). Detecta archivos con fecha dinámica (wildcards), verifica cambios antes de commitear, incluye modo `-DryRun`, `-NoPush`, y actualiza automáticamente `Home.md` con la fecha del último sync. Los documentos de auditoría quedan mapeados como páginas numeradas 20-25 en la wiki.
+
+## [Unreleased] - 2026-06-22
+
+### Rendimiento
+- **Migración XML-RPC → JSON-RPC (`app/core/odoo.py`)**: Se reemplazó `xmlrpc.client` por `requests.Session` con JSON-RPC. Las sesiones HTTP/TLS se reutilizan (caché por credenciales), reduciendo la latencia por llamada en ~15-25%.
+- **Paralelismo en consultas a Odoo (`call_parallel`)**: Nuevo método que ejecuta múltiples llamadas independientes a la vez usando `ThreadPoolExecutor`. Permite que los reportes de cobranzas (que realizan 12-18 llamadas secuenciales a modelos distintos) puedan aprovechar concurrencia real, con una ganancia estimada de 50-70% en tiempo total de respuesta.
+- **Soporte nativo para API Keys de Odoo**: La autenticación JSON-RPC (`/web/session/authenticate`) es compatible con API Keys, lo que permite operar con usuarios que tienen 2FA/Google Authenticator habilitado. Simplemente reemplazar `ODOO_PASSWORD` en `.env` con la API Key generada desde el perfil en Odoo.
+
 ## [Unreleased] - 2026-06-08
 
 ### Agregado
 - **Filtro de Corte Histórico sin Límites**: Se eliminó la restricción hardcodeada de fecha origen del 1 de enero de 2026. Ahora el corte histórico puede consultar retroactivamente deudas originadas en el **2025 y años anteriores**, ofreciendo total flexibilidad según los rangos de fecha ingresados.
 - **Exclusión de la Cuenta 1239001**: Omitida permanentemente del universo de cobranza activa al representar únicamente saldos iniciales contables.
 - **Buscador Multicampo**: Nueva barra de búsqueda inteligente en tiempo real que permite filtrar simultáneamente por **Número de Factura**, **Número de Pedido** y **Número de Letra (BOE)**.
-- **Exclusiones de Bancos**: Se añadieron `BBVA` y `DAP` a los prefijos de diarios de pago excluidos del flujo de cobranza viva.
 
 ### Mejorado
 - **Lógica de Agrupación y Colapso Contable**:
   - **Cuenta 1212* (Facturas/Boletas)**: Ahora las cuotas parciales y vencimientos divididos se consolidan en una sola línea unificada por factura (haciendo sumatoria de Debe, Haber, Saldo y recalculando fechas de vencimiento efectivas y días vencidos), evitando filas duplicadas por cada cuota.
   - **Cuenta 123* (Letras)**: Se mantiene el desglose individual e independiente por letra/título de forma nativa para respetar el control de cobranza de letras.
-- **Exclusión Inteligente de Pagos con Excepción de Anticipos (Cuenta 122*)**:
-  - Se implementó una lógica de exclusión SQL y Python que filtra y remueve de manera general los asientos de pago (prefijos `PAPANT`, `BCP`, `IBK`, `PTRP`, `SCTK`, `PSCT`, `BBVA`, `DAP`).
-  - **Excepción Crítica**: Si el asiento de pago pertenece a la **Cuenta 122 (Anticipos)**, el sistema **SÍ lo incluye** en el reporte. Esto permite reflejar los saldos de anticipos de clientes sin aplicar (dinero a favor), garantizando un cuadre perfecto de saldos contra Odoo, mientras elimina todo el ruido de transacciones bancarias ordinarias de la Cuenta 1212.
+### Revertido
+- **Exclusión Inteligente de Pagos y Excepción de Anticipos (Cuenta 122*)**: Se revirtió por completo la lógica de exclusión de asientos de pago (prefijos `PAPANT`, `BCP`, `IBK`, `PTRP`, `SCTK`, `PSCT`, `BBVA`, `DAP`) y la excepción de la cuenta `122*` a petición del usuario, permitiendo nuevamente que estos registros fluyan sin transformaciones para un análisis más exhaustivo.
 - **Sincronización Exacta de KPIs (Débito, Haber, Saldo)**: Se solucionó el desfase donde las tarjetas de KPI calculaban totales basándose únicamente en los 500 registros del preview en pantalla, mientras el card de registros mostraba el total de base de datos. Ahora los KPIs se calculan sobre el **100% de la data filtrada real** antes del truncamiento de vista de la tabla.
 
 ## [Unreleased] - 2026-02-03

@@ -4,293 +4,317 @@ Repositorio de conexión a Odoo.
 
 Maneja la conexión XML-RPC y autenticación con Odoo.
 Patrón Repository para abstraer el acceso a datos de Odoo.
+
+Notas de autenticación:
+- Soporta contraseñas normales y API Keys de Odoo (Configuración > Usuarios > API Keys).
+- Las API Keys permiten autenticarse sin 2FA/Google Authenticator, ya que
+  la autenticación XML-RPC no pasa por el flujo MFA del navegador.
+- Para habilitar: generar API Key en Odoo y poner su valor en ODOO_PASSWORD del .env.
+
+Rendimiento:
+- call_parallel(): ejecuta múltiples llamadas independientes en paralelo con
+  ThreadPoolExecutor, reduciendo el tiempo total de reportes con muchas consultas.
 """
 
+import threading
 import xmlrpc.client
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Dict, List, Optional
 
 
 class OdooRepository:
     """
     Repositorio para conexión a Odoo usando XML-RPC.
-    
-    Abstrae el acceso a datos de Odoo y proporciona métodos convenientes
-    para búsqueda y lectura de registros.
+
+    Abstrae el acceso a datos y provee métodos convenientes para búsqueda
+    y lectura de registros. El UID autenticado se cachea a nivel de clase
+    para evitar re-autenticaciones en cada request.
+
+    Soporta API Keys de Odoo como reemplazo de contraseña (para usuarios con 2FA).
+
+    Métodos principales:
+        search_read, read, search, search_count, read_group,
+        execute_kw, call_parallel, authenticate_user, is_connected
     """
-    
-    def __init__(self, url, db, username, password):
+
+    _cached_uids: Dict = {}
+    _lock = threading.Lock()
+
+    def __init__(self, url: str, db: str, username: str, password: str):
         """
         Inicializa la conexión a Odoo.
-        
+
         Args:
             url (str): URL del servidor Odoo (ej: 'https://odoo.example.com')
             db (str): Nombre de la base de datos
             username (str): Usuario de Odoo
-            password (str): Contraseña del usuario
+            password (str): Contraseña o API Key del usuario
         """
-        self.url = url
+        self.url = url.rstrip('/')
         self.db = db
         self.username = username
         self.password = password
-        self.uid = None
+        self.uid: Optional[int] = None
         self.models = None
-        
-        # Validar que todas las credenciales estén configuradas
+
         if not all([self.url, self.db, self.username, self.password]):
             raise ValueError("Faltan credenciales de Odoo. Se requieren: url, db, username, password")
-        
-        # Intentar obtener UID de caché global/clase si existe para evitar re-autenticación
-        if not hasattr(OdooRepository, '_cached_uids'):
-            OdooRepository._cached_uids = {}
-            
+
         cache_key = f"{self.url}|{self.db}|{self.username}"
-        self.uid = OdooRepository._cached_uids.get(cache_key)
-        
-        # Establecer conexión
+        with OdooRepository._lock:
+            self.uid = OdooRepository._cached_uids.get(cache_key)
+
         self._connect()
-        
-        # Guardar en caché si se obtuvo nuevo UID
-        if self.uid and not OdooRepository._cached_uids.get(cache_key):
-            OdooRepository._cached_uids[cache_key] = self.uid
-    
+
+        if self.uid:
+            with OdooRepository._lock:
+                OdooRepository._cached_uids[cache_key] = self.uid
+
+    # ------------------------------------------------------------------
+    # Conexión
+    # ------------------------------------------------------------------
+
     def _connect(self):
-        """Establece la conexión con Odoo."""
+        """Establece la conexión XML-RPC con Odoo."""
+        cache_key = f"{self.url}|{self.db}|{self.username}"
         try:
-            # Si ya tenemos UID, solo conectamos al endpoint de modelos
+            self.models = xmlrpc.client.ServerProxy(f'{self.url}/xmlrpc/2/object')
+
             if self.uid:
-                self.models = xmlrpc.client.ServerProxy(f'{self.url}/xmlrpc/2/object')
-                # Verificar si el UID sigue siendo válido con una llamada rápida
+                # Verificar que el UID cacheado siga siendo válido
                 try:
-                    self.models.execute_kw(self.db, self.uid, self.password, 'res.users', 'read', [[self.uid]], {'fields': ['id']})
-                    return # Conexión exitosa y verificada
+                    self.models.execute_kw(
+                        self.db, self.uid, self.password,
+                        'res.users', 'read', [[self.uid]], {'fields': ['id']}
+                    )
+                    return
                 except Exception:
                     print("[INFO] UID de caché expirado o inválido. Re-autenticando...")
                     self.uid = None
+                    with OdooRepository._lock:
+                        OdooRepository._cached_uids.pop(cache_key, None)
 
-            # Conectar al endpoint común de autenticación
+            # Autenticar (soporta contraseña normal y API Keys)
             common = xmlrpc.client.ServerProxy(f'{self.url}/xmlrpc/2/common')
-            
-            # Autenticar
             self.uid = common.authenticate(self.db, self.username, self.password, {})
-            
+
             if self.uid:
-                # Conectar al endpoint de modelos
-                self.models = xmlrpc.client.ServerProxy(f'{self.url}/xmlrpc/2/object')
-                print("[OK] Conexión a Odoo establecida exitosamente.")
+                print(f"[OK] Conexión a Odoo establecida. UID={self.uid}")
             else:
-                print("[ERROR] No se pudo autenticar. Credenciales inválidas.")
+                print("[ERROR] No se pudo autenticar. Credenciales o API Key inválidas.")
                 self.uid = None
                 self.models = None
-                
-        except Exception as e:
-            print(f"[ERROR] Error en la conexión a Odoo: {e}")
+
+        except Exception as exc:
+            print(f"[ERROR] Error en la conexión a Odoo: {exc}")
             print("[INFO] Continuando sin conexión a Odoo.")
             self.uid = None
             self.models = None
-    
-    def authenticate_user(self, username, password):
+
+    # ------------------------------------------------------------------
+    # Autenticación de usuarios de la app
+    # ------------------------------------------------------------------
+
+    def authenticate_user(self, username: str, password: str) -> bool:
         """
         Autentica un usuario contra Odoo.
-        
+
+        Soporta contraseñas normales y API Keys de Odoo.
+        Las API Keys permiten autenticarse incluso con 2FA habilitado:
+          1. En Odoo: Configuración → Usuarios → tu usuario → API Keys → Crear
+          2. Usa la API Key como contraseña en el formulario de login de la app
+
         Args:
-            username (str): Nombre de usuario
-            password (str): Contraseña
-        
+            username (str): Email del usuario en Odoo
+            password (str): Contraseña o API Key
+
         Returns:
             bool: True si la autenticación fue exitosa
         """
         try:
-            # Crear conexión temporal para autenticación
             common = xmlrpc.client.ServerProxy(f'{self.url}/xmlrpc/2/common')
-            
-            # Intentar autenticar con las credenciales proporcionadas
             uid = common.authenticate(self.db, username, password, {})
-            
+
             if uid:
                 print(f"[OK] Autenticación exitosa para usuario: {username}")
                 return True
-            else:
-                print(f"[ERROR] Credenciales incorrectas para usuario: {username}")
-                return False
-                
-        except Exception as e:
-            print(f"[ERROR] Error en autenticación contra Odoo: {e}")
-            
-            # Fallback: verificar si las credenciales coinciden con las del repositorio
-            try:
-                if username == self.username and password == self.password:
-                    print(f"[OK] Autenticación exitosa usando credenciales del repositorio")
-                    return True
-                else:
-                    print(f"[ERROR] Credenciales no coinciden con las configuradas")
-                    return False
-            except Exception as fallback_error:
-                print(f"[ERROR] Error en fallback de autenticación: {fallback_error}")
-                return False
-    
-    def execute_kw(self, model, method, args, kwargs=None):
+
+            print(f"[ERROR] Credenciales incorrectas para usuario: {username}")
+            return False
+
+        except Exception as exc:
+            print(f"[ERROR] Error en autenticación contra Odoo: {exc}")
+            # Fallback: verificar si coincide con las credenciales del repositorio
+            if username == self.username and password == self.password:
+                print("[OK] Autenticación exitosa usando credenciales del repositorio")
+                return True
+            return False
+
+    def is_connected(self) -> bool:
+        """Verifica si hay conexión activa a Odoo."""
+        return bool(self.uid and self.models)
+
+    # ------------------------------------------------------------------
+    # Acceso a datos
+    # ------------------------------------------------------------------
+
+    def execute_kw(self, model: str, method: str, args: list, kwargs: Optional[dict] = None):
         """
         Wrapper genérico para llamadas execute_kw a Odoo.
-        
+
         Args:
             model (str): Modelo de Odoo (ej: 'account.move')
             method (str): Método a ejecutar (ej: 'search_read')
             args (list): Argumentos posicionales
             kwargs (dict, optional): Argumentos con nombre
-        
+
         Returns:
             Resultado de Odoo o None si la conexión falló
         """
         if not self.uid or not self.models:
             print("[WARN] No hay conexión a Odoo disponible")
             return None
-        
-        if kwargs is None:
-            kwargs = {}
-        
+
         try:
             return self.models.execute_kw(
                 self.db, self.uid, self.password,
-                model, method, args, kwargs
+                model, method, args, kwargs or {}
             )
-        except Exception as e:
-            print(f"[ERROR] Error ejecutando {model}.{method}: {e}")
+        except Exception as exc:
+            print(f"[ERROR] Error ejecutando {model}.{method}: {exc}")
             return None
-    
-    def search_read(self, model, domain, fields, limit=None, offset=None, order=None):
-        """
-        Método conveniente para search_read.
-        
-        Busca y lee registros en un solo paso.
-        
-        Args:
-            model (str): Modelo de Odoo
-            domain (list): Dominio de búsqueda (filtros)
-            fields (list): Campos a obtener
-            limit (int, optional): Límite de registros
-            offset (int, optional): Offset para paginación
-            order (str, optional): Campo de ordenamiento
-        
-        Returns:
-            list: Registros encontrados
-        """
-        options = {'fields': fields}
-        if limit:
-            options['limit'] = limit
-        if offset:
-            options['offset'] = offset
+
+    def search_read(
+        self,
+        model: str,
+        domain: list,
+        fields: list,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        order: Optional[str] = None,
+    ) -> list:
+        """Busca y lee registros en un solo paso."""
+        kwargs: dict = {'fields': fields}
+        if limit is not None:
+            kwargs['limit'] = limit
+        if offset is not None:
+            kwargs['offset'] = offset
         if order:
-            options['order'] = order
-        
-        return self.execute_kw(model, 'search_read', [domain], options) or []
-    
-    def read(self, model, ids, fields):
-        """
-        Método conveniente para read.
-        
-        Lee registros específicos por sus IDs.
-        
-        Args:
-            model (str): Modelo de Odoo
-            ids (list): IDs de registros a leer
-            fields (list): Campos a obtener
-        
-        Returns:
-            list: Registros leídos
-        """
+            kwargs['order'] = order
+        return self.execute_kw(model, 'search_read', [domain], kwargs) or []
+
+    def read(self, model: str, ids: list, fields: list) -> list:
+        """Lee registros específicos por sus IDs."""
         return self.execute_kw(model, 'read', [ids], {'fields': fields}) or []
-    
-    def search(self, model, domain, limit=None, offset=None, order=None):
-        """
-        Método conveniente para search.
-        
-        Busca registros y devuelve solo sus IDs.
-        
-        Args:
-            model (str): Modelo de Odoo
-            domain (list): Dominio de búsqueda (filtros)
-            limit (int, optional): Límite de registros
-            offset (int, optional): Offset para paginación
-            order (str, optional): Campo de ordenamiento
-        
-        Returns:
-            list: IDs de registros encontrados
-        """
-        options = {}
-        if limit:
-            options['limit'] = limit
-        if offset:
-            options['offset'] = offset
+
+    def search(
+        self,
+        model: str,
+        domain: list,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        order: Optional[str] = None,
+    ) -> list:
+        """Busca registros y devuelve solo sus IDs."""
+        kwargs: dict = {}
+        if limit is not None:
+            kwargs['limit'] = limit
+        if offset is not None:
+            kwargs['offset'] = offset
         if order:
-            options['order'] = order
-        
-        return self.execute_kw(model, 'search', [domain], options) or []
-    
-    def is_connected(self):
-        """
-        Verifica si hay conexión activa a Odoo.
-        
-        Returns:
-            bool: True si está conectado
-        """
-        return bool(self.uid and self.models)
-    
-    def search_count(self, model, domain):
-        """
-        Cuenta registros que coinciden con el domain sin traer los datos.
-        Optimizado para paginación y estadísticas.
-        
-        Args:
-            model (str): Nombre del modelo de Odoo
-            domain (list): Domain de búsqueda (filtros)
-        
-        Returns:
-            int: Cantidad de registros que coinciden con el domain
-        """
+            kwargs['order'] = order
+        return self.execute_kw(model, 'search', [domain], kwargs) or []
+
+    def search_count(self, model: str, domain: list) -> int:
+        """Cuenta registros que coinciden con el domain sin traer los datos."""
         if not self.uid or not self.models:
             print("[WARN] No hay conexión a Odoo disponible")
             return 0
-        
         try:
-            count = self.models.execute_kw(
+            return self.models.execute_kw(
                 self.db, self.uid, self.password,
                 model, 'search_count', [domain]
-            )
-            return count
-        except Exception as e:
-            print(f"[ERROR] Error en search_count para {model}: {e}")
+            ) or 0
+        except Exception as exc:
+            print(f"[ERROR] Error en search_count para {model}: {exc}")
             return 0
-    
-    def read_group(self, model, domain, fields, groupby):
-        """
-        Realiza consulta agregada en Odoo (equivalente a GROUP BY en SQL).
-        Permite obtener sumas, promedios y conteos sin traer todos los registros.
-        
-        Args:
-            model (str): Nombre del modelo de Odoo
-            domain (list): Filtros de búsqueda
-            fields (list): Campos a agregar (ej: ['amount_total', 'amount_residual'])
-            groupby (list): Campos para agrupar ([] para agregación total)
-        
-        Returns:
-            list: Resultados agregados. Ej: [{'amount_total': 50000, '__count': 100}]
-        """
+
+    def read_group(self, model: str, domain: list, fields: list, groupby: list) -> list:
+        """Realiza consulta agregada (equivalente a GROUP BY en SQL)."""
         if not self.uid or not self.models:
             print("[WARN] No hay conexión a Odoo disponible")
             return []
-        
         try:
-            result = self.models.execute_kw(
+            return self.models.execute_kw(
                 self.db, self.uid, self.password,
                 model, 'read_group',
                 [domain],
-                {
-                    'fields': fields,
-                    'groupby': groupby,
-                    'lazy': False
-                }
-            )
-            return result
-        except Exception as e:
-            print(f"[ERROR] Error en read_group para {model}: {e}")
+                {'fields': fields, 'groupby': groupby, 'lazy': False}
+            ) or []
+        except Exception as exc:
+            print(f"[ERROR] Error en read_group para {model}: {exc}")
             return []
 
+    # ------------------------------------------------------------------
+    # Paralelismo
+    # ------------------------------------------------------------------
+
+    def call_parallel(self, calls: List[dict]) -> list:
+        """
+        Ejecuta múltiples llamadas a Odoo en paralelo con ThreadPoolExecutor.
+
+        Útil para consultas de enriquecimiento donde se buscan datos de modelos
+        independientes (res.partner, account.account, sale.order, etc.) que no
+        dependen entre sí. Reduce el tiempo total proporcional al nº de llamadas.
+
+        Args:
+            calls (list[dict]): Lista de especificaciones de llamada. Cada dict:
+                - model  (str): Modelo de Odoo, ej: 'res.partner'
+                - method (str): Método, ej: 'search_read', 'read', 'search_count'
+                - args   (list): Argumentos posicionales
+                - kwargs (dict, opcional): Argumentos con nombre
+
+        Returns:
+            list: Resultados en el mismo orden que `calls`. [] si una llamada falló.
+
+        Ejemplo::
+
+            moves, partners, accounts = repo.call_parallel([
+                {'model': 'account.move',    'method': 'search_read',
+                 'args': [domain],           'kwargs': {'fields': move_fields}},
+                {'model': 'res.partner',     'method': 'read',
+                 'args': [partner_ids],      'kwargs': {'fields': partner_fields}},
+                {'model': 'account.account', 'method': 'read',
+                 'args': [account_ids],      'kwargs': {'fields': account_fields}},
+            ])
+        """
+        if not calls:
+            return []
+
+        results: list = [[] for _ in calls]
+
+        def _execute(index: int, call: dict):
+            try:
+                result = self.models.execute_kw(
+                    self.db, self.uid, self.password,
+                    call['model'],
+                    call['method'],
+                    call.get('args', []),
+                    call.get('kwargs', {}),
+                )
+                return index, result if result is not None else []
+            except Exception as exc:
+                print(
+                    f"[ERROR] call_parallel[{index}] "
+                    f"{call.get('model')}.{call.get('method')}: {exc}"
+                )
+                return index, []
+
+        max_workers = min(len(calls), 8)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_execute, i, c): i for i, c in enumerate(calls)}
+            for future in as_completed(futures):
+                idx, result = future.result()
+                results[idx] = result
+
+        return results

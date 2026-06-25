@@ -43,7 +43,7 @@ Thumbs.db
 *.tmp
 
 # Archivos de configuración no críticos
-.env.produccion
+
 
 *.bak
 *.log
