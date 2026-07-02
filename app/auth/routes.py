@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Rutas de Autenticación.
+Rutas de Autenticacion.
 
-Endpoints para login y autenticación de usuarios.
+Endpoints para login y autenticacion de usuarios.
 """
 
-from flask import request, jsonify, current_app, session
+from flask import jsonify, session, current_app
 from app.auth import auth_bp
-from app.core.odoo import OdooRepository
+from app import limiter
 
 
 def _normalize_user_email(username, provided_email=None):
@@ -26,106 +26,32 @@ def _normalize_user_email(username, provided_email=None):
 
 
 @auth_bp.route('/login', methods=['POST'])
+@limiter.limit("10 per minute;50 per hour")
 def login():
     """
-    Endpoint de login de usuarios.
-    
-    Autentica un usuario contra Odoo y devuelve un token.
-    
-    Request Body (JSON):
-        {
-            "username": "usuario",
-            "password": "contraseña"
-        }
-    
-    Response (JSON):
-        Success:
-            {
-                "success": true,
-                "message": "Login exitoso",
-                "token": "dummy_token_12345",
-                "user": "usuario"
-            }
-        
-        Error:
-            {
-                "success": false,
-                "message": "Credenciales inválidas"
-            }
-    """
-    try:
-        # Obtener datos del request
-        data = request.get_json()
-        
-        if not data:
-            return jsonify({
-                'success': False,
-                'message': 'Debe enviar datos en formato JSON'
-            }), 400
-        
-        username = data.get('username')
-        password = data.get('password')
-        
-        # Validar que se enviaron ambos campos
-        if not username or not password:
-            return jsonify({
-                'success': False,
-                'message': 'Se requieren username y password'
-            }), 400
-        
-        # Intentar autenticar contra Odoo
-        try:
-            odoo_repo = OdooRepository(
-                url=current_app.config['ODOO_URL'],
-                db=current_app.config['ODOO_DB'],
-                username=current_app.config['ODOO_USER'],
-                password=current_app.config['ODOO_PASSWORD']
-            )
-            
-            # Autenticar usuario
-            if odoo_repo.authenticate_user(username, password):
-                user_email = _normalize_user_email(username, data.get('email'))
-                session['logged_in'] = True
-                session['username'] = username
-                session['email'] = user_email
-                session.permanent = True
+    Endpoint de login legado (usuario/contraseña contra Odoo). Deshabilitado.
 
-                return jsonify({
-                    'success': True,
-                    'message': 'Login exitoso',
-                    'token': 'dummy_token_12345',  # En producción: generar JWT real
-                    'user': username,
-                    'email': user_email
-                }), 200
-            else:
-                return jsonify({
-                    'success': False,
-                    'message': 'Credenciales inválidas'
-                }), 401
-                
-        except ValueError as ve:
-            return jsonify({
-                'success': False,
-                'message': f'Error de configuración: {str(ve)}'
-            }), 500
-        except Exception as e:
-            return jsonify({
-                'success': False,
-                'message': f'Error al conectar con Odoo: {str(e)}'
-            }), 500
-            
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': f'Error interno: {str(e)}'
-        }), 500
+    El único método de autenticación soportado es Google OAuth2, vía
+    GET /api/v1/auth/google. Se conserva esta ruta (en vez de eliminarla)
+    para no romper integraciones externas que aún la invoquen.
+
+    Response (JSON):
+        {
+            "success": false,
+            "message": "Este método de login ya no está disponible. Use /api/v1/auth/google"
+        }
+    """
+    return jsonify({
+        'success': False,
+        'message': 'Este método de login ya no está disponible. Use /api/v1/auth/google'
+    }), 410
 
 
 @auth_bp.route('/user-info', methods=['GET'])
 def user_info():
     """
-    Endpoint para obtener información del usuario actual desde la sesión.
-    
+    Endpoint para obtener informacion del usuario actual desde la sesion.
+
     Response (JSON):
         {
             "success": true,
@@ -139,38 +65,36 @@ def user_info():
             'username': session.get('username', ''),
             'email': session.get('email', '')
         }), 200
-    else:
-        return jsonify({
-            'success': False,
-            'message': 'Usuario no autenticado'
-        }), 401
+    return jsonify({
+        'success': False,
+        'message': 'Usuario no autenticado'
+    }), 401
 
 
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
-    """Cierra la sesión del usuario autenticado."""
+    """Cierra la sesion del usuario autenticado."""
     session.clear()
     return jsonify({
         'success': True,
-        'message': 'Sesión cerrada'
+        'message': 'Sesion cerrada'
     }), 200
 
 
 @auth_bp.route('/status', methods=['GET'])
 def status():
     """
-    Endpoint para verificar el estado del módulo de autenticación.
-    
+    Endpoint para verificar el estado del modulo de autenticacion.
+
     Response (JSON):
         {
             "module": "auth",
             "status": "active",
-            "endpoints": ["/login", "/status"]
+            "endpoints": ["/google", "/google/callback", "/logout", "/status", "/user-info"]
         }
     """
     return jsonify({
         'module': 'auth',
         'status': 'active',
-        'endpoints': ['/login', '/logout', '/status', '/user-info']
+        'endpoints': ['/google', '/google/callback', '/logout', '/status', '/user-info']
     }), 200
-

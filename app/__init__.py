@@ -12,6 +12,10 @@ from flask_caching import Cache
 from flask_compress import Compress
 from flask_mail import Mail
 from flask_cors import CORS
+from flask_jwt_extended import JWTManager
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from authlib.integrations.flask_client import OAuth
 from config import config
 from app.core.celery_utils import celery_init_app
 
@@ -19,6 +23,9 @@ from app.core.celery_utils import celery_init_app
 cache = Cache()
 compress = Compress()
 mail = Mail()
+jwt = JWTManager()
+limiter = Limiter(key_func=get_remote_address, default_limits=[])
+oauth = OAuth()
 
 
 def create_app(config_name='development'):
@@ -41,7 +48,8 @@ def create_app(config_name='development'):
     app.config.setdefault('RESTRICT_TO_LETTERS_ONLY', True)
     
     # Configurar CORS para Next.js frontend
-    cors_origins = ["http://localhost:3000", "http://localhost:5000"]
+    # localhost:5000 es la propia API, no debe estar como origen permitido
+    cors_origins = ["http://localhost:3000"]
     frontend_url = (app.config.get('FRONTEND_URL') or '').strip()
     if frontend_url:
         parsed_frontend = urlsplit(frontend_url)
@@ -93,7 +101,26 @@ def create_app(config_name='development'):
     
     # Configurar Flask-Mail
     mail.init_app(app)
-    
+
+    # Inicializar Flask-JWT-Extended
+    jwt.init_app(app)
+
+    # Inicializar Flask-Limiter
+    # storage_uri: usa Redis si está disponible, memoria simple si no
+    redis_url = app.config.get('REDIS_URL')
+    limiter.storage_uri = redis_url if redis_url else 'memory://'
+    limiter.init_app(app)
+
+    # Inicializar cliente OAuth (login con Google)
+    oauth.init_app(app)
+    oauth.register(
+        name='google',
+        client_id=app.config.get('GOOGLE_CLIENT_ID'),
+        client_secret=app.config.get('GOOGLE_CLIENT_SECRET'),
+        server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+        client_kwargs={'scope': 'openid email profile'},
+    )
+
     # Registrar blueprints API
     from app.auth import auth_bp
     from app.collections import collections_bp
@@ -114,6 +141,59 @@ def create_app(config_name='development'):
     # Registrar blueprint Web (Frontend)
     from app.web import web_bp
     app.register_blueprint(web_bp)
+
+    @app.after_request
+    def add_security_headers(response):
+        """Añade cabeceras de seguridad a todas las respuestas."""
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        # HSTS solo en producción (requiere HTTPS activo)
+        if not app.debug:
+            response.headers['Strict-Transport-Security'] = (
+                'max-age=31536000; includeSubDomains'
+            )
+        return response
+
+    @app.errorhandler(429)
+    def ratelimit_handler(e):
+        """Respuesta JSON cuando se supera el rate limit."""
+        return jsonify({
+            'success': False,
+            'message': 'Demasiados intentos. Intente nuevamente en unos minutos.',
+            'status': 429
+        }), 429
+
+    @app.before_request
+    def check_csrf():
+        """
+        Proteccion CSRF basica para endpoints de API.
+        - Si el request viene con cabecera Origin, debe ser un origen permitido por CORS.
+        - Los requests POST/PUT/PATCH con body deben enviar Content-Type: application/json.
+        El frontend (axios con withCredentials) ya cumple ambas condiciones de forma nativa.
+        """
+        if request.method == 'OPTIONS':
+            return None
+        if not request.path.startswith('/api/v1/'):
+            return None
+
+        origin = request.headers.get('Origin')
+        if origin and origin not in cors_origins:
+            return jsonify({
+                'success': False,
+                'message': 'Origen no permitido'
+            }), 403
+
+        if request.method in ('POST', 'PUT', 'PATCH') and request.content_length:
+            content_type = (request.content_type or '').split(';')[0].strip()
+            if content_type and content_type != 'application/json':
+                return jsonify({
+                    'success': False,
+                    'message': 'Content-Type debe ser application/json'
+                }), 415
+
+        return None
 
     @app.before_request
     def restrict_api_modules():
@@ -145,6 +225,7 @@ def create_app(config_name='development'):
             '/api/v1/auth/logout',
             '/api/v1/auth/status',
             '/api/v1/auth/user-info',
+            '/api/v1/auth/google',
         )
 
         if any(path == prefix or path.startswith(f'{prefix}/') for prefix in allowed_prefixes):
@@ -211,5 +292,8 @@ def create_app(config_name='development'):
     print(f"[OK] Flask-Caching configurado (timeout: 300s)")
     print(f"[OK] Flask-Compress configurado (nivel: 6)")
     print(f"[OK] Flask-Mail configurado (servidor: {app.config.get('MAIL_SERVER', 'N/A')})")
+    print(f"[OK] Flask-JWT-Extended inicializado")
+    print(f"[OK] Flask-Limiter inicializado (storage: {'Redis' if redis_url else 'memoria'})")
+    print(f"[OK] Security headers habilitados")
     
     return app

@@ -5,12 +5,24 @@ Rutas de Cobranzas (Collections).
 Endpoints para reportes de cuentas por cobrar.
 """
 
-from flask import request, jsonify, current_app
+from flask import request, jsonify, current_app, session
 from app.collections import collections_bp
 from app.collections.services import CollectionsService
 from app.core.odoo import OdooRepository
 from app.auth.security import require_login
 from app import cache
+
+# Máximo de registros permitido por request (previene DoS por queries sin límite)
+MAX_REPORT_LIMIT = 10_000
+
+
+def _user_cache_key():
+    """
+    Genera una clave de caché que incluye la identidad del usuario autenticado.
+    Evita que dos usuarios distintos compartan datos en caché.
+    """
+    user = session.get('username', '_anon_')
+    return f"collections:v1:{user}:{request.path}?{request.query_string.decode()}"
 
 
 def _get_odoo_repository():
@@ -28,7 +40,7 @@ def _get_odoo_repository():
 
 @collections_bp.route('/report/account12', methods=['GET'])
 @require_login
-@cache.cached(timeout=300, query_string=True)
+@cache.cached(timeout=300, key_prefix=_user_cache_key)
 def report_account12():
     """
     Endpoint para reporte general de cuentas por cobrar (Cuenta 12).
@@ -50,9 +62,10 @@ def report_account12():
         summary_only = request.args.get('summary_only') == 'true'
         if cutoff_date:
             include_reconciled = True
-        # Sin límite por defecto para permitir análisis completo.
-        limit = request.args.get('limit', type=int, default=0)
-        
+        # Cap de seguridad: limit>MAX → truncar; limit=0 → sin límite (comportamiento original)
+        limit_raw = request.args.get('limit', type=int, default=0)
+        limit = min(limit_raw, MAX_REPORT_LIMIT) if limit_raw > 0 else 0
+
         # Crear repositorio y servicio
         odoo_repo = _get_odoo_repository()
         collections_service = CollectionsService(odoo_repo)
@@ -441,7 +454,7 @@ def filter_options():
 
 @collections_bp.route('/report/account12/rows', methods=['GET'])
 @require_login
-@cache.cached(timeout=300, query_string=True)
+@cache.cached(timeout=300, key_prefix=_user_cache_key)
 def report_account12_rows():
     """
     Endpoint legacy de lazy loading HTML (deprecado).
@@ -455,7 +468,7 @@ def report_account12_rows():
 
 @collections_bp.route('/report/account12/stats', methods=['GET'])
 @require_login
-@cache.cached(timeout=300, query_string=True)
+@cache.cached(timeout=300, key_prefix=_user_cache_key)
 def report_account12_stats():
     """
     Endpoint para obtener KPIs agregados sin traer filas.

@@ -48,8 +48,9 @@ def export_collections_excel():
         account_codes = request.args.get('account_codes')
         sales_channel_id = request.args.get('sales_channel_id', type=int)
         doc_type_id = request.args.get('doc_type_id', type=int)
-        # Sin límite por defecto para exportar análisis completo.
-        limit = request.args.get('limit', type=int, default=0)
+        MAX_EXPORT_LIMIT = 50_000
+        limit_raw = request.args.get('limit', type=int, default=0)
+        limit = min(limit_raw, MAX_EXPORT_LIMIT) if limit_raw > 0 else 0
         cutoff_date = request.args.get('date_cutoff')
         include_reconciled = request.args.get('include_reconciled') == 'true'
         if cutoff_date:

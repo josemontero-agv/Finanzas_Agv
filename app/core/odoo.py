@@ -16,10 +16,13 @@ Rendimiento:
   ThreadPoolExecutor, reduciendo el tiempo total de reportes con muchas consultas.
 """
 
+import logging
 import threading
 import xmlrpc.client
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 
 class OdooRepository:
@@ -89,7 +92,7 @@ class OdooRepository:
                     )
                     return
                 except Exception:
-                    print("[INFO] UID de caché expirado o inválido. Re-autenticando...")
+                    logger.info("UID de cache expirado o invalido. Re-autenticando...")
                     self.uid = None
                     with OdooRepository._lock:
                         OdooRepository._cached_uids.pop(cache_key, None)
@@ -99,15 +102,14 @@ class OdooRepository:
             self.uid = common.authenticate(self.db, self.username, self.password, {})
 
             if self.uid:
-                print(f"[OK] Conexión a Odoo establecida. UID={self.uid}")
+                logger.info("Conexion a Odoo establecida. UID=%s", self.uid)
             else:
-                print("[ERROR] No se pudo autenticar. Credenciales o API Key inválidas.")
+                logger.warning("No se pudo autenticar contra Odoo. Credenciales o API Key invalidas.")
                 self.uid = None
                 self.models = None
 
         except Exception as exc:
-            print(f"[ERROR] Error en la conexión a Odoo: {exc}")
-            print("[INFO] Continuando sin conexión a Odoo.")
+            logger.error("Error al conectar con Odoo (%s). Continuando sin conexion.", type(exc).__name__)
             self.uid = None
             self.models = None
 
@@ -124,6 +126,9 @@ class OdooRepository:
           1. En Odoo: Configuración → Usuarios → tu usuario → API Keys → Crear
           2. Usa la API Key como contraseña en el formulario de login de la app
 
+        Falla de forma segura (fail-safe): si Odoo no está disponible, la
+        autenticación falla. No se usa ningún fallback con credenciales internas.
+
         Args:
             username (str): Email del usuario en Odoo
             password (str): Contraseña o API Key
@@ -136,18 +141,17 @@ class OdooRepository:
             uid = common.authenticate(self.db, username, password, {})
 
             if uid:
-                print(f"[OK] Autenticación exitosa para usuario: {username}")
+                logger.info("Autenticacion exitosa para usuario: %s", username)
                 return True
 
-            print(f"[ERROR] Credenciales incorrectas para usuario: {username}")
+            logger.warning("Credenciales incorrectas para usuario: %s", username)
             return False
 
         except Exception as exc:
-            print(f"[ERROR] Error en autenticación contra Odoo: {exc}")
-            # Fallback: verificar si coincide con las credenciales del repositorio
-            if username == self.username and password == self.password:
-                print("[OK] Autenticación exitosa usando credenciales del repositorio")
-                return True
+            logger.error(
+                "No se pudo conectar a Odoo para autenticar (%s). Servicio no disponible.",
+                type(exc).__name__
+            )
             return False
 
     def is_connected(self) -> bool:
@@ -172,7 +176,7 @@ class OdooRepository:
             Resultado de Odoo o None si la conexión falló
         """
         if not self.uid or not self.models:
-            print("[WARN] No hay conexión a Odoo disponible")
+            logger.warning("No hay conexion a Odoo disponible")
             return None
 
         try:
@@ -181,7 +185,7 @@ class OdooRepository:
                 model, method, args, kwargs or {}
             )
         except Exception as exc:
-            print(f"[ERROR] Error ejecutando {model}.{method}: {exc}")
+            logger.error("Error ejecutando %s.%s: %s", model, method, type(exc).__name__)
             return None
 
     def search_read(
@@ -228,7 +232,7 @@ class OdooRepository:
     def search_count(self, model: str, domain: list) -> int:
         """Cuenta registros que coinciden con el domain sin traer los datos."""
         if not self.uid or not self.models:
-            print("[WARN] No hay conexión a Odoo disponible")
+            logger.warning("No hay conexion a Odoo disponible")
             return 0
         try:
             return self.models.execute_kw(
@@ -236,13 +240,13 @@ class OdooRepository:
                 model, 'search_count', [domain]
             ) or 0
         except Exception as exc:
-            print(f"[ERROR] Error en search_count para {model}: {exc}")
+            logger.error("Error en search_count para %s: %s", model, type(exc).__name__)
             return 0
 
     def read_group(self, model: str, domain: list, fields: list, groupby: list) -> list:
         """Realiza consulta agregada (equivalente a GROUP BY en SQL)."""
         if not self.uid or not self.models:
-            print("[WARN] No hay conexión a Odoo disponible")
+            logger.warning("No hay conexion a Odoo disponible")
             return []
         try:
             return self.models.execute_kw(
@@ -252,7 +256,7 @@ class OdooRepository:
                 {'fields': fields, 'groupby': groupby, 'lazy': False}
             ) or []
         except Exception as exc:
-            print(f"[ERROR] Error en read_group para {model}: {exc}")
+            logger.error("Error en read_group para %s: %s", model, type(exc).__name__)
             return []
 
     # ------------------------------------------------------------------
@@ -304,9 +308,9 @@ class OdooRepository:
                 )
                 return index, result if result is not None else []
             except Exception as exc:
-                print(
-                    f"[ERROR] call_parallel[{index}] "
-                    f"{call.get('model')}.{call.get('method')}: {exc}"
+                logger.error(
+                    "call_parallel[%d] %s.%s: %s",
+                    index, call.get('model'), call.get('method'), type(exc).__name__
                 )
                 return index, []
 

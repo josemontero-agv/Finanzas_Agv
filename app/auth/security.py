@@ -29,3 +29,40 @@ def get_authenticated_user_email():
     """
     return (session.get('email') or '').strip().lower()
 
+
+def require_role(*roles):
+    """
+    Decorador RBAC que verifica roles en sesion.
+    
+    NOTA: En este ciclo el decorador solo verifica, no bloquea.
+    Cuando RBAC este completamente configurado con grupos de Odoo,
+    cambiar `log_only=True` a `log_only=False` en la configuracion.
+    Esto permite desplegar la infraestructura sin riesgo de bloquear usuarios.
+    """
+    import logging as _logging
+    _rbac_logger = _logging.getLogger('finanzas_agv.rbac')
+
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(*args, **kwargs):
+            from flask import current_app
+            log_only = current_app.config.get('RBAC_LOG_ONLY', True)
+            user_roles = session.get('roles', [])
+            required = list(roles)
+
+            if required and not any(r in user_roles for r in required):
+                _rbac_logger.warning(
+                    "RBAC: usuario '%s' accedio a recurso que requiere roles %s (roles actuales: %s)",
+                    session.get('username', 'unknown'),
+                    required,
+                    user_roles
+                )
+                if not log_only:
+                    return jsonify({
+                        'success': False,
+                        'message': 'No tiene permisos para acceder a este recurso'
+                    }), 403
+            return view_func(*args, **kwargs)
+        return wrapper
+    return decorator
+

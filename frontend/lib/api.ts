@@ -166,14 +166,6 @@ export interface EmailResult {
   errors: string[]
 }
 
-export interface AuthLoginResponse {
-  success: boolean
-  message: string
-  token?: string
-  user?: string
-  email?: string
-}
-
 export interface AuthUserInfoResponse {
   success: boolean
   username?: string
@@ -205,11 +197,8 @@ export const lettersApi = {
     flaskApi.post<ApiResponse<EmailResult>>('/api/v1/letters/send-acceptance', { letter_ids }),
 }
 
-// Endpoints de Auth
+// Endpoints de Auth (login exclusivo con Google OAuth2, manejado por navegación del navegador)
 export const authApi = {
-  login: (username: string, password: string, email?: string) =>
-    flaskApi.post<AuthLoginResponse>('/api/v1/auth/login', { username, password, email }),
-
   getUserInfo: () =>
     flaskApi.get<AuthUserInfoResponse>('/api/v1/auth/user-info'),
 
