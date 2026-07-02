@@ -34,7 +34,7 @@ psycopg2-binary==2.9.9
 SQLAlchemy==2.0.23
 
 # Servidor WSGI para producción (opcional)
-gunicorn==21.2.0
+gunicorn==22.0.0
 
 # Testing (opcional)
 pytest==7.4.3
