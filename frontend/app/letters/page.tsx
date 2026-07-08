@@ -4,16 +4,25 @@ import { useQuery } from "@tanstack/react-query"
 import { lettersApi, authApi } from "@/lib/api"
 import { AuthLoadingScreen } from "@/components/auth-loading-screen"
 import { Mail, Search, X, Send, Eye, RotateCcw, FileText, CheckCircle2 } from "lucide-react"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ErrorFallback } from "@/components/error-fallback"
 import { cn } from "@/lib/utils"
+import { isLettersModuleEnabled } from "@/lib/feature-flags"
 
 export default function LettersPage() {
   const router = useRouter()
+  const moduleEnabled = isLettersModuleEnabled()
+
+  useEffect(() => {
+    if (!moduleEnabled) {
+      router.replace("/collections")
+    }
+  }, [moduleEnabled, router])
+
   const [clientFilter, setClientFilter] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("TODOS")
   const [rowSelection, setRowSelection] = useState<Record<number, boolean>>({})
@@ -35,6 +44,7 @@ export default function LettersPage() {
       return response.data.data
     },
     retry: 1,
+    enabled: moduleEnabled,
   })
 
   const normalizeStatus = (status: string) => {
@@ -178,6 +188,10 @@ export default function LettersPage() {
       return "bg-blue-100 text-blue-700 border-blue-200"
     }
     return "bg-slate-100 text-slate-700 border-slate-200"
+  }
+
+  if (!moduleEnabled) {
+    return null
   }
 
   if (error) {

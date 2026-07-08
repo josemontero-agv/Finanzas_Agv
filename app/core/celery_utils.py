@@ -8,7 +8,14 @@ def celery_init_app(app: Flask) -> Celery:
                 return self.run(*args, **kwargs)
 
     celery_app = Celery(app.name)
-    celery_app.config_from_object(app.config["CELERY"])
+    celery_config = app.config["CELERY"]
+    celery_app.config_from_object(celery_config)
+    # config_from_object ya propaga 'beat_schedule' (verificado: Celery acepta dicts con
+    # claves lowercase estilo Celery 4+), pero lo reafirmamos explícitamente para que
+    # `celery -A celery_worker.celery beat` siempre encuentre la tarea programada aunque
+    # cambie el mecanismo interno de config_from_object en futuras versiones de Celery.
+    if celery_config.get('beat_schedule'):
+        celery_app.conf.beat_schedule = celery_config['beat_schedule']
     celery_app.Task = FlaskTask
     celery_app.set_default()
     app.extensions["celery"] = celery_app

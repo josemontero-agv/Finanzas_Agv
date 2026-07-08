@@ -3,11 +3,14 @@
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase"
 import { healthApi } from "@/lib/api"
+import { isLettersModuleEnabled } from "@/lib/feature-flags"
 import { CheckCircle, XCircle, AlertCircle, Activity } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
 export default function DiagnosticsPage() {
+  const lettersModuleEnabled = isLettersModuleEnabled()
+
   // Test Supabase tables
   const { data: movesCount } = useQuery({
     queryKey: ["diagnostics", "moves"],
@@ -31,6 +34,7 @@ export default function DiagnosticsPage() {
       if (error) throw error
       return count
     },
+    enabled: lettersModuleEnabled,
   })
 
   const { data: partnersCount } = useQuery({
@@ -87,18 +91,31 @@ export default function DiagnosticsPage() {
           </div>
 
           <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 flex flex-col items-center text-center transition-colors duration-300">
-            {lettersCount != null && lettersCount > 0 ? (
-              <CheckCircle className="h-8 w-8 text-green-500 dark:text-green-400 mb-2" />
-            ) : lettersCount === 0 ? (
-              <AlertCircle className="h-8 w-8 text-yellow-500 dark:text-yellow-400 mb-2" />
+            {lettersModuleEnabled ? (
+              <>
+                {lettersCount != null && lettersCount > 0 ? (
+                  <CheckCircle className="h-8 w-8 text-green-500 dark:text-green-400 mb-2" />
+                ) : lettersCount === 0 ? (
+                  <AlertCircle className="h-8 w-8 text-yellow-500 dark:text-yellow-400 mb-2" />
+                ) : (
+                  <XCircle className="h-8 w-8 text-red-500 dark:text-red-400 mb-2" />
+                )}
+                <p className="font-bold text-slate-800 dark:text-slate-200 text-lg">fact_letters</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider font-semibold">Letras de Cambio</p>
+                <Badge variant="outline" className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600">
+                  {lettersCount != null ? `${lettersCount} registros` : "Error"}
+                </Badge>
+              </>
             ) : (
-              <XCircle className="h-8 w-8 text-red-500 dark:text-red-400 mb-2" />
+              <>
+                <AlertCircle className="h-8 w-8 text-slate-400 dark:text-slate-500 mb-2" />
+                <p className="font-bold text-slate-800 dark:text-slate-200 text-lg">fact_letters</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider font-semibold">Módulo deshabilitado</p>
+                <Badge variant="outline" className="bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-600">
+                  No disponible
+                </Badge>
+              </>
             )}
-            <p className="font-bold text-slate-800 dark:text-slate-200 text-lg">fact_letters</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider font-semibold">Letras de Cambio</p>
-            <Badge variant="outline" className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600">
-              {lettersCount != null ? `${lettersCount} registros` : "Error"}
-            </Badge>
           </div>
 
           <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 flex flex-col items-center text-center transition-colors duration-300">

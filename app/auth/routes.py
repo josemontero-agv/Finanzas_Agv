@@ -6,7 +6,14 @@ Endpoints para login y autenticacion de usuarios.
 """
 
 from flask import jsonify, session, current_app
+from flask_jwt_extended import (
+    jwt_required,
+    create_access_token,
+    set_access_cookies,
+    unset_jwt_cookies,
+)
 from app.auth import auth_bp
+from app.auth.security import get_authenticated_user_email
 from app import limiter
 
 
@@ -50,7 +57,7 @@ def login():
 @auth_bp.route('/user-info', methods=['GET'])
 def user_info():
     """
-    Endpoint para obtener informacion del usuario actual desde la sesion.
+    Endpoint para obtener informacion del usuario actual desde la sesion o el JWT.
 
     Response (JSON):
         {
@@ -65,20 +72,54 @@ def user_info():
             'username': session.get('username', ''),
             'email': session.get('email', '')
         }), 200
+
+    email = get_authenticated_user_email()
+    if email:
+        return jsonify({
+            'success': True,
+            'username': email.split('@')[0],
+            'email': email
+        }), 200
+
     return jsonify({
         'success': False,
         'message': 'Usuario no autenticado'
     }), 401
 
 
+@auth_bp.route('/refresh', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh():
+    """
+    Reemite un access token JWT nuevo a partir de un refresh token válido (cookie HttpOnly).
+
+    El frontend puede invocar este endpoint cuando reciba un 401 en llamadas API para
+    renovar la sesión sin forzar un nuevo login con Google.
+    """
+    from flask_jwt_extended import get_jwt_identity, get_jwt
+
+    identity = get_jwt_identity()
+    claims = get_jwt()
+    additional_claims = {
+        'email': claims.get('email', ''),
+        'roles': claims.get('roles', []),
+    }
+    response = jsonify({'success': True, 'message': 'Token renovado'})
+    new_access_token = create_access_token(identity=identity, additional_claims=additional_claims)
+    set_access_cookies(response, new_access_token)
+    return response, 200
+
+
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
-    """Cierra la sesion del usuario autenticado."""
+    """Cierra la sesion del usuario autenticado e invalida las cookies JWT (access + refresh)."""
     session.clear()
-    return jsonify({
+    response = jsonify({
         'success': True,
         'message': 'Sesion cerrada'
-    }), 200
+    })
+    unset_jwt_cookies(response)
+    return response, 200
 
 
 @auth_bp.route('/status', methods=['GET'])
@@ -96,5 +137,5 @@ def status():
     return jsonify({
         'module': 'auth',
         'status': 'active',
-        'endpoints': ['/google', '/google/callback', '/logout', '/status', '/user-info']
+        'endpoints': ['/google', '/google/callback', '/logout', '/status', '/user-info', '/refresh']
     }), 200

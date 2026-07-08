@@ -1,7 +1,21 @@
 version: '3.8'
 
 services:
-  # Backend Flask (único servicio necesario para tu despliegue actual)
+  # Redis: broker/backend de Celery y storage de Flask-Caching / Flask-Limiter en producción.
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend Flask
   backend:
     build: .
     command: sh -c "gunicorn --bind 0.0.0.0:5000 --workers 2 --threads 4 --timeout 180 run:app"
@@ -11,6 +25,36 @@ services:
       - .env.produccion
     environment:
       - APP_ENV=production
+      - REDIS_URL=redis://redis:6379/0
+      - LETTERS_MODULE_ENABLED=false
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # Worker de Celery: ejecuta las tareas asíncronas (p.ej. run_etl_sync).
+  worker:
+    build: .
+    command: sh -c "celery -A celery_worker.celery worker -l info"
+    env_file:
+      - .env.produccion
+    environment:
+      - APP_ENV=production
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # Beat de Celery: programa periódicamente la tarea run_etl_sync (ver ETL_SYNC_MINUTES).
+  beat:
+    build: .
+    command: sh -c "celery -A celery_worker.celery beat -l info"
+    env_file:
+      - .env.produccion
+    environment:
+      - APP_ENV=production
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
     restart: unless-stopped
 
   # Frontend opcional para desarrollo local
@@ -28,6 +72,11 @@ services:
     environment:
       - NODE_ENV=development
       - NEXT_PUBLIC_FLASK_API_URL=http://localhost:5000
+      - NEXT_PUBLIC_ENABLE_LETTERS=false
+      - NEXT_PUBLIC_ENABLE_LETTERS=false
     depends_on:
       - backend
+
+volumes:
+  redis_data:
 

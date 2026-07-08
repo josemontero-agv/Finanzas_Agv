@@ -8,7 +8,7 @@ frontend Next.js (FRONTEND_URL) con la cookie de sesión Flask ya establecida.
 """
 
 from flask import current_app, redirect, session, url_for
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, create_refresh_token, set_access_cookies, set_refresh_cookies
 from app import oauth
 from app.auth import auth_bp
 from app.auth.routes import _normalize_user_email
@@ -22,6 +22,19 @@ def _is_email_allowed(email):
     if not email or not email.endswith(f'@{domain}'):
         return False
     return email in allowed_users
+
+
+def _roles_for_email(email):
+    """
+    Deriva los roles del usuario a partir de ADMIN_EMAILS (config).
+
+    Deja la base lista para activar el RBAC hoy en modo "log only" (ver RBAC_LOG_ONLY
+    en config.py y require_role en app/auth/security.py): estos roles ya viajan como
+    claim "roles" en el JWT y en session['roles'], listos para que require_role los
+    empiece a exigir de verdad simplemente cambiando RBAC_LOG_ONLY a False.
+    """
+    admin_emails = current_app.config.get('ADMIN_EMAILS', [])
+    return ['admin', 'user'] if email in admin_emails else ['user']
 
 
 @auth_bp.route('/google')
@@ -56,19 +69,26 @@ def google_callback():
 
     username = (user_info.get('name') or email.split('@')[0])
     user_email = _normalize_user_email(username, email)
+    roles = _roles_for_email(user_email)
 
     session['logged_in'] = True
     session['username'] = username
     session['email'] = user_email
+    session['roles'] = roles
     session.permanent = True
 
-    # JWT real (se mantiene por compatibilidad; el frontend no lo usa, depende de la cookie de sesión)
-    create_access_token(
-        identity=username,
-        additional_claims={
-            'email': user_email,
-            'type': 'access',
-        }
-    )
+    response = redirect(f'{frontend_url}/collections')
 
-    return redirect(f'{frontend_url}/collections')
+    # JWT real como cookies HttpOnly (access de corta duración + refresh de larga duración).
+    # Complementa la sesión Flask para que llamadas cross-site entre dominios distintos
+    # (backend y frontend en Render) no dependan solo de la cookie de sesión.
+    additional_claims = {
+        'email': user_email,
+        'roles': roles,
+    }
+    access_token = create_access_token(identity=username, additional_claims=additional_claims)
+    refresh_token = create_refresh_token(identity=username, additional_claims=additional_claims)
+    set_access_cookies(response, access_token)
+    set_refresh_cookies(response, refresh_token)
+
+    return response

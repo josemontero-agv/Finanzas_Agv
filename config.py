@@ -21,7 +21,19 @@ class Config:
 
     # JWT (Flask-JWT-Extended)
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY') or os.getenv('SECRET_KEY', 'default-secret-key-change-me')
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=8)
+    # Access token de corta duración + refresh token de larga duración, entregados como cookies HttpOnly
+    # (no se exponen a JS). Ver app/auth/oauth.py y app/auth/security.py.
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=int(os.getenv('JWT_ACCESS_TOKEN_EXPIRES_MINUTES', '15')))
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=int(os.getenv('JWT_REFRESH_TOKEN_EXPIRES_DAYS', '30')))
+    JWT_TOKEN_LOCATION = ['cookies']
+    JWT_ACCESS_COOKIE_NAME = 'finanzas_agv_access_token'
+    JWT_REFRESH_COOKIE_NAME = 'finanzas_agv_refresh_token'
+    JWT_ACCESS_COOKIE_PATH = '/'
+    JWT_REFRESH_COOKIE_PATH = '/api/v1/auth/refresh'
+    # CSRF de flask-jwt-extended (double-submit cookie) desactivado: la protección CSRF ya la cubre
+    # el chequeo de Origin + Content-Type: application/json en app/__init__.py (check_csrf). Si se
+    # habilita, el frontend debe leer la cookie csrf_access_token y reenviarla en X-CSRF-TOKEN.
+    JWT_COOKIE_CSRF_PROTECT = False
     
     # Configuración Odoo
     ODOO_URL = os.getenv('ODOO_URL')
@@ -37,7 +49,18 @@ class Config:
         for email in os.getenv('ALLOWED_USERS', '').split(',')
         if email.strip()
     ]
-    
+    # Emails con rol "admin" para el claim "roles" del JWT (base para activar RBAC más adelante,
+    # ver require_role en app/auth/security.py y RBAC_LOG_ONLY más abajo).
+    ADMIN_EMAILS = [
+        email.strip().lower()
+        for email in os.getenv('ADMIN_EMAILS', '').split(',')
+        if email.strip()
+    ]
+
+    # Módulo Letras: oculto por defecto. En producción debe permanecer en False hasta que el
+    # módulo esté listo para el público (ver app/__init__.py, bloquea /api/v1/letters/* con 404).
+    LETTERS_MODULE_ENABLED = os.getenv('LETTERS_MODULE_ENABLED', 'False').lower() == 'true'
+
     # Configuración Supabase (PostgreSQL)
     SUPABASE_URL = os.getenv('SUPABASE_URL')
     SUPABASE_KEY = os.getenv('SUPABASE_KEY')
@@ -55,6 +78,8 @@ class Config:
     # Configuración Celery
     CELERY_BROKER_URL = REDIS_URL if REDIS_URL else 'memory://'
     CELERY_RESULT_BACKEND = REDIS_URL if REDIS_URL else 'memory://'
+    # Minutos entre ejecuciones automáticas del ETL Odoo -> Supabase (Celery Beat).
+    ETL_SYNC_MINUTES = int(os.getenv('ETL_SYNC_MINUTES', '20'))
     
     # Configuración Gmail SMTP
     MAIL_SERVER = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
@@ -120,6 +145,24 @@ class Config:
         )
         lifetime_minutes = int(os.getenv('SESSION_LIFETIME_MINUTES', '480'))
         app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=lifetime_minutes)
+
+        # Cookies JWT (Flask-JWT-Extended) coherentes con las de sesión: mismas reglas de
+        # Secure/SameSite para que funcionen igual en llamadas cross-site (backend y frontend
+        # en subdominios distintos de Render).
+        app.config['JWT_TOKEN_LOCATION'] = ['cookies']
+        app.config['JWT_COOKIE_SECURE'] = app.config['SESSION_COOKIE_SECURE']
+        app.config['JWT_COOKIE_SAMESITE'] = app.config['SESSION_COOKIE_SAMESITE']
+        app.config['JWT_COOKIE_CSRF_PROTECT'] = False
+        app.config['JWT_ACCESS_COOKIE_NAME'] = 'finanzas_agv_access_token'
+        app.config['JWT_REFRESH_COOKIE_NAME'] = 'finanzas_agv_refresh_token'
+        app.config['JWT_ACCESS_COOKIE_PATH'] = '/'
+        app.config['JWT_REFRESH_COOKIE_PATH'] = '/api/v1/auth/refresh'
+        app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(
+            minutes=int(os.getenv('JWT_ACCESS_TOKEN_EXPIRES_MINUTES', '15'))
+        )
+        app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(
+            days=int(os.getenv('JWT_REFRESH_TOKEN_EXPIRES_DAYS', '30'))
+        )
     
     @classmethod
     def _load_common_env(cls, app, default_secret, dev_email_default):
@@ -134,7 +177,8 @@ class Config:
         secret_key = os.getenv('SECRET_KEY', default_secret)
         app.config['SECRET_KEY'] = secret_key
         app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY') or secret_key
-        app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=8)
+        # JWT_ACCESS_TOKEN_EXPIRES / JWT_REFRESH_TOKEN_EXPIRES y el resto de settings de
+        # cookies JWT se fijan en _apply_session_settings, junto a las de sesión.
 
         app.config['ODOO_URL'] = os.getenv('ODOO_URL')
         app.config['ODOO_DB'] = os.getenv('ODOO_DB')
@@ -148,6 +192,14 @@ class Config:
             for email in os.getenv('ALLOWED_USERS', '').split(',')
             if email.strip()
         ]
+        app.config['ADMIN_EMAILS'] = [
+            email.strip().lower()
+            for email in os.getenv('ADMIN_EMAILS', '').split(',')
+            if email.strip()
+        ]
+
+        # Módulo Letras oculto por defecto (404 en /api/v1/letters/* si está en False).
+        app.config['LETTERS_MODULE_ENABLED'] = os.getenv('LETTERS_MODULE_ENABLED', 'False').lower() == 'true'
 
         app.config['SUPABASE_URL'] = os.getenv('SUPABASE_URL')
         app.config['SUPABASE_KEY'] = os.getenv('SUPABASE_KEY')
@@ -179,10 +231,22 @@ class Config:
         app.config['DEV_EMAIL_MODE'] = os.getenv('DEV_EMAIL_MODE', dev_email_default).lower() == 'true'
         app.config['DEV_EMAIL_RECIPIENT'] = os.getenv('DEV_EMAIL_RECIPIENT', 'creditosycobranzas@agrovetmarket.com')
 
+        # Celery Beat: programa la sincronización ETL Odoo -> Supabase cada N minutos.
+        # N se controla con la variable de entorno ETL_SYNC_MINUTES (default 20).
+        etl_sync_minutes = int(os.getenv('ETL_SYNC_MINUTES', '20'))
+        app.config['ETL_SYNC_MINUTES'] = etl_sync_minutes
+
         app.config['CELERY'] = {
             'broker_url': app.config.get('CELERY_BROKER_URL'),
             'result_backend': app.config.get('CELERY_RESULT_BACKEND'),
             'task_ignore_result': True,
+            'timezone': 'America/Lima',
+            'beat_schedule': {
+                'run-etl-sync-periodico': {
+                    'task': 'run_etl_sync',
+                    'schedule': timedelta(minutes=etl_sync_minutes),
+                },
+            },
         }
 
     @staticmethod

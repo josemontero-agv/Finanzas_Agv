@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { assertLettersModuleEnabled } from '@/lib/feature-flags'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_FLASK_API_URL || 'http://localhost:5000'
 
@@ -188,13 +189,17 @@ export const treasuryApi = {
     flaskApi.get<ApiResponse<TreasuryLine[]>>('/api/v1/treasury/report/account42', { params }),
 }
 
-// Endpoints de Letters
+// Endpoints de Letters (bloqueados en cliente si el feature flag está apagado)
 export const lettersApi = {
-  getToAccept: () =>
-    flaskApi.get<ApiResponse<Letter[]>>('/api/v1/letters/to-accept'),
-  
-  sendAcceptanceEmails: (letter_ids: number[]) =>
-    flaskApi.post<ApiResponse<EmailResult>>('/api/v1/letters/send-acceptance', { letter_ids }),
+  getToAccept: () => {
+    assertLettersModuleEnabled()
+    return flaskApi.get<ApiResponse<Letter[]>>('/api/v1/letters/to-accept')
+  },
+
+  sendAcceptanceEmails: (letter_ids: number[]) => {
+    assertLettersModuleEnabled()
+    return flaskApi.post<ApiResponse<EmailResult>>('/api/v1/letters/send-acceptance', { letter_ids })
+  },
 }
 
 // Endpoints de Auth (login exclusivo con Google OAuth2, manejado por navegación del navegador)

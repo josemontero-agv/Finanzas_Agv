@@ -384,6 +384,7 @@ def get_summary():
 
 
 @letters_bp.route('/status', methods=['GET'])
+@require_login
 def status():
     """Endpoint para verificar el estado del módulo de letras."""
     return jsonify({

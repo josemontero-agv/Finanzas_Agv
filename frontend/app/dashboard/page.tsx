@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { healthApi } from "@/lib/api"
+import { isLettersModuleEnabled } from "@/lib/feature-flags"
 import { 
   Activity, 
   CreditCard, 
@@ -124,19 +125,21 @@ export default function DashboardPage() {
           </div>
         </Link>
 
-        <Link href="/letters">
-          <div className="bg-gradient-to-br from-[#714B67] to-[#875A7B] p-6 rounded-lg shadow-lg hover:shadow-xl transition-all cursor-pointer text-white hover:scale-105">
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-white/20 p-3 rounded-lg">
-                <Mail className="h-6 w-6" />
+        {isLettersModuleEnabled() && (
+          <Link href="/letters">
+            <div className="bg-gradient-to-br from-[#714B67] to-[#875A7B] p-6 rounded-lg shadow-lg hover:shadow-xl transition-all cursor-pointer text-white hover:scale-105">
+              <div className="flex items-center justify-between mb-4">
+                <div className="bg-white/20 p-3 rounded-lg">
+                  <Mail className="h-6 w-6" />
+                </div>
               </div>
+              <h3 className="font-bold text-lg">Letras</h3>
+              <p className="text-sm text-purple-100 mt-1">
+                Gestión de Letras por Firmar
+              </p>
             </div>
-            <h3 className="font-bold text-lg">Letras</h3>
-            <p className="text-sm text-purple-100 mt-1">
-              Gestión de Letras por Firmar
-            </p>
-          </div>
-        </Link>
+          </Link>
+        )}
 
         <div className="bg-gradient-to-br from-slate-300 to-slate-400 p-6 rounded-lg shadow-lg opacity-60 text-white">
           <div className="flex items-center justify-between mb-4">

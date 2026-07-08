@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/components/theme-provider'
 import { authApi } from '@/lib/api'
+import { isLettersModuleEnabled } from '@/lib/feature-flags'
 
 export function Sidebar() {
   const router = useRouter()
@@ -55,12 +56,14 @@ export function Sidebar() {
           label="Cobranzas"
           isExpanded={isExpanded}
         />
-        <SidebarLink 
-          href="/letters" 
-          icon={<Mail size={22} />} 
-          label="Letras" 
-          isExpanded={isExpanded} 
-        />
+        {isLettersModuleEnabled() && (
+          <SidebarLink
+            href="/letters"
+            icon={<Mail size={22} />}
+            label="Letras"
+            isExpanded={isExpanded}
+          />
+        )}
       </nav>
       
       <div className="p-4 space-y-2 border-t border-purple-400/30 dark:border-slate-700">

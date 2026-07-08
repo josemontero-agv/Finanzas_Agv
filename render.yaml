@@ -1,0 +1,178 @@
+# =============================================================================
+# Render Blueprint - Finanzas AGV
+# =============================================================================
+# Referencia: https://render.com/docs/blueprint-spec (sintaxis verificada 2026:
+# type "keyvalue" para Redis administrado, "redis" es un alias deprecado).
+#
+# Uso: Render > New > Blueprint, apuntando a este repositorio. Las variables con
+# `sync: false` deben cargarse manualmente en el dashboard de Render (nunca en el repo).
+# Ver auditoria/Informe_Entrega_V2/GUIA_DESPLIEGUE_RENDER.md para la checklist completa.
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Backend Flask (API REST)
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: finanzas-agv-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: SECRET_KEY
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: ODOO_URL
+        sync: false
+      - key: ODOO_DB
+        sync: false
+      - key: ODOO_USER
+        sync: false
+      - key: ODOO_PASSWORD
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: ALLOWED_USERS
+        sync: false
+      - key: ADMIN_EMAILS
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_DB_URI
+        sync: false
+      - key: MAIL_SERVER
+        sync: false
+      - key: MAIL_PORT
+        sync: false
+      - key: MAIL_USE_TLS
+        sync: false
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_DEFAULT_SENDER
+        sync: false
+      - key: MAIL_DEFAULT_CC
+        sync: false
+      - key: MAIL_DEFAULT_BCC
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: LETTERS_MODULE_ENABLED
+        value: "false"
+      - key: DEV_EMAIL_MODE
+        sync: false
+      - key: ETL_SYNC_MINUTES
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: finanzas-agv-redis
+          property: connectionString
+
+  # ---------------------------------------------------------------------------
+  # Worker de Celery (con Beat embebido) para el ETL Odoo -> Supabase
+  # ---------------------------------------------------------------------------
+  - type: worker
+    name: finanzas-agv-worker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: celery -A celery_worker.celery worker -B -l info
+    plan: starter
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: SECRET_KEY
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: ODOO_URL
+        sync: false
+      - key: ODOO_DB
+        sync: false
+      - key: ODOO_USER
+        sync: false
+      - key: ODOO_PASSWORD
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: ALLOWED_USERS
+        sync: false
+      - key: ADMIN_EMAILS
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_DB_URI
+        sync: false
+      - key: MAIL_SERVER
+        sync: false
+      - key: MAIL_PORT
+        sync: false
+      - key: MAIL_USE_TLS
+        sync: false
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_DEFAULT_SENDER
+        sync: false
+      - key: MAIL_DEFAULT_CC
+        sync: false
+      - key: MAIL_DEFAULT_BCC
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: LETTERS_MODULE_ENABLED
+        value: "false"
+      - key: DEV_EMAIL_MODE
+        sync: false
+      - key: ETL_SYNC_MINUTES
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: finanzas-agv-redis
+          property: connectionString
+
+  # ---------------------------------------------------------------------------
+  # Redis administrado (Render Key Value): broker/backend de Celery,
+  # storage de Flask-Caching y Flask-Limiter.
+  # ---------------------------------------------------------------------------
+  - type: keyvalue
+    name: finanzas-agv-redis
+    plan: starter
+    ipAllowList: []
+
+  # ---------------------------------------------------------------------------
+  # Frontend Next.js
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: finanzas-agv-frontend
+    runtime: node
+    plan: starter
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_FLASK_API_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: NEXT_PUBLIC_ENABLE_LETTERS
+        value: "false"

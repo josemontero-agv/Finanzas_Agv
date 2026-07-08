@@ -46,6 +46,7 @@ ENV/
 *.swo
 *~
 /auditoria
+/scripts/
 # OS
 .DS_Store
 Thumbs.db

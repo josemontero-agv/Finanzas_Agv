@@ -124,3 +124,21 @@ JOIN fact_move_lines aml ON vmm.line_id = aml.id
 WHERE m.move_type = 'in_invoice'
 GROUP BY p.name, p.vat, m.name, m.ref, m.invoice_date, m.invoice_date_due, m.amount_total, m.payment_state;
 
+-- ============================================================================
+-- RLS (Row Level Security) [NUEVO - agregado en la sesión de reactivación de Supabase]
+-- ============================================================================
+-- fact_move_lines y fact_partial_reconciles son datos analíticos de conciliación de
+-- cuentas: hoy ningún cliente con ANON KEY los consulta directamente (solo el backend, vía
+-- SERVICE ROLE KEY, que bypassa RLS, a través de las vistas view_aml_master_mapping y
+-- view_treasury_netted_report en app/treasury/services.py). Se activa RLS con
+-- "deny by default" (sin políticas) para que ningún cliente anon pueda leerlos ni
+-- escribirlos directamente.
+ALTER TABLE fact_move_lines ENABLE ROW LEVEL SECURITY;
+ALTER TABLE fact_partial_reconciles ENABLE ROW LEVEL SECURITY;
+
+-- Nota sobre las vistas (view_aml_master_mapping, view_treasury_netted_report): las vistas
+-- de Postgres no tienen RLS propio; heredan los permisos de quien las creó a menos que se
+-- marquen con `security_invoker`. Como solo se consultan desde el backend con la SERVICE
+-- ROLE KEY (bypassa RLS de todas formas), no se requiere ajuste adicional mientras no se
+-- exponga ninguna de las dos vistas al frontend con la ANON KEY.
+

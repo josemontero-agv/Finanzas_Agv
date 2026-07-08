@@ -28,6 +28,17 @@ limiter = Limiter(key_func=get_remote_address, default_limits=[])
 oauth = OAuth()
 
 
+def _is_letters_api_path(path):
+    """Rutas de API relacionadas con el módulo Letras (incluye envío por email)."""
+    if path.startswith('/api/v1/letters'):
+        return True
+    letters_email_paths = (
+        '/api/v1/emails/send/letters-to-recover',
+        '/api/v1/emails/send/letters-in-bank',
+    )
+    return path in letters_email_paths
+
+
 def create_app(config_name='development'):
     """
     Factory para crear la aplicación Flask.
@@ -196,6 +207,32 @@ def create_app(config_name='development'):
         return None
 
     @app.before_request
+    def block_disabled_letters_module():
+        """
+        Oculta completamente el módulo Letras cuando LETTERS_MODULE_ENABLED es False.
+
+        Devuelve 404 (no 403) para no revelar que el módulo existe pero está deshabilitado.
+        Se aplica independientemente de RESTRICT_TO_LETTERS_ONLY (defensa en profundidad
+        distinta: este flag apaga el módulo por completo, el otro restringe temporalmente
+        la API a un subconjunto de módulos activos).
+        """
+        if request.method == 'OPTIONS':
+            return None
+
+        path = request.path or ''
+        if not _is_letters_api_path(path):
+            return None
+
+        if app.config.get('LETTERS_MODULE_ENABLED', False):
+            return None
+
+        return jsonify({
+            'error': 'Not Found',
+            'message': 'El endpoint solicitado no existe',
+            'status': 404
+        }), 404
+
+    @app.before_request
     def restrict_api_modules():
         """
         Restringe temporalmente la API a endpoints de Letras.
@@ -218,7 +255,6 @@ def create_app(config_name='development'):
             return None
 
         allowed_prefixes = (
-            '/api/v1/letters',
             '/api/v1/collections',
             '/api/v1/exports/collections',
             '/api/v1/auth/login',
@@ -226,7 +262,13 @@ def create_app(config_name='development'):
             '/api/v1/auth/status',
             '/api/v1/auth/user-info',
             '/api/v1/auth/google',
+            '/api/v1/auth/refresh',
         )
+        if app.config.get('LETTERS_MODULE_ENABLED', False):
+            allowed_prefixes = (
+                '/api/v1/letters',
+                *allowed_prefixes,
+            )
 
         if any(path == prefix or path.startswith(f'{prefix}/') for prefix in allowed_prefixes):
             return None
@@ -242,25 +284,32 @@ def create_app(config_name='development'):
     def index():
         """Endpoint raíz con información de la API."""
         restricted_mode = app.config.get('RESTRICT_TO_LETTERS_ONLY', False)
+        letters_enabled = app.config.get('LETTERS_MODULE_ENABLED', False)
+
+        if restricted_mode:
+            endpoints = {
+                'auth': '/api/v1/auth',
+                'collections': '/api/v1/collections',
+            }
+            if letters_enabled:
+                endpoints['letters'] = '/api/v1/letters'
+        else:
+            endpoints = {
+                'auth': '/api/v1/auth',
+                'collections': '/api/v1/collections',
+                'treasury': '/api/v1/treasury',
+                'exports': '/api/v1/exports',
+                'emails': '/api/v1/emails',
+                'detractions': '/api/v1/detractions',
+            }
+            if letters_enabled:
+                endpoints['letters'] = '/api/v1/letters'
+
         return jsonify({
             'app': 'Finanzas AGV API',
             'version': '1.0.0',
             'description': 'API REST para gestión financiera - Modo Letras + Cobranzas',
-            'endpoints': (
-                {
-                    'auth': '/api/v1/auth',
-                    'letters': '/api/v1/letters',
-                    'collections': '/api/v1/collections'
-                } if restricted_mode else {
-                    'auth': '/api/v1/auth',
-                    'collections': '/api/v1/collections',
-                    'treasury': '/api/v1/treasury',
-                    'exports': '/api/v1/exports',
-                    'emails': '/api/v1/emails',
-                    'letters': '/api/v1/letters',
-                    'detractions': '/api/v1/detractions'
-                }
-            ),
+            'endpoints': endpoints,
             'restricted_mode': restricted_mode,
             'status': 'running'
         })
@@ -288,6 +337,7 @@ def create_app(config_name='development'):
     print(f"[OK] Aplicación creada con configuración: {config_name}")
     print(f"[OK] Blueprints API registrados: auth, collections, treasury, exports, emails, letters, detractions")
     print(f"[OK] Restricción temporal de módulos activa: {app.config.get('RESTRICT_TO_LETTERS_ONLY', False)}")
+    print(f"[OK] Módulo Letras habilitado: {app.config.get('LETTERS_MODULE_ENABLED', False)}")
     print(f"[OK] Blueprint Web (Frontend) registrado")
     print(f"[OK] Flask-Caching configurado (timeout: 300s)")
     print(f"[OK] Flask-Compress configurado (nivel: 6)")
