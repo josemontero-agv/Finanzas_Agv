@@ -1,5 +1,5 @@
 # Finanzas AGV - Dependencias del proyecto
-requests==2.32.3
+requests==2.33.0
 # Framework Web
 Flask==3.0.0
 Werkzeug==3.0.1
