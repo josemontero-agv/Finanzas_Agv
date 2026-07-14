@@ -272,7 +272,7 @@ Variables con `sync: false` en `render.yaml` debes pegarlas manualmente en Rende
 
 | Variable | Notas |
 |----------|--------|
-| `NEXT_PUBLIC_FLASK_API_URL` | URL del backend Render (ej. `https://finanzas-agv-backend.onrender.com`) |
+| `NEXT_PUBLIC_FLASK_API_URL` | URL **completa** del backend Render con `https://` (ej. `https://finanzas-agv-backend.onrender.com`; sin barra final). Ver §4.3 si el login redirige mal. |
 | `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon key pública |
 | `NEXT_PUBLIC_ENABLE_LETTERS` | `false` |
@@ -281,7 +281,7 @@ Variables con `sync: false` en `render.yaml` debes pegarlas manualmente en Rende
 
 | Campo | Valor |
 |-------|--------|
-| Build Command | `yarn install --frozen-lockfile && yarn build` |
+| Build Command | `yarn install && yarn build` |
 | Start Command | `yarn start` |
 
 **Backend local (Yarn en raíz del repo):** `yarn dev`, `yarn etl`, `yarn test`, `yarn parity`
@@ -296,12 +296,60 @@ Variables con `sync: false` en `render.yaml` debes pegarlas manualmente en Rende
 
 ### 4.3 OAuth Google
 
-1. [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials.
-2. OAuth 2.0 Client → **Authorized redirect URIs**.
-3. Agrega la URL de callback de producción Render, por ejemplo:  
-   `https://<tu-backend-render>/api/auth/google/callback`  
-   (confirma la ruta exacta en tu backend si difiere).
-4. El dominio del frontend (`FRONTEND_URL`) debe coincidir con lo configurado en la app.
+El login con Google **no** ocurre en el frontend: el botón redirige al backend (`/api/v1/auth/google`) y Google devuelve el `code` al **callback del backend**. Por eso `NEXT_PUBLIC_FLASK_API_URL` debe ser una URL absoluta con protocolo; si falta `https://`, el navegador interpreta la ruta como relativa y termina en URLs rotas como `finanzas-agv-frontend.onrender.com/finanzas-agv-backend.onrender.com/api/v1/auth/google`.
+
+#### Render — frontend (`finanzas-agv-frontend`)
+
+| Variable | Valor correcto (ejemplo producción) |
+|----------|-------------------------------------|
+| `NEXT_PUBLIC_FLASK_API_URL` | `https://finanzas-agv-backend.onrender.com` |
+
+**Reglas:**
+
+- Debe incluir `https://` (o `http://` solo en local).
+- Sin barra final (`/`).
+- **Incorrecto:** `finanzas-agv-backend.onrender.com` (sin protocolo).
+
+#### Render — backend (`finanzas-agv-backend`)
+
+| Variable | Valor correcto (ejemplo producción) |
+|----------|-------------------------------------|
+| `FRONTEND_URL` | `https://finanzas-agv-frontend.onrender.com` |
+
+Tras cambiar `NEXT_PUBLIC_FLASK_API_URL` en Render, redeploy del frontend (Save Changes reinicia el servicio).
+
+#### Google Cloud Console → OAuth 2.0 Client
+
+[Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials → tu cliente OAuth.
+
+**Authorized JavaScript origins** (orígenes permitidos para el flujo en el navegador):
+
+```
+http://localhost:3000
+http://localhost:5000
+https://finanzas-agv-frontend.onrender.com
+https://finanzas-agv-backend.onrender.com
+```
+
+Sin barra final en cada origen.
+
+**Authorized redirect URIs** (solo callbacks del backend Flask):
+
+```
+http://localhost:5000/api/v1/auth/google/callback
+https://finanzas-agv-backend.onrender.com/api/v1/auth/google/callback
+```
+
+La ruta exacta del callback es `/api/v1/auth/google/callback` (prefijo `auth_bp` en Flask).
+
+**Eliminar de la configuración actual (incorrecta):**
+
+| URI a borrar | Motivo |
+|--------------|--------|
+| `http://localhost:3000/authorize` | El frontend Next.js no recibe el callback de Google; esa ruta no existe en la app. |
+| Cualquier URI del backend **sin** `/api/v1/auth/google/callback` | Google debe devolver el `code` al endpoint de callback del backend, no a la raíz del dominio. |
+
+**No agregar** redirect URIs del frontend (`finanzas-agv-frontend.onrender.com/...`); el usuario vuelve al frontend solo después de que el backend procesa el callback y redirige con `FRONTEND_URL`.
 
 ### 4.4 Cron ETL
 

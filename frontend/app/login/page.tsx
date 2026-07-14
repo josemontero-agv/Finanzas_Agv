@@ -3,10 +3,8 @@
 import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
-import { authApi } from "@/lib/api"
+import { authApi, FLASK_API_URL } from "@/lib/api"
 import { AuthLoadingScreen } from "@/components/auth-loading-screen"
-
-const FLASK_API_URL = process.env.NEXT_PUBLIC_FLASK_API_URL || "http://localhost:5000"
 
 const ERROR_MESSAGES: Record<string, string> = {
   not_allowed: "Tu cuenta de Google no está autorizada para acceder a Finanzas AGV.",

@@ -1,7 +1,21 @@
 import axios from 'axios'
 import { assertLettersModuleEnabled } from '@/lib/feature-flags'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_FLASK_API_URL || 'http://localhost:5000'
+const DEFAULT_FLASK_API_URL = 'http://localhost:5000'
+
+/** Normaliza NEXT_PUBLIC_FLASK_API_URL para redirects y baseURL absolutos. */
+export function normalizeFlaskApiUrl(url?: string | null): string {
+  const trimmed = (url ?? '').trim()
+  if (!trimmed) {
+    return DEFAULT_FLASK_API_URL
+  }
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+  return withProtocol.replace(/\/+$/, '')
+}
+
+export const FLASK_API_URL = normalizeFlaskApiUrl(process.env.NEXT_PUBLIC_FLASK_API_URL)
+
+const API_BASE_URL = FLASK_API_URL
 
 export const flaskApi = axios.create({
   baseURL: API_BASE_URL,
