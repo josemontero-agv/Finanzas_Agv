@@ -32,11 +32,6 @@ ENV/
 .env.desarrollo
 .env.produccion
 
-
-/scripts/*
-
-
-
 # IDE
 .vscode/
 .cursor/
@@ -46,11 +41,13 @@ ENV/
 *.swo
 *~
 /auditoria
-# Ignorar scripts locales/exploratorios, pero versionar el ETL de producción
+# Ignorar scripts locales/exploratorios, pero versionar el ETL y scripts de CI
 /scripts/*
 !/scripts/__init__.py
 !/scripts/etl/
 !/scripts/etl/**
+!/scripts/ci/
+!/scripts/ci/**
 /scripts/investigation/
 /scripts/etl/__pycache__/
 /scripts/etl/*_log.txt

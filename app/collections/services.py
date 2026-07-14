@@ -774,11 +774,10 @@ class CollectionsService:
             
             # Si limit <= 0 o None, traer todos los registros para análisis.
             effective_limit = limit if limit and limit > 0 else None
-            # Mismo orden que CollectionsSupabaseProvider (ORDER BY date DESC, id DESC)
-            # para que escenarios con limit produzcan el mismo subconjunto de líneas.
+            # Sin limit en search_read: sub_channel, payment_method, corte histórico y
+            # _collapse_1212_lines son post-proceso (routes.py aplica limit al final).
             lines = self.repository.search_read(
                 'account.move.line', line_domain, line_fields,
-                limit=effective_limit,
                 order='date desc, id desc',
             )
             
@@ -1150,6 +1149,8 @@ class CollectionsService:
 
             # Regla de negocio contable: 1212 → colapsar cuotas; 123 → mantener individual
             rows = self._collapse_1212_lines(rows, today)
+            if effective_limit:
+                rows = rows[:effective_limit]
 
             print(f"[OK] Procesadas {len(rows)} líneas de CxC con TODOS los campos")
             return rows

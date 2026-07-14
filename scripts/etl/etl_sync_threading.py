@@ -451,6 +451,13 @@ class OdooSync:
             return [terms[0]]
         return (['|'] * (len(terms) - 1)) + terms
 
+    _MOVE_LINE_FIELDS = [
+        'id', 'move_id', 'partner_id', 'account_id', 'name', 'date',
+        'date_maturity', 'amount_currency', 'amount_residual', 'currency_id',
+        'debit', 'credit', 'balance', 'parent_state',
+        'matched_debit_ids', 'matched_credit_ids', 'reconciled',
+    ]
+
     def sync_move_lines(self):
         """
         Sincroniza account.move.line de las cuentas 12x usadas por Cobranzas
@@ -477,16 +484,7 @@ class OdooSync:
         else:
             logger.info("[MOVE_LINES] Sin sync previo registrado: se trae el histórico completo")
 
-        fields = [
-            'id', 'move_id', 'partner_id', 'account_id', 'name', 'date',
-            'date_maturity', 'amount_currency', 'amount_residual', 'currency_id',
-            'debit', 'credit', 'balance', 'parent_state',
-            'matched_debit_ids', 'matched_credit_ids',
-            # 'reconciled' (booleano, ya existe la columna desde netted.sql): usado por
-            # CollectionsSupabaseProvider para reproducir el filtro
-            # ('reconciled', '=', False) de _build_report_domain cuando include_reconciled=False.
-            'reconciled',
-        ]
+        fields = self._MOVE_LINE_FIELDS
 
         line_ids = self._search_all_ids('account.move.line', domain)
 
@@ -500,52 +498,72 @@ class OdooSync:
         for offset in range(0, len(line_ids), PAGE_SIZE):
             batch_ids = line_ids[offset:offset + PAGE_SIZE]
             lines = self._execute_kw('account.move.line', 'read', [batch_ids], {'fields': fields})
-
-            # Asegura que fact_moves tenga la cabecera de TODOS los moves referenciados,
-            # incluyendo letras (in_bill) y estados custom que sync_moves() no cubre
-            # (ver _upsert_move_headers_batch).
-            move_ids_in_batch = list({self._clean_m2o(l.get('move_id')) for l in lines if l.get('move_id')})
-            partner_ids_in_batch = list({self._clean_m2o(l.get('partner_id')) for l in lines if l.get('partner_id')})
-            try:
-                if partner_ids_in_batch:
-                    self.sync_partners(partner_ids_in_batch)
-                self._upsert_move_headers_batch(move_ids_in_batch)
-            except Exception as e:
-                logger.error("[ERROR] Fallo al sincronizar cabeceras de moves (offset=%s): %s", offset, e)
-
-            data_to_upsert = []
-            for l in lines:
-                data_to_upsert.append({
-                    'id': l['id'],
-                    'move_id': self._clean_m2o(l.get('move_id')),
-                    'partner_id': self._clean_m2o(l.get('partner_id')),
-                    'account_id': self._clean_m2o(l.get('account_id')),
-                    'name': l.get('name') or '',
-                    'date': self._clean_date(l.get('date')),
-                    'date_maturity': self._clean_date(l.get('date_maturity')),
-                    'amount_currency': l.get('amount_currency', 0),
-                    'amount_residual': l.get('amount_residual', 0),
-                    'currency_id': self._clean_m2o(l.get('currency_id')),
-                    'currency_name': self._clean_m2o_name(l.get('currency_id')),
-                    'debit': l.get('debit', 0),
-                    'credit': l.get('credit', 0),
-                    'balance': l.get('balance', 0),
-                    'parent_state': l.get('parent_state'),
-                    'matched_debit_ids': l.get('matched_debit_ids') or [],
-                    'matched_credit_ids': l.get('matched_credit_ids') or [],
-                    'reconciled': bool(l.get('reconciled', False)),
-                    'last_updated_at': datetime.now(timezone.utc).isoformat()
-                })
-
-            try:
-                self.supabase.table('fact_move_lines').upsert(data_to_upsert).execute()
-                logger.info("[MOVE_LINES] %s líneas sincronizadas (offset=%s)", len(data_to_upsert), offset)
-            except Exception as e:
-                logger.error("[ERROR] Fallo al guardar fact_move_lines (offset=%s): %s", offset, e)
+            n = self._upsert_move_lines_from_odoo(lines or [])
+            logger.info("[MOVE_LINES] %s líneas sincronizadas (offset=%s)", n, offset)
 
         self.set_last_sync(SYNC_KEY_MOVE_LINES_COLLECTIONS, sync_started_at)
 
-    def _get_existing_move_line_ids(self, line_ids):
+    def _upsert_move_lines_from_odoo(self, lines):
+        """Persiste en fact_move_lines registros ya leídos desde Odoo."""
+        if not lines:
+            return 0
+
+        move_ids_in_batch = list({self._clean_m2o(l.get('move_id')) for l in lines if l.get('move_id')})
+        partner_ids_in_batch = list({self._clean_m2o(l.get('partner_id')) for l in lines if l.get('partner_id')})
+        try:
+            if partner_ids_in_batch:
+                self.sync_partners(partner_ids_in_batch)
+            self._upsert_move_headers_batch(move_ids_in_batch)
+        except Exception as e:
+            logger.error("[ERROR] Fallo al sincronizar cabeceras de moves (refresh): %s", e)
+
+        data_to_upsert = []
+        for l in lines:
+            data_to_upsert.append({
+                'id': l['id'],
+                'move_id': self._clean_m2o(l.get('move_id')),
+                'partner_id': self._clean_m2o(l.get('partner_id')),
+                'account_id': self._clean_m2o(l.get('account_id')),
+                'name': l.get('name') or '',
+                'date': self._clean_date(l.get('date')),
+                'date_maturity': self._clean_date(l.get('date_maturity')),
+                'amount_currency': l.get('amount_currency', 0),
+                'amount_residual': l.get('amount_residual', 0),
+                'currency_id': self._clean_m2o(l.get('currency_id')),
+                'currency_name': self._clean_m2o_name(l.get('currency_id')),
+                'debit': l.get('debit', 0),
+                'credit': l.get('credit', 0),
+                'balance': l.get('balance', 0),
+                'parent_state': l.get('parent_state'),
+                'matched_debit_ids': l.get('matched_debit_ids') or [],
+                'matched_credit_ids': l.get('matched_credit_ids') or [],
+                'reconciled': bool(l.get('reconciled', False)),
+                'last_updated_at': datetime.now(timezone.utc).isoformat()
+            })
+
+        try:
+            self.supabase.table('fact_move_lines').upsert(data_to_upsert).execute()
+            return len(data_to_upsert)
+        except Exception as e:
+            logger.error("[ERROR] Fallo al guardar fact_move_lines (refresh): %s", e)
+            return 0
+
+    def refresh_move_lines_by_ids(self, line_ids):
+        """Re-sincroniza líneas CxC concretas (p. ej. tras conciliación parcial)."""
+        if not line_ids:
+            return 0
+        unique_ids = list({int(i) for i in line_ids if i})
+        refreshed = 0
+        for offset in range(0, len(unique_ids), PAGE_SIZE):
+            batch_ids = unique_ids[offset:offset + PAGE_SIZE]
+            lines = self._execute_kw(
+                'account.move.line', 'read', [batch_ids],
+                {'fields': self._MOVE_LINE_FIELDS},
+            )
+            refreshed += self._upsert_move_lines_from_odoo(lines or [])
+        if refreshed:
+            logger.info("[MOVE_LINES] %s líneas refrescadas por IDs explícitos", refreshed)
+        return refreshed
         """IDs de fact_move_lines ya presentes en Supabase (para filtrar FKs)."""
         if not line_ids:
             return set()
@@ -592,6 +610,7 @@ class OdooSync:
             return
 
         sync_started_at = datetime.now(timezone.utc).isoformat()
+        touched_line_ids = set()
 
         for offset in range(0, len(reconcile_ids), PAGE_SIZE):
             batch_ids = reconcile_ids[offset:offset + PAGE_SIZE]
@@ -599,10 +618,16 @@ class OdooSync:
 
             data_to_upsert = []
             for p in partials:
+                debit_line_id = self._clean_m2o(p.get('debit_move_id'))
+                credit_line_id = self._clean_m2o(p.get('credit_move_id'))
+                if debit_line_id:
+                    touched_line_ids.add(debit_line_id)
+                if credit_line_id:
+                    touched_line_ids.add(credit_line_id)
                 data_to_upsert.append({
                     'id': p['id'],
-                    'debit_move_line_id': self._clean_m2o(p.get('debit_move_id')),
-                    'credit_move_line_id': self._clean_m2o(p.get('credit_move_id')),
+                    'debit_move_line_id': debit_line_id,
+                    'credit_move_line_id': credit_line_id,
                     'amount': p.get('amount', 0),
                     'amount_currency': 0,
                     'currency_id': None,
@@ -618,6 +643,11 @@ class OdooSync:
                 logger.info("[PARTIAL_RECONCILES] %s conciliaciones sincronizadas (offset=%s)", len(data_to_upsert), offset)
             except Exception as e:
                 logger.error("[ERROR] Fallo al guardar fact_partial_reconciles (offset=%s): %s", offset, e)
+
+        if touched_line_ids:
+            # Odoo no siempre actualiza write_date en account.move.line al conciliar;
+            # refrescar las líneas tocadas mantiene amount_residual/reconciled al día.
+            self.refresh_move_lines_by_ids(list(touched_line_ids))
 
         self.set_last_sync(SYNC_KEY_PARTIAL_RECONCILES, sync_started_at)
 

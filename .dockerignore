@@ -16,3 +16,8 @@ node_modules
 site
 docs
 image
+auditoria/
+test_data/
+scripts/investigation/
+etl_*_log.txt
+*.db

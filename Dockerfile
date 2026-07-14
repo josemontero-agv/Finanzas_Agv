@@ -17,8 +17,14 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
+# Usuario no-root para gunicorn y ETL cron
+RUN groupadd --system appgroup \
+    && useradd --system --gid appgroup --home-dir /app --shell /usr/sbin/nologin appuser \
+    && chown -R appuser:appgroup /app
+
+USER appuser
+
 EXPOSE 5000
 
 # Render define PORT dinámico; local usa 5000 por defecto.
 CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 2 --threads 4 --timeout 180 run:app"]
-

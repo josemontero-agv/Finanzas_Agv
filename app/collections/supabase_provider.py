@@ -274,13 +274,11 @@ class CollectionsSupabaseProvider:
                 date_cutoff_start=date_cutoff_start, cutoff_date=cutoff_date,
                 include_reconciled=include_reconciled, doc_number=doc_number,
             )
-            limit_sql = ''
+            # No aplicar LIMIT en SQL: sub_channel, payment_method, corte histórico y
+            # _collapse_1212_lines son post-proceso (misma semántica que routes.py y Odoo).
             effective_limit = limit if limit and limit > 0 else None
-            if effective_limit:
-                params['row_limit'] = effective_limit
-                limit_sql = 'LIMIT %(row_limit)s'
 
-            sql = _MAIN_SELECT_SQL.format(where_sql=where_sql, limit_sql=limit_sql)
+            sql = _MAIN_SELECT_SQL.format(where_sql=where_sql, limit_sql='')
 
             conn = self._connect()
             try:
@@ -327,6 +325,8 @@ class CollectionsSupabaseProvider:
                 rows.append(row)
 
             rows = CollectionsService._collapse_1212_lines(rows, today)
+            if effective_limit:
+                rows = rows[:effective_limit]
             return rows
 
         except Exception as e:

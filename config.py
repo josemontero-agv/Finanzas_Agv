@@ -7,12 +7,20 @@ Las credenciales se cargan desde archivos .env específicos.
 """
 
 import os
+import warnings
 from datetime import timedelta
 from dotenv import load_dotenv
 
 
 class Config:
     """Configuración base."""
+
+    # Valores de secretos que no deben usarse en producción
+    INSECURE_SECRET_VALUES = frozenset({
+        'default-secret-key-change-me',
+        'dev-secret-key',
+        'production-secret-key',
+    })
     
     # Configuración Flask
     SECRET_KEY = os.getenv('SECRET_KEY', 'default-secret-key-change-me')
@@ -258,6 +266,40 @@ class Config:
             },
         }
 
+    @classmethod
+    def _validate_production_config(cls, app):
+        """
+        Valida configuración crítica en producción.
+        Falla al arrancar si hay secretos por defecto o ALLOWED_USERS vacío.
+        """
+        secret_key = (app.config.get('SECRET_KEY') or '').strip()
+        jwt_secret = (app.config.get('JWT_SECRET_KEY') or '').strip()
+
+        if not secret_key or secret_key in cls.INSECURE_SECRET_VALUES:
+            raise RuntimeError(
+                'SECRET_KEY inválido en producción: debe definirse una clave segura '
+                'vía variable de entorno (no usar valores por defecto).'
+            )
+        if not jwt_secret or jwt_secret in cls.INSECURE_SECRET_VALUES:
+            raise RuntimeError(
+                'JWT_SECRET_KEY inválido en producción: debe definirse una clave segura '
+                'vía variable de entorno (no usar valores por defecto).'
+            )
+
+        allowed_users = app.config.get('ALLOWED_USERS') or []
+        if not allowed_users:
+            raise RuntimeError(
+                'ALLOWED_USERS vacío en producción: debe configurarse al menos un usuario permitido.'
+            )
+
+        collections_source = (app.config.get('COLLECTIONS_SOURCE') or 'odoo').strip().lower()
+        if collections_source == 'supabase' and not app.config.get('SUPABASE_DB_URI'):
+            warnings.warn(
+                'COLLECTIONS_SOURCE=supabase sin SUPABASE_DB_URI: Cobranzas vía Supabase '
+                'puede fallar hasta configurar la URI de base de datos.',
+                stacklevel=2,
+            )
+
     @staticmethod
     def init_app(app):
         """Inicialización adicional de la app."""
@@ -310,6 +352,7 @@ class ProductionConfig(Config):
 
         cls._load_common_env(app, default_secret='production-secret-key', dev_email_default='False')
         cls._apply_session_settings(app, secure_default=True, samesite_default='None')
+        cls._validate_production_config(app)
 
 
 class TestingConfig(Config):

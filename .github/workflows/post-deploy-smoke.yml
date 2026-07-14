@@ -1,0 +1,20 @@
+name: Post-deploy smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      BACKEND_URL:
+        description: URL pública del backend (ej. https://finanzas-agv-backend.onrender.com)
+        required: true
+        type: string
+
+jobs:
+  smoke:
+    name: Health check post-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run smoke test
+        env:
+          BACKEND_URL: ${{ inputs.BACKEND_URL }}
+        run: bash scripts/ci/smoke_test.sh "${BACKEND_URL}"
