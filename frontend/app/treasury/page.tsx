@@ -45,10 +45,12 @@ export default function TreasuryPage() {
   const data = response?.data || []
   const summary = response?.summary
 
-  // Calcular estadísticas manuales si no viene summary (fallback)
-  const totalAmount = data.reduce((sum, item) => sum + (item.amount_total || 0), 0)
-  const totalPending = data.reduce((sum, item) => sum + (item.amount_residual || 0), 0)
-  const overdueCount = data.filter(item => (item.dias_vencido || 0) > 0).length
+  // KPIs desde el resumen del backend (calculado sobre el universo filtrado completo, no solo las filas mostradas).
+  // Fallback a un cálculo en cliente sobre las filas visibles solo si el backend aún no respondió con summary.
+  const totalAmount = summary?.overall.amount_total ?? data.reduce((sum, item) => sum + (item.amount_total || 0), 0)
+  const totalPending = summary?.overall.pending_cutoff ?? data.reduce((sum, item) => sum + (item.amount_residual || 0), 0)
+  const overdueCount = summary?.overall.overdue_count ?? data.filter(item => (item.dias_vencido || 0) > 0).length
+  const totalRecords = summary?.overall.count ?? data.length
 
   const handleFilterChange = (key: keyof ReportParams, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }))
@@ -264,7 +266,7 @@ export default function TreasuryPage() {
             <p className="text-sm font-medium text-orange-700 dark:text-orange-300">Total Registros</p>
             <CreditCard className="h-4 w-4 text-orange-600 dark:text-orange-300" />
           </div>
-          <p className="text-2xl font-bold text-orange-900 dark:text-orange-200">{data.length}</p>
+          <p className="text-2xl font-bold text-orange-900 dark:text-orange-200">{totalRecords}</p>
         </div>
       </div>
 
@@ -350,7 +352,7 @@ export default function TreasuryPage() {
           <div className="p-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-500 dark:text-slate-400 flex justify-between items-center">
             <span className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-[#714B67] dark:bg-purple-500"></div>
-              Mostrando {data.length} de {response?.count || data.length} registros
+              Mostrando {response?.shown_count || data.length} de {response?.count || totalRecords} registros
             </span>
             <span>* Última actualización: {new Date().toLocaleString("es-PE")}</span>
           </div>

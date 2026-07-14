@@ -10,6 +10,9 @@ from app.treasury import treasury_bp
 from app.treasury.services import TreasuryService
 from app.core.odoo import OdooRepository
 
+# Máximo de registros permitido por request (previene DoS por queries sin límite)
+MAX_REPORT_LIMIT = 10_000
+
 
 def _get_odoo_repository():
     """Helper para crear instancia de OdooRepository desde la configuración."""
@@ -64,19 +67,22 @@ def report_account42():
         if date_cutoff:
             # En corte histórico incluir conciliados para cuadrar con el mayor
             include_reconciled = True
-        limit = request.args.get('limit', type=int, default=10000)
+        # Cap de seguridad: limit>MAX → truncar; limit=0 → sin límite (comportamiento original)
+        limit_raw = request.args.get('limit', type=int, default=0)
+        limit = min(limit_raw, MAX_REPORT_LIMIT) if limit_raw > 0 else 0
         
         # Crear repositorio y servicio
         odoo_repo = _get_odoo_repository()
         treasury_service = TreasuryService(odoo_repo)
         
-        # Obtener datos
-        data = treasury_service.get_accounts_payable_report(
+        # Obtener el universo filtrado completo (limit=0) para que el resumen/KPIs
+        # se calculen sobre el total real y no solo sobre las filas mostradas en tabla.
+        full_filtered_rows = treasury_service.get_accounts_payable_report(
             start_date=date_from,
             end_date=date_to,
             cutoff_date=date_cutoff,
             supplier=supplier,
-            limit=limit,
+            limit=0,
             account_codes=account_codes,
             payment_state=payment_state,
             doc_type_id=doc_type_id,
@@ -86,14 +92,18 @@ def report_account42():
             only_vouchers=only_vouchers,
             include_reconciled=include_reconciled
         )
+        total_count = len(full_filtered_rows)
+        data = full_filtered_rows[:limit] if limit and limit > 0 else full_filtered_rows
         
         def _summarize(rows):
             overall = {
                 'debit': 0.0,
                 'credit': 0.0,
+                'amount_total': 0.0,
                 'pending_cutoff': 0.0,
                 'paid_after_cutoff': 0.0,
                 'saldo': 0.0,
+                'overdue_count': 0,
                 'count': 0
             }
             accounts = {}
@@ -103,14 +113,19 @@ def report_account42():
                 acc_name = row.get('account_name') or ''
                 debit = float(row.get('debit', 0.0) or 0.0)
                 credit = float(row.get('credit', 0.0) or 0.0)
+                amount_total = float(row.get('amount_total', 0.0) or 0.0)
                 pending = float(row.get('amount_residual_historical', row.get('amount_residual', 0.0)) or 0.0)
                 paid_after = float(row.get('paid_after_cutoff', 0.0) or 0.0)
+                is_overdue = int(row.get('dias_vencido', 0) or 0) > 0
                 
                 overall['debit'] += debit
                 overall['credit'] += credit
+                overall['amount_total'] += amount_total
                 overall['pending_cutoff'] += pending
                 overall['paid_after_cutoff'] += paid_after
                 overall['count'] += 1
+                if is_overdue:
+                    overall['overdue_count'] += 1
                 
                 if acc not in accounts:
                     accounts[acc] = {
@@ -118,16 +133,21 @@ def report_account42():
                         'account_name': acc_name,
                         'debit': 0.0,
                         'credit': 0.0,
+                        'amount_total': 0.0,
                         'pending_cutoff': 0.0,
                         'paid_after_cutoff': 0.0,
                         'saldo': 0.0,
+                        'overdue_count': 0,
                         'count': 0
                     }
                 accounts[acc]['debit'] += debit
                 accounts[acc]['credit'] += credit
+                accounts[acc]['amount_total'] += amount_total
                 accounts[acc]['pending_cutoff'] += pending
                 accounts[acc]['paid_after_cutoff'] += paid_after
                 accounts[acc]['count'] += 1
+                if is_overdue:
+                    accounts[acc]['overdue_count'] += 1
             
             # Calcular saldo (Debe - Haber) por cuenta y global
             # En Odoo el "Saldo" de análisis/mayor corresponde al balance = debit - credit.
@@ -153,7 +173,7 @@ def report_account42():
                 'by_account': by_account
             }
         
-        summary = _summarize(data)
+        summary = _summarize(full_filtered_rows)
         
         # Preparar filtros aplicados para la respuesta
         filters_applied = {
@@ -175,10 +195,11 @@ def report_account42():
         return jsonify({
             'success': True,
             'data': data,
-            'count': len(data),
+            'count': total_count,
+            'shown_count': len(data),
             'summary': summary,
             'filters': filters_applied,
-            'message': f'Reporte de CxP generado exitosamente con {len(data)} registros'
+            'message': f'Reporte de CxP generado exitosamente. Mostrando {len(data)} de {total_count} registros.'
         }), 200
         
     except ValueError as ve:

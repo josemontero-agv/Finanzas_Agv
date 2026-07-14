@@ -40,8 +40,10 @@ export interface ApiResponse<T> {
       credit: number
       saldo: number
       saldo_total?: number
+      amount_total?: number
       count: number
       overdue_amount?: number
+      overdue_count?: number
       pending_cutoff?: number
       paid_after_cutoff?: number
     }
@@ -52,8 +54,10 @@ export interface ApiResponse<T> {
       credit: number
       saldo: number
       saldo_total?: number
+      amount_total?: number
       count: number
       overdue_amount?: number
+      overdue_count?: number
       pending_cutoff?: number
       paid_after_cutoff?: number
     }>

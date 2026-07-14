@@ -1,17 +1,26 @@
 # =============================================================================
 # Render Blueprint - Finanzas AGV
 # =============================================================================
-# Referencia: https://render.com/docs/blueprint-spec (sintaxis verificada 2026:
-# type "keyvalue" para Redis administrado, "redis" es un alias deprecado).
+# Referencia: https://render.com/docs/blueprint-spec
 #
 # Uso: Render > New > Blueprint, apuntando a este repositorio. Las variables con
 # `sync: false` deben cargarse manualmente en el dashboard de Render (nunca en el repo).
 # Ver auditoria/Informe_Entrega_V2/GUIA_DESPLIEGUE_RENDER.md para la checklist completa.
+#
+# Arquitectura (Fase 3/4 - piloto Cobranzas vía Supabase): 3 servicios, sin worker
+# persistente de Celery ni Redis administrado en producción. El ETL (Odoo -> Supabase)
+# corre como Cron Job independiente cada 15 min en vez de Celery Beat, porque no hay
+# proceso de fondo de larga duración que lo justifique y así se evita el costo fijo
+# mensual del worker + Redis. El código de Celery/Redis (celery_worker.py, app/tasks.py,
+# app/core/celery_utils.py, docker-compose.yml) se mantiene intacto para desarrollo
+# local, donde sí siguen siendo útiles (hot-reload, no depender de Render para probar
+# el ETL). En producción, COLLECTIONS_SOURCE=supabase hace que Cobranzas lea de las
+# tablas que puebla este Cron Job, en vez de llamar a Odoo en cada request.
 # =============================================================================
 
 services:
   # ---------------------------------------------------------------------------
-  # Backend Flask (API REST)
+  # Backend Flask (API REST) - lee Cobranzas desde Supabase (COLLECTIONS_SOURCE)
   # ---------------------------------------------------------------------------
   - type: web
     name: finanzas-agv-backend
@@ -23,6 +32,10 @@ services:
     envVars:
       - key: APP_ENV
         value: production
+      - key: COLLECTIONS_SOURCE
+        value: supabase
+      - key: LETTERS_MODULE_ENABLED
+        value: "false"
       - key: SECRET_KEY
         sync: false
       - key: JWT_SECRET_KEY
@@ -39,6 +52,8 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
+      # Lista blanca equipo Créditos/Cobranzas (6 correos @agrovetmarket.com, comma-separated):
+      # kattya.barcena, jancarlo.pariasca, eigly.pereira, augusto.matto, jhosselyn.paliza, maria.alvarez
       - key: ALLOWED_USERS
         sync: false
       - key: ADMIN_EMAILS
@@ -65,97 +80,10 @@ services:
         sync: false
       - key: MAIL_DEFAULT_BCC
         sync: false
-      - key: FRONTEND_URL
-        sync: false
-      - key: LETTERS_MODULE_ENABLED
-        value: "false"
       - key: DEV_EMAIL_MODE
-        sync: false
-      - key: ETL_SYNC_MINUTES
-        sync: false
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: finanzas-agv-redis
-          property: connectionString
-
-  # ---------------------------------------------------------------------------
-  # Worker de Celery (con Beat embebido) para el ETL Odoo -> Supabase
-  # ---------------------------------------------------------------------------
-  - type: worker
-    name: finanzas-agv-worker
-    runtime: docker
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
-    dockerCommand: celery -A celery_worker.celery worker -B -l info
-    plan: starter
-    envVars:
-      - key: APP_ENV
-        value: production
-      - key: SECRET_KEY
-        sync: false
-      - key: JWT_SECRET_KEY
-        sync: false
-      - key: ODOO_URL
-        sync: false
-      - key: ODOO_DB
-        sync: false
-      - key: ODOO_USER
-        sync: false
-      - key: ODOO_PASSWORD
-        sync: false
-      - key: GOOGLE_CLIENT_ID
-        sync: false
-      - key: GOOGLE_CLIENT_SECRET
-        sync: false
-      - key: ALLOWED_USERS
-        sync: false
-      - key: ADMIN_EMAILS
-        sync: false
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_KEY
-        sync: false
-      - key: SUPABASE_DB_URI
-        sync: false
-      - key: MAIL_SERVER
-        sync: false
-      - key: MAIL_PORT
-        sync: false
-      - key: MAIL_USE_TLS
-        sync: false
-      - key: MAIL_USERNAME
-        sync: false
-      - key: MAIL_PASSWORD
-        sync: false
-      - key: MAIL_DEFAULT_SENDER
-        sync: false
-      - key: MAIL_DEFAULT_CC
-        sync: false
-      - key: MAIL_DEFAULT_BCC
         sync: false
       - key: FRONTEND_URL
         sync: false
-      - key: LETTERS_MODULE_ENABLED
-        value: "false"
-      - key: DEV_EMAIL_MODE
-        sync: false
-      - key: ETL_SYNC_MINUTES
-        sync: false
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: finanzas-agv-redis
-          property: connectionString
-
-  # ---------------------------------------------------------------------------
-  # Redis administrado (Render Key Value): broker/backend de Celery,
-  # storage de Flask-Caching y Flask-Limiter.
-  # ---------------------------------------------------------------------------
-  - type: keyvalue
-    name: finanzas-agv-redis
-    plan: starter
-    ipAllowList: []
 
   # ---------------------------------------------------------------------------
   # Frontend Next.js
@@ -176,3 +104,31 @@ services:
         sync: false
       - key: NEXT_PUBLIC_ENABLE_LETTERS
         value: "false"
+
+  # ---------------------------------------------------------------------------
+  # Cron Job ETL Odoo -> Supabase (cada 15 min). Reemplaza al worker de Celery
+  # con Beat embebido que existía antes en producción (ver nota de arquitectura
+  # arriba). Usa el mismo Dockerfile/imagen que el backend.
+  # ---------------------------------------------------------------------------
+  - type: cron
+    name: finanzas-agv-etl
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    schedule: "*/15 * * * *"
+    dockerCommand: python -m scripts.etl.etl_sync_threading
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: ODOO_URL
+        sync: false
+      - key: ODOO_DB
+        sync: false
+      - key: ODOO_USER
+        sync: false
+      - key: ODOO_PASSWORD
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false

@@ -27,6 +27,8 @@ services:
       - APP_ENV=production
       - REDIS_URL=redis://redis:6379/0
       - LETTERS_MODULE_ENABLED=false
+      # Cobranzas: odoo (default local) o supabase (probar stack ETL + lectura Postgres).
+      - COLLECTIONS_SOURCE=${COLLECTIONS_SOURCE:-odoo}
     depends_on:
       - redis
     restart: unless-stopped

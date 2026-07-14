@@ -8,7 +8,7 @@ Endpoints para exportar reportes a diferentes formatos.
 from flask import request, send_file, jsonify, current_app
 from app.exports import exports_bp
 from app.exports.excel_service import ExcelExportService
-from app.collections.services import CollectionsService
+from app.collections.routes import get_collections_provider
 from app.treasury.services import TreasuryService
 from app.core.odoo import OdooRepository
 from app.auth.security import require_login
@@ -56,9 +56,8 @@ def export_collections_excel():
         if cutoff_date:
             include_reconciled = True
         
-        # Obtener datos
-        odoo_repo = _get_odoo_repository()
-        collections_service = CollectionsService(odoo_repo)
+        # Obtener datos (Odoo o Supabase según COLLECTIONS_SOURCE, ver Fase 3)
+        collections_service = get_collections_provider()
         
         data = collections_service.get_report_lines(
             start_date=date_from,

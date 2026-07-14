@@ -21,6 +21,7 @@ const DEFAULT_FILTERS: ReportParams = {
   account_codes: '',
   sales_channel_id: undefined,
   doc_type_id: undefined,
+  doc_number: '',
   include_reconciled: false,
 }
 
@@ -31,7 +32,6 @@ export default function CollectionsPage() {
 
   const [isFiltersOpen, setIsFiltersOpen] = useState(true)
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
-  const [docNumberSearch, setDocNumberSearch] = useState("")
 
   // AppShell ya validó sesión; esta página solo se monta si hay auth OK
   const { data: filterOptions } = useQuery({
@@ -56,17 +56,6 @@ export default function CollectionsPage() {
   const data = response?.data || []
   const summary = response?.summary
 
-  const filteredData = useMemo(() => {
-    if (!docNumberSearch.trim()) return data
-    const q = docNumberSearch.trim().toLowerCase()
-    return data.filter((row: any) => {
-      const docName = (row["account.move/name"] || row["move_name"] || "").toLowerCase()
-      const origin = (row["account.move/invoice_origin"] || row["invoice_origin"] || "").toLowerCase()
-      const letra = (row["account.move/l10n_latam_boe_number"] || row["l10n_latam_boe_number"] || "").toLowerCase()
-      return docName.includes(q) || origin.includes(q) || letra.includes(q)
-    })
-  }, [data, docNumberSearch])
-
   const handleFilterChange = (key: keyof ReportParams, value: any) => {
     setDraftFilters(prev => ({ ...prev, [key]: value }))
   }
@@ -75,7 +64,6 @@ export default function CollectionsPage() {
     setDraftFilters(DEFAULT_FILTERS)
     setAppliedFilters(DEFAULT_FILTERS)
     setHasAppliedFilters(false)
-    setDocNumberSearch("")
   }
 
   const applyFilters = () => {
@@ -234,8 +222,9 @@ export default function CollectionsPage() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                   <Input
                     placeholder="Ej: F001-00123 · L001 · pedido"
-                    value={docNumberSearch}
-                    onChange={(e) => setDocNumberSearch(e.target.value)}
+                    value={draftFilters.doc_number}
+                    onChange={(e) => handleFilterChange('doc_number', e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
                     className="pl-9 focus-visible:ring-[#714B67] dark:focus-visible:ring-purple-500 border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                   />
                 </div>
@@ -373,7 +362,7 @@ export default function CollectionsPage() {
         <div className="bg-purple-50/50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-xl p-6">
           <p className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-2">Monto Residual Total</p>
           <p className="text-2xl font-bold text-purple-900 dark:text-purple-200">
-            {formatCurrency(summary?.overall.saldo_total ?? summary?.overall.saldo)}
+            {formatCurrency(summary?.overall.pending_cutoff)}
           </p>
         </div>
         <div className="bg-red-50/50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-6">
@@ -418,16 +407,16 @@ export default function CollectionsPage() {
                     Aplica filtros para consultar y luego exportar a Excel.
                   </td>
                 </tr>
-              ) : filteredData.length === 0 ? (
+              ) : data.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className="px-4 py-12 text-center text-slate-500 dark:text-slate-400">
-                    {docNumberSearch.trim()
-                      ? `Sin resultados para "${docNumberSearch}". Prueba con otro número de documento.`
+                    {appliedFilters.doc_number?.trim()
+                      ? `Sin resultados para "${appliedFilters.doc_number}". Prueba con otro número de documento.`
                       : "No se encontraron resultados con los filtros aplicados."}
                   </td>
                 </tr>
               ) : (
-                filteredData.map((row, idx) => (
+                data.map((row, idx) => (
                   <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                     {columns.map((col) => {
                       const value = col.get(row)
@@ -478,10 +467,8 @@ export default function CollectionsPage() {
         {!isLoading && data.length > 0 && (
           <div className="p-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 flex justify-between">
             <span>
-              {docNumberSearch.trim()
-                ? `${filteredData.length} de ${response?.shown_count || data.length} registros filtrados por "${docNumberSearch}" · Total en BD: ${response?.count || data.length}`
-                : `Mostrando ${response?.shown_count || data.length} de ${response?.count || data.length} registros. Para ver el total detallado, exporta a Excel.`
-              }
+              Mostrando {response?.shown_count || data.length} de {response?.count || data.length} registros
+              {appliedFilters.doc_number?.trim() ? ` filtrados por "${appliedFilters.doc_number}"` : ''}. Para ver el total detallado, exporta a Excel.
             </span>
             <span>* Montos en moneda local del sistema</span>
           </div>

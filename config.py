@@ -67,6 +67,13 @@ class Config:
     # Connection string para SQLAlchemy/psycopg2
     # Formato: postgresql://user:password@host:port/dbname
     SUPABASE_DB_URI = os.getenv('SUPABASE_DB_URI')
+
+    # Fase 3 (piloto Cobranzas): fuente de datos para app/collections y el Excel de
+    # Cobranzas en app/exports. 'odoo' = comportamiento actual (Odoo en vivo, default
+    # seguro). 'supabase' = leer de las tablas pobladas por scripts/etl/etl_sync_threading.py
+    # vía app/collections/supabase_provider.py. Ver get_collections_provider() en
+    # app/collections/routes.py.
+    COLLECTIONS_SOURCE = os.getenv('COLLECTIONS_SOURCE', 'odoo')
     
     # Configuración Redis & Cache
     # Si no hay REDIS_URL, usa memoria simple (para dev sin docker)
@@ -204,6 +211,8 @@ class Config:
         app.config['SUPABASE_URL'] = os.getenv('SUPABASE_URL')
         app.config['SUPABASE_KEY'] = os.getenv('SUPABASE_KEY')
         app.config['SUPABASE_DB_URI'] = os.getenv('SUPABASE_DB_URI')
+        # Fase 3 (piloto Cobranzas): default seguro 'odoo' si no se define explícitamente.
+        app.config['COLLECTIONS_SOURCE'] = os.getenv('COLLECTIONS_SOURCE', 'odoo')
 
         app.config['REDIS_URL'] = os.getenv('REDIS_URL')
         if app.config['REDIS_URL']:

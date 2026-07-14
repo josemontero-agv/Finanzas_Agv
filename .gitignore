@@ -46,7 +46,14 @@ ENV/
 *.swo
 *~
 /auditoria
-/scripts/
+# Ignorar scripts locales/exploratorios, pero versionar el ETL de producción
+/scripts/*
+!/scripts/__init__.py
+!/scripts/etl/
+!/scripts/etl/**
+/scripts/investigation/
+/scripts/etl/__pycache__/
+/scripts/etl/*_log.txt
 # OS
 .DS_Store
 Thumbs.db

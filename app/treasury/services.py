@@ -181,20 +181,26 @@ class TreasuryService:
             
             # 1. Obtener TOTAL de registros
             total_count = self.repository.search_count('account.move.line', line_domain)
-            
+
+            # per_page <= 0 significa "sin límite": traer el universo filtrado completo
+            # (usado para calcular resúmenes/KPIs exactos, replicando el patrón de Collections).
+            unlimited = not per_page or per_page <= 0
+            effective_limit = None if unlimited else per_page
+            total_pages = 1 if unlimited else (total_count + per_page - 1) // per_page
+
             # 2. Calcular offset y validar página
-            offset = (page - 1) * per_page
-            if offset >= total_count and page > 1:
+            offset = 0 if unlimited else (page - 1) * per_page
+            if not unlimited and offset >= total_count and page > 1:
                 return {
                     'data': [],
                     'total_count': total_count,
                     'page': page,
                     'per_page': per_page,
-                    'total_pages': (total_count + per_page - 1) // per_page,
+                    'total_pages': total_pages,
                     'has_more': False
                 }
             
-            # 3. Obtener SOLO los registros de esta página
+            # 3. Obtener los registros (todos si es unlimited, o solo la página solicitada)
             line_fields = [
                 'id', 'move_id', 'partner_id', 'account_id', 'name', 'date',
                 'date_maturity', 'amount_currency', 'amount_residual', 'currency_id',
@@ -206,7 +212,7 @@ class TreasuryService:
                 'account.move.line',
                 line_domain,
                 line_fields,
-                limit=per_page,
+                limit=effective_limit,
                 offset=offset,
                 order='date desc'
             )
@@ -217,7 +223,7 @@ class TreasuryService:
                     'total_count': total_count,
                     'page': page,
                     'per_page': per_page,
-                    'total_pages': (total_count + per_page - 1) // per_page,
+                    'total_pages': total_pages,
                     'has_more': False
                 }
             
@@ -247,8 +253,7 @@ class TreasuryService:
             )
             
             # 5. Metadatos
-            total_pages = (total_count + per_page - 1) // per_page
-            has_more = page < total_pages
+            has_more = False if unlimited else page < total_pages
             
             print(f"[OK] Procesados {len(rows)} registros paginados")
             
@@ -291,8 +296,8 @@ class TreasuryService:
             only_vouchers: Solo comprobantes (excluir asientos manuales)
             include_reconciled: Incluir conciliados
         """
-        # Redirigir a la versión paginada solicitando "todas" (o muchas) líneas si limit=0
-        limit_val = limit if limit and limit > 0 else 10000
+        # Redirigir a la versión paginada; limit<=0 solicita el universo completo (sin límite)
+        limit_val = limit if limit and limit > 0 else 0
         result = self.get_report_lines_paginated(
             page=1, per_page=limit_val,
             start_date=start_date, end_date=end_date,

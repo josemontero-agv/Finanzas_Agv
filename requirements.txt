@@ -30,7 +30,13 @@ redis==5.0.1
 celery==5.3.6
 
 # Base de Datos y Cloud (Supabase)
-supabase==2.3.0
+# 2.31.0 (antes 2.3.0): el proyecto Supabase usa el nuevo formato de API key
+# (sb_secret_...) en vez de las claves legacy basadas en JWT. supabase-py 2.3.0
+# validaba localmente que la key tuviera formato JWT (regex con puntos) y
+# lanzaba SupabaseException("Invalid API key") antes de siquiera intentar la
+# conexión. Ese chequeo se eliminó en versiones posteriores (commit 2f4a5ed,
+# 2025-06-20) para soportar las nuevas claves opacas sb_publishable_/sb_secret_.
+supabase==2.31.0
 psycopg2-binary==2.9.9
 SQLAlchemy==2.0.23
 

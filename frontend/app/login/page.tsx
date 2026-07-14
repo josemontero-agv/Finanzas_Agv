@@ -66,7 +66,7 @@ function LoginForm() {
         </div>
 
         {errorMessage && (
-          <div className="mb-4 rounded-lg border border-red-300 bg-red-50 text-red-700 text-sm px-3 py-2">
+          <div className="mb-4 rounded-lg border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 text-sm px-3 py-2">
             {errorMessage}
           </div>
         )}

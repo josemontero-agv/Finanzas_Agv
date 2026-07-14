@@ -8,6 +8,7 @@ Endpoints para reportes de cuentas por cobrar.
 from flask import request, jsonify, current_app, session
 from app.collections import collections_bp
 from app.collections.services import CollectionsService
+from app.collections.supabase_provider import CollectionsSupabaseProvider
 from app.core.odoo import OdooRepository
 from app.auth.security import require_login
 from app import cache
@@ -38,6 +39,21 @@ def _get_odoo_repository():
         raise ValueError(f"Error de configuración de Odoo: {str(e)}")
 
 
+def get_collections_provider():
+    """
+    Fase 3 (piloto Cobranzas): decide entre CollectionsService (Odoo en vivo) y
+    CollectionsSupabaseProvider (Supabase) según COLLECTIONS_SOURCE, exponiendo
+    la misma interfaz pública (get_report_lines, get_filter_options,
+    get_report_summary) para que el resto de cada ruta no necesite cambiar.
+    Mismo helper se usa en app/exports/routes.py para el Excel de Cobranzas.
+    """
+    source = (current_app.config.get('COLLECTIONS_SOURCE') or 'odoo').strip().lower()
+    if source == 'supabase':
+        return CollectionsSupabaseProvider(current_app.config.get('SUPABASE_DB_URI'))
+    odoo_repo = _get_odoo_repository()
+    return CollectionsService(odoo_repo)
+
+
 @collections_bp.route('/report/account12', methods=['GET'])
 @require_login
 @cache.cached(timeout=300, key_prefix=_user_cache_key)
@@ -66,9 +82,8 @@ def report_account12():
         limit_raw = request.args.get('limit', type=int, default=0)
         limit = min(limit_raw, MAX_REPORT_LIMIT) if limit_raw > 0 else 0
 
-        # Crear repositorio y servicio
-        odoo_repo = _get_odoo_repository()
-        collections_service = CollectionsService(odoo_repo)
+        # Crear proveedor (Odoo o Supabase según COLLECTIONS_SOURCE, ver Fase 3)
+        collections_service = get_collections_provider()
 
         # OPTIMIZACIÓN: Si es solo resumen y no hay fecha de corte, usar read_group
         if summary_only and not cutoff_date:
@@ -423,9 +438,8 @@ def filter_options():
         cutoff_date = request.args.get('date_cutoff')
         include_reconciled = request.args.get('include_reconciled') == 'true'
 
-        # Crear repositorio y servicio
-        odoo_repo = _get_odoo_repository()
-        collections_service = CollectionsService(odoo_repo)
+        # Crear proveedor (Odoo o Supabase según COLLECTIONS_SOURCE, ver Fase 3)
+        collections_service = get_collections_provider()
         
         # Obtener opciones de filtros
         filter_data = collections_service.get_filter_options(
@@ -488,9 +502,8 @@ def report_account12_stats():
         if cutoff_date:
             include_reconciled = True
         
-        # Crear servicio
-        odoo_repo = _get_odoo_repository()
-        collections_service = CollectionsService(odoo_repo)
+        # Crear proveedor (Odoo o Supabase según COLLECTIONS_SOURCE, ver Fase 3)
+        collections_service = get_collections_provider()
         
         # Obtener datos (método tradicional para asegurar exactitud)
         data = collections_service.get_report_lines(
