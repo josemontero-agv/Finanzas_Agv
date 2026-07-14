@@ -84,6 +84,10 @@ docker compose --profile frontend up
 ### Backend local sin Docker
 
 ```powershell
+# Con Yarn (scripts en package.json raíz)
+yarn dev
+
+# O directamente con Python
 python run.py
 ```
 
@@ -91,8 +95,8 @@ python run.py
 
 ```powershell
 cd frontend
-npm install
-npm run dev
+yarn install
+yarn dev
 ```
 
 ## Variables de entorno relevantes

@@ -89,8 +89,8 @@ services:
     runtime: node
     plan: starter
     rootDir: frontend
-    buildCommand: npm install && npm run build
-    startCommand: npm start
+    buildCommand: yarn install --frozen-lockfile && yarn build
+    startCommand: yarn start
     envVars:
       - key: NEXT_PUBLIC_FLASK_API_URL
         sync: false

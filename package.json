@@ -1,0 +1,17 @@
+{
+  "name": "finanzas-agv-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Orquestación Yarn del backend Flask (Python). Dependencias reales en requirements.txt.",
+  "scripts": {
+    "dev": "python run.py",
+    "start": "gunicorn --bind 0.0.0.0:5000 --workers 2 --threads 4 --timeout 180 run:app",
+    "start:render": "sh -c \"gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 2 --threads 4 --timeout 180 run:app\"",
+    "etl": "python -m scripts.etl.etl_sync_threading",
+    "test": "pytest tests/",
+    "parity": "python test_collections_parity.py --env produccion"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

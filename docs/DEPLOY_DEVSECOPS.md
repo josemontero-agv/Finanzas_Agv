@@ -277,6 +277,15 @@ Variables con `sync: false` en `render.yaml` debes pegarlas manualmente en Rende
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon key pública |
 | `NEXT_PUBLIC_ENABLE_LETTERS` | `false` |
 
+**Comandos Render (frontend, Root Directory = `frontend`):**
+
+| Campo | Valor |
+|-------|--------|
+| Build Command | `yarn install --frozen-lockfile && yarn build` |
+| Start Command | `yarn start` |
+
+**Backend local (Yarn en raíz del repo):** `yarn dev`, `yarn etl`, `yarn test`, `yarn parity`
+
 **Cron ETL (`finanzas-agv-etl`)**
 
 | Variable | Notas |

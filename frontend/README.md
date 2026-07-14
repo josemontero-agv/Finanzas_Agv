@@ -16,14 +16,14 @@ Sistema de gestión financiera con arquitectura moderna desacoplada.
 
 ```bash
 # Instalar dependencias
-npm install
+yarn install
 
 # Modo desarrollo
-npm run dev
+yarn dev
 
 # Build para producción
-npm run build
-npm run start
+yarn build
+yarn start
 ```
 
 ## Variables de Entorno
