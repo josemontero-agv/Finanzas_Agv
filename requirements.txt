@@ -48,7 +48,7 @@ Flask-Limiter==3.9.0
 Authlib==1.7.2
 
 # Servidor WSGI para producción (opcional)
-gunicorn==21.2.0
+gunicorn==22.0.0
 
 # Testing (opcional)
 pytest==7.4.3
