@@ -6,7 +6,7 @@ Werkzeug==3.0.1
 Flask-CORS==4.0.0
 
 # Configuración
-python-dotenv==1.0.0
+python-dotenv==1.2.2
 
 # Cliente Odoo (XML-RPC built-in de Python — soporta API Keys para usuarios con 2FA)
 
