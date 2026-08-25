@@ -189,7 +189,44 @@ export interface AuthUserInfoResponse {
   success: boolean
   username?: string
   email?: string
+  roles?: string[]
   message?: string
+}
+
+export interface AnalyticsSummary {
+  kpis: {
+    unique_users: number
+    total_logins: number
+    failed_logins?: number
+    logouts?: number
+    total_page_views: number
+    active_days: number
+  }
+  logins_by_hour: Array<{ hour: number; count: number }>
+  logins_by_day: Array<{ date: string; count: number }>
+  top_users: Array<{ email: string; login_count: number; last_seen?: string }>
+  top_modules: Array<{ module: string; views: number }>
+  recent_events?: AnalyticsEvent[]
+  user_admin_actions?: UserAdminAction[]
+  range?: { from: string; to: string; timezone?: string }
+}
+
+export interface AnalyticsEvent {
+  created_at?: string
+  user_email?: string
+  username?: string
+  event_category?: string
+  event_name?: string
+  payload?: Record<string, unknown>
+  path?: string
+}
+
+export interface UserAdminAction {
+  created_at?: string
+  actor_email?: string
+  event_name?: string
+  target_email?: string
+  payload?: Record<string, unknown>
 }
 
 // Endpoints de Collections
@@ -227,6 +264,108 @@ export const authApi = {
 
   logout: () =>
     flaskApi.post('/api/v1/auth/logout'),
+}
+
+// Endpoints de Analytics / Observabilidad
+export const analyticsApi = {
+  getSummary: (params?: { from?: string; to?: string }) =>
+    flaskApi.get<{ success: boolean; data: AnalyticsSummary; message?: string }>(
+      '/api/v1/analytics/summary',
+      { params }
+    ),
+}
+
+export interface AppUser {
+  email: string
+  display_name?: string | null
+  role: string
+  is_active: boolean
+  is_protected?: boolean
+  created_by?: string | null
+  created_at?: string
+  updated_at?: string
+}
+
+export interface AppPlatform {
+  id: string
+  name: string
+  slug: string
+  base_url?: string | null
+  kind: string
+  is_active: boolean
+  sort_order?: number
+  notes?: string | null
+  health_status?: string
+  health_checked_at?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface AppsDashboard {
+  kpis: {
+    users_total: number
+    users_active: number
+    users_inactive: number
+    users_by_role: {
+      admin: number
+      app_assistant: number
+      user: number
+    }
+    platforms_total: number
+    platforms_active: number
+    platforms_ok: number
+    platforms_degraded: number
+    platforms_down: number
+    platforms_unknown: number
+  }
+  charts: {
+    roles_distribution: Array<{ role: string; count: number }>
+    users_active_inactive: Array<{ status: string; count: number }>
+    platforms_health: Array<{ name: string; status: string; value: number }>
+    users_created_by_day: Array<{ date: string; count: number }>
+  }
+  platforms: AppPlatform[]
+  users: AppUser[]
+}
+
+// Centro de aplicaciones (admin + app_assistant)
+export const appsApi = {
+  getDashboard: () =>
+    flaskApi.get<{ success: boolean; data: AppsDashboard; message?: string }>(
+      '/api/v1/apps/dashboard'
+    ),
+
+  listPlatforms: () =>
+    flaskApi.get<{ success: boolean; data: AppPlatform[] }>('/api/v1/apps/platforms'),
+
+  createPlatform: (body: {
+    name: string
+    slug: string
+    base_url?: string
+    kind?: string
+    notes?: string
+    is_active?: boolean
+    sort_order?: number
+  }) => flaskApi.post<{ success: boolean; data: AppPlatform }>('/api/v1/apps/platforms', body),
+
+  updatePlatform: (id: string, body: Partial<AppPlatform>) =>
+    flaskApi.patch<{ success: boolean; data: AppPlatform }>(`/api/v1/apps/platforms/${id}`, body),
+
+  listUsers: () =>
+    flaskApi.get<{ success: boolean; data: AppUser[] }>('/api/v1/apps/users'),
+
+  createUser: (body: {
+    email: string
+    display_name?: string
+    role?: string
+    is_active?: boolean
+  }) => flaskApi.post<{ success: boolean; data: AppUser }>('/api/v1/apps/users', body),
+
+  updateUser: (email: string, body: Partial<AppUser>) =>
+    flaskApi.patch<{ success: boolean; data: AppUser }>(
+      `/api/v1/apps/users/${encodeURIComponent(email)}`,
+      body
+    ),
 }
 
 // Health check

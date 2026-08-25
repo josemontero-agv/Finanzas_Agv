@@ -10,6 +10,8 @@ const ALLOWED_PATH_PREFIXES = [
   "/treasury",
   "/dashboard",
   "/diagnostics",
+  "/observability",
+  "/apps",
   "/login",
 ]
 

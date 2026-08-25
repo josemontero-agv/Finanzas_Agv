@@ -145,7 +145,23 @@ Entra a **`/diagnostics`** en el frontend.
 - Debe mostrar conteos de tablas Supabase (no vacío si el ETL corrió).
 - Sin errores de conexión a `SUPABASE_DB_URI`.
 
-**7d — (Opcional) Smoke en GitHub Actions**
+**7d — RBAC y Centro de aplicaciones**
+
+1. Aplicar DDL (una vez) en Supabase SQL Editor o MCP:
+   - `scripts/etl/supabase_schema_app_users.sql`
+   - `scripts/etl/supabase_schema_app_platforms.sql`
+   - `scripts/etl/supabase_schema_user_activity.sql` (requerido por `/observability`)
+2. Confirmar `ADMIN_EMAILS=jose.montero@agrovetmarket.com` y `SUPABASE_KEY` real en `.env.produccion` (no placeholders `TODO_*` del overlay `.env.supabase.produccion`).
+3. Login admin → sidebar **Aplicaciones** (`/apps`) y **Observabilidad** (`/observability`).
+4. Login `app_assistant` → solo `/apps` (sin telemetría de personas); puede crear/editar rol `user`.
+5. Login `user` → sin `/apps` ni `/observability`.
+6. `ALLOWED_USERS` queda como red de seguridad hasta que todos los usuarios activos estén en `app_users`.
+7. Si `/apps` o `/observability` responden 500 con *Invalid API key*, reiniciar Flask tras corregir el env (`.\venv\Scripts\python.exe .\run.py production`).
+8. Alta de un correo **nuevo** `@agrovetmarket.com` en `/apps` → aparece en la tabla. Email duplicado → 409. Dominio ajeno → 400.
+9. Editar nombre / Desactivar un usuario **no protegido** → cambia en UI y en `app_users`. El usuario desactivado recibe 401 en el siguiente request API.
+10. En `/observability` (solo admin): logins en hora Lima, KPI de logins fallidos, tabla de actividad reciente y auditoría de altas/roles.
+
+**7e — (Opcional) Smoke en GitHub Actions**
 
 Si ya tienes el workflow `post-deploy-smoke.yml`, ejecútalo manualmente con la URL del backend.
 
@@ -259,9 +275,9 @@ Variables con `sync: false` en `render.yaml` debes pegarlas manualmente en Rende
 | `COLLECTIONS_SOURCE` | Empezar con **`odoo`**; cambiar a `supabase` tras paridad 3/3 |
 | `SECRET_KEY` | Clave Flask única y larga |
 | `JWT_SECRET_KEY` | Clave JWT única (no usar default) |
-| `ALLOWED_USERS` | 6 correos @agrovetmarket.com del equipo Créditos/Cobranzas, separados por coma |
-| `ADMIN_EMAILS` | Admins si aplica |
-| `ODOO_URL`, `ODOO_DB`, `ODOO_USER`, `ODOO_PASSWORD` | Credenciales Odoo lectura producción |
+| `ALLOWED_USERS` | Fallback temporal de whitelist hasta completar seed en `app_users` (Supabase). Separados por coma |
+| `ADMIN_EMAILS` | **Único admin bootstrap**: `jose.montero@agrovetmarket.com` (fuerza rol `admin` en login; no asignable vía UI) |
+| `ODOO_URL`, `ODOO_DB`, `ODOO_USER`, `ODOO_PASSWORD` | Credenciales Odoo lectura producción. Validar localmente con `.\scripts\etl\check_odoo.ps1 -Env produccion` antes de copiarlas a Render |
 | `SUPABASE_URL`, `SUPABASE_KEY` | Service role para ETL y backend |
 | `SUPABASE_DB_URI` | Pooler Postgres **`:6543`** (no conexión directa `:5432`) |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | OAuth Google |

@@ -825,6 +825,11 @@ sequenceDiagram
                 <td>Test de paridad Odoo vs Supabase</td>
                 <td><code>python test_collections_parity.py --env desarrollo|produccion</code></td>
               </tr>
+              <tr>
+                <td><code>check_odoo.ps1</code></td>
+                <td>Confirmar credenciales y consulta de lectura a Odoo</td>
+                <td><code>python scripts/etl/check_odoo.py --env desarrollo|produccion</code></td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -967,6 +972,7 @@ flowchart LR
           <li><code>/diagnostics</code> — conteo de filas Supabase desde frontend.</li>
           <li>Logs ETL en stdout (Render cron logs).</li>
           <li>Script de paridad con salida tabular y exit code para CI/manual.</li>
+          <li><strong>Uso de app (v1)</strong>: tabla <code>user_activity_logs</code>, API <code>/api/v1/analytics</code> y tablero <code>/observability</code> solo admin (logins, page views, horarios, top usuarios/módulos). Ver skill <code>finanzas-observabilidad</code>.</li>
         </ul>
       </section>
 

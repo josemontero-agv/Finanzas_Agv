@@ -3,14 +3,19 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Mail, Moon, Sun, Wallet, LogOut } from 'lucide-react'
+import { Activity, AppWindow, Mail, Moon, Sun, Wallet, LogOut } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/components/theme-provider'
 import { authApi } from '@/lib/api'
 import { isLettersModuleEnabled } from '@/lib/feature-flags'
 
-export function Sidebar() {
+type SidebarProps = {
+  isAdmin?: boolean
+  canManageApps?: boolean
+}
+
+export function Sidebar({ isAdmin = false, canManageApps = false }: SidebarProps) {
   const router = useRouter()
   const [isExpanded, setIsExpanded] = useState(false)
   const { theme, toggleTheme } = useTheme()
@@ -61,6 +66,22 @@ export function Sidebar() {
             href="/letters"
             icon={<Mail size={22} />}
             label="Letras"
+            isExpanded={isExpanded}
+          />
+        )}
+        {canManageApps && (
+          <SidebarLink
+            href="/apps"
+            icon={<AppWindow size={22} />}
+            label="Aplicaciones"
+            isExpanded={isExpanded}
+          />
+        )}
+        {isAdmin && (
+          <SidebarLink
+            href="/observability"
+            icon={<Activity size={22} />}
+            label="Observabilidad"
             isExpanded={isExpanded}
           />
         )}

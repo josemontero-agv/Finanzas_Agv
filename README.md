@@ -107,6 +107,13 @@ yarn dev
 - `ODOO_USER`
 - `ODOO_PASSWORD`
 
+Para confirmar que esas credenciales autentican y que una consulta de lectura responde:
+
+```powershell
+.\scripts\etl\check_odoo.ps1
+.\scripts\etl\check_odoo.ps1 -Env produccion
+```
+
 ### Sesion y seguridad Flask
 - `SECRET_KEY`
 - `SESSION_COOKIE_NAME`

@@ -5,7 +5,7 @@ Rutas de Autenticacion.
 Endpoints para login y autenticacion de usuarios.
 """
 
-from flask import jsonify, session, current_app
+from flask import jsonify, request, session, current_app
 from flask_jwt_extended import (
     jwt_required,
     create_access_token,
@@ -13,7 +13,8 @@ from flask_jwt_extended import (
     unset_jwt_cookies,
 )
 from app.auth import auth_bp
-from app.auth.security import get_authenticated_user_email
+from app.auth.security import get_authenticated_user_email, get_authenticated_user_roles
+from app.core.telemetry import log_event
 from app import limiter
 
 
@@ -59,18 +60,28 @@ def user_info():
     """
     Endpoint para obtener informacion del usuario actual desde la sesion o el JWT.
 
-    Response (JSON):
-        {
-            "success": true,
-            "username": "usuario",
-            "email": "usuario@agrovet.com.pe"
-        }
+    Los roles se resuelven en vivo (ADMIN_EMAILS / app_users) para que el sidebar
+    refleje admin/app_assistant sin depender solo de claims JWT antiguos.
     """
+    from app.apps import services as apps_svc
+
+    def _live_roles(email: str, fallback=None):
+        email = (email or '').strip().lower()
+        if email:
+            roles = apps_svc.roles_claim_for_email(email)
+            # Mantener sesión alineada con el rol efectivo.
+            if session.get('logged_in'):
+                session['roles'] = roles
+            return roles
+        return fallback or get_authenticated_user_roles() or []
+
     if session.get('logged_in'):
+        email = session.get('email', '')
         return jsonify({
             'success': True,
             'username': session.get('username', ''),
-            'email': session.get('email', '')
+            'email': email,
+            'roles': _live_roles(email, session.get('roles')),
         }), 200
 
     email = get_authenticated_user_email()
@@ -78,7 +89,8 @@ def user_info():
         return jsonify({
             'success': True,
             'username': email.split('@')[0],
-            'email': email
+            'email': email,
+            'roles': _live_roles(email),
         }), 200
 
     return jsonify({
@@ -113,6 +125,20 @@ def refresh():
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
     """Cierra la sesion del usuario autenticado e invalida las cookies JWT (access + refresh)."""
+    # Telemetría ANTES de session.clear() para conservar identidad.
+    email = get_authenticated_user_email() or (session.get('email') or '').strip().lower()
+    username = session.get('username') or (email.split('@')[0] if email else None)
+    if email:
+        log_event(
+            email=email,
+            category='auth',
+            name='user_logout',
+            payload={},
+            path='/api/v1/auth/logout',
+            user_agent=request.headers.get('User-Agent'),
+            username=username,
+        )
+
     session.clear()
     response = jsonify({
         'success': True,

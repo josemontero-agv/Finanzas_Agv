@@ -36,8 +36,8 @@ def health_check():
         except:
             odoo_status = "error"
         
-        # Verificar Supabase
-        supabase_status = "connected" if SupabaseClient.get_client() else "disconnected"
+        # Verificar Supabase con ping real (evita "connected" con API key inválida)
+        supabase_status = "connected" if SupabaseClient.ping() else "disconnected"
         
         return jsonify({
             "status": "healthy",

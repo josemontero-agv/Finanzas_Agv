@@ -7,34 +7,55 @@ manejado por el backend Flask. Al finalizar, redirige al navegador hacia el
 frontend Next.js (FRONTEND_URL) con la cookie de sesión Flask ya establecida.
 """
 
-from flask import current_app, redirect, session, url_for
+from flask import current_app, redirect, request, session, url_for
 from flask_jwt_extended import create_access_token, create_refresh_token, set_access_cookies, set_refresh_cookies
 from app import oauth
 from app.auth import auth_bp
 from app.auth.routes import _normalize_user_email
+from app.core.telemetry import log_event
 
 
 def _is_email_allowed(email):
-    """Valida que el email pertenezca al dominio corporativo Y esté en la whitelist."""
+    """
+    Valida dominio corporativo + autorización de acceso.
+
+    Preferencia: fila activa en app_users (Supabase).
+    Fallback temporal: ALLOWED_USERS (env) si Supabase no está disponible
+    o la tabla aún no está sembrada para ese email pero sí está en env.
+    """
+    from app.apps import services as apps_svc
+
     domain = current_app.config.get('USER_EMAIL_DOMAIN', 'agrovetmarket.com').strip().lower()
-    allowed_users = current_app.config.get('ALLOWED_USERS', [])
+    email = (email or '').strip().lower()
 
     if not email or not email.endswith(f'@{domain}'):
         return False
+
+    # Override bootstrap: ADMIN_EMAILS siempre permitido (aunque falte fila).
+    if apps_svc.is_bootstrap_admin_email(email):
+        return True
+
+    active = apps_svc.is_user_active_in_db(email)
+    if active is True:
+        return True
+    if active is False:
+        # Fila existe pero inactiva → denegar (no caer a ALLOWED_USERS).
+        return False
+
+    # Supabase no disponible / error de lectura → fallback ALLOWED_USERS.
+    allowed_users = current_app.config.get('ALLOWED_USERS', [])
     return email in allowed_users
 
 
 def _roles_for_email(email):
     """
-    Deriva los roles del usuario a partir de ADMIN_EMAILS (config).
+    Rol único primario: ['admin'] | ['app_assistant'] | ['user'].
 
-    Deja la base lista para activar el RBAC hoy en modo "log only" (ver RBAC_LOG_ONLY
-    en config.py y require_role en app/auth/security.py): estos roles ya viajan como
-    claim "roles" en el JWT y en session['roles'], listos para que require_role los
-    empiece a exigir de verdad simplemente cambiando RBAC_LOG_ONLY a False.
+    - Si email ∈ ADMIN_EMAILS → siempre admin (no se mezcla con user).
+    - Si no, role de app_users (default user).
     """
-    admin_emails = current_app.config.get('ADMIN_EMAILS', [])
-    return ['admin', 'user'] if email in admin_emails else ['user']
+    from app.apps import services as apps_svc
+    return apps_svc.roles_claim_for_email(email)
 
 
 @auth_bp.route('/google')
@@ -49,21 +70,39 @@ def google_callback():
     """
     Recibe el code de Google, valida la identidad y establece la sesión Flask.
 
-    Si el email es válido (dominio corporativo + whitelist ALLOWED_USERS),
+    Si el email es válido (dominio + app_users activo / fallback ALLOWED_USERS),
     fija la sesión y redirige al frontend ya autenticado. Caso contrario,
     redirige al login del frontend con el error correspondiente en la query string.
     """
     frontend_url = (current_app.config.get('FRONTEND_URL') or 'http://localhost:3000').rstrip('/')
+    user_agent = request.headers.get('User-Agent')
 
     try:
         token = oauth.google.authorize_access_token()
         user_info = token.get('userinfo') or {}
     except Exception:
+        log_event(
+            email='unknown',
+            category='auth',
+            name='user_login_failure',
+            payload={'error_code': 'google_auth_failed'},
+            path='/api/v1/auth/google/callback',
+            user_agent=user_agent,
+        )
         return redirect(f'{frontend_url}/login?error=google_auth_failed')
 
     email = (user_info.get('email') or '').strip().lower()
 
     if not user_info.get('email_verified', True) or not _is_email_allowed(email):
+        log_event(
+            email=email or 'unknown',
+            category='auth',
+            name='user_login_failure',
+            payload={'error_code': 'not_allowed'},
+            path='/api/v1/auth/google/callback',
+            user_agent=user_agent,
+            username=(user_info.get('name') or (email.split('@')[0] if email else None)),
+        )
         session.clear()
         return redirect(f'{frontend_url}/login?error=not_allowed')
 
@@ -76,6 +115,16 @@ def google_callback():
     session['email'] = user_email
     session['roles'] = roles
     session.permanent = True
+
+    log_event(
+        email=user_email,
+        category='auth',
+        name='user_login_success',
+        payload={'username': username},
+        path='/api/v1/auth/google/callback',
+        user_agent=user_agent,
+        username=username,
+    )
 
     response = redirect(f'{frontend_url}/collections')
 

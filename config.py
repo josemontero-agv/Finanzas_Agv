@@ -300,6 +300,15 @@ class Config:
                 stacklevel=2,
             )
 
+        supabase_key = (app.config.get('SUPABASE_KEY') or '').strip()
+        supabase_key_upper = supabase_key.upper()
+        if not supabase_key or supabase_key_upper.startswith('TODO') or 'TODO_' in supabase_key_upper:
+            raise RuntimeError(
+                'SUPABASE_KEY inválido en producción: no use placeholders TODO_* del overlay '
+                '.env.supabase.produccion. Defina la secret key real en .env.produccion '
+                '(o variable de entorno) y reinicie Flask.'
+            )
+
     @staticmethod
     def init_app(app):
         """Inicialización adicional de la app."""
@@ -314,11 +323,15 @@ class DevelopmentConfig(Config):
 
     @classmethod
     def init_app(cls, app):
-        """Carga variables de entorno desde .env.desarrollo y .env.supabase.desarrollo."""
+        """Carga variables de entorno desde .env.desarrollo y .env.supabase.desarrollo.
+
+        Orden: overlay supabase primero (puede traer TODO_*), luego .env.desarrollo
+        con override para que las keys reales ganen.
+        """
         base_path = os.path.dirname(__file__)
         for env_path in [
-            os.path.join(base_path, '.env.desarrollo'),
             os.path.join(base_path, '.env.supabase.desarrollo'),
+            os.path.join(base_path, '.env.desarrollo'),
         ]:
             if os.path.exists(env_path):
                 load_dotenv(env_path, override=True)
@@ -338,11 +351,15 @@ class ProductionConfig(Config):
 
     @classmethod
     def init_app(cls, app):
-        """Carga variables de entorno desde .env.produccion y .env.supabase.produccion."""
+        """Carga variables de entorno desde .env.produccion y .env.supabase.produccion.
+
+        Orden: primero el overlay supabase (a menudo tiene placeholders TODO_*),
+        luego .env.produccion con override para que las keys reales ganen.
+        """
         base_path = os.path.dirname(__file__)
         for env_path in [
-            os.path.join(base_path, '.env.produccion'),
             os.path.join(base_path, '.env.supabase.produccion'),
+            os.path.join(base_path, '.env.produccion'),
         ]:
             if os.path.exists(env_path):
                 load_dotenv(env_path, override=True)

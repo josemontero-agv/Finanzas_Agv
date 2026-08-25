@@ -2,6 +2,57 @@
 
 Todas las modificaciones notables a este proyecto serán documentadas en este archivo.
 
+## [Unreleased] - 2026-08-25
+
+### Herramientas / DevOps
+- **Script `scripts/etl/check_odoo.py`**: Diagnóstico de credenciales Odoo (`ODOO_URL` / `ODOO_DB` / `ODOO_USER` / `ODOO_PASSWORD`) que autentica por XML-RPC y confirma una consulta de solo lectura (`res.users.read` + `search_read`/`search_count`). Wrapper PowerShell `scripts/etl/check_odoo.ps1`. No imprime secretos.
+
+## [Unreleased] - 2026-08-13
+
+### Corregido
+- **CORS PATCH**: Flask-CORS ahora permite `PATCH` y `HEAD` (además de GET/POST/PUT/DELETE/OPTIONS). Sin esto, Editar/Desactivar usuarios en `/apps` fallaba en el preflight del navegador; el alta (POST) sí funcionaba.
+- **Alta de usuarios**: se exige dominio corporativo (`USER_EMAIL_DOMAIN`, default `agrovetmarket.com`). Email duplicado responde **409** con mensaje claro (no el error críptico de PostgREST).
+- **PATCH con persistencia verificada**: tras update se compara `is_active` / `role` / `display_name` con el patch; si el re-fetch no cambió, **500** explícito (nunca 200 con datos viejos).
+- **Desactivar de verdad**: `require_login` relee `app_users.is_active`; si es `False` → 401 y limpia sesión/JWT. `None` (Supabase caído / sin fila) no bloquea.
+- **Roles en vivo**: `get_authenticated_user_roles()` resuelve desde `ADMIN_EMAILS` / `app_users` (mismo criterio que `user-info`), no solo claims JWT stale.
+
+### Agregado
+- **Telemetría de gestión de personas**: `users.user_created` / `user_updated` / `user_toggled` en `user_activity_logs` al crear o editar desde `/apps`.
+- **Observabilidad v2** (`GET /api/v1/analytics/summary` + `/observability`):
+  - Agregados de login en zona **America/Lima**.
+  - KPIs `failed_logins` y `logouts`.
+  - Tabla **Actividad reciente** y bloque **Auditoría de personas**.
+  - Se mantiene el aviso si `total_logins === 0`.
+
+## [Unreleased] - 2026-08-11
+
+### Agregado
+- **RBAC + Centro de aplicaciones**: Roles únicos `admin` | `app_assistant` | `user` con gate de login vía `app_users` (fallback `ALLOWED_USERS`) y override `ADMIN_EMAILS` → siempre `admin`.
+  - DDL: `scripts/etl/supabase_schema_app_users.sql`, `scripts/etl/supabase_schema_app_platforms.sql` (seed José admin + plataformas Finanzas AGV / Odoo).
+  - Backend: blueprint `app/apps/` (`GET /dashboard`, CRUD platforms/users) con `require_apps_operator` (bloqueo real); helpers `require_admin` / `require_apps_operator` en `app/auth/security.py`.
+  - Frontend: pestaña `/apps` (KPIs + Recharts + catálogo + gestión usuarios), sidebar **Aplicaciones** para admin/asistente, `/observability` solo admin, `/apps` en `proxy.ts`.
+  - Docs: skill observabilidad (admin-only vs `/apps`), `docs/DEPLOY_DEVSECOPS.md` §7d.
+
+- **Observabilidad de uso (v1)**: Telemetría propia en Supabase (`user_activity_logs`) + API Flask `/api/v1/analytics` + tablero `/observability` solo para admins (`ADMIN_EMAILS`).
+  - DDL: `scripts/etl/supabase_schema_user_activity.sql`.
+  - Backend: `app/core/telemetry.py` (`log_event`), blueprint `app/analytics/` (`POST /events`, `GET /summary` con bloqueo admin explícito aunque `RBAC_LOG_ONLY=True`).
+  - Instrumentación: login success/failure en `app/auth/oauth.py`, logout en `app/auth/routes.py` (antes de `session.clear`).
+  - Frontend: `frontend/lib/analytics.ts` (page_view fire-and-forget), página `/observability` con KPIs + Recharts, link sidebar/dashboard solo admin, `/observability` en `proxy.ts`.
+  - `user-info` ahora expone `roles: string[]`.
+
+### Corregido
+- **Editar/desactivar usuarios en `/apps`**: `update_user` re-lee por email si el UPDATE de Supabase no devuelve filas (evita falso 404). UI con edición en estado React controlado (sin `getElementById` con `@`), feedback de éxito/error por fila, y filas `ADMIN_EMAILS` / `role=admin` marcadas como **Protegido** (sin Editar/Desactivar). Alta (`+ Alta`) intacta.
+- **Observabilidad sin logins**: aviso cuando `total_logins === 0` — los logins previos a la telemetría no se recuperan; hay que cerrar sesión y volver a entrar.
+- **Sidebar sin Aplicaciones/Observabilidad**: `user-info` resuelve roles en vivo (`ADMIN_EMAILS` / `app_users`). Añadir `ADMIN_EMAILS=jose.montero@agrovetmarket.com` en el env local. Script de seed: `scripts/seed_app_users_from_allowed.py`.
+- **Supabase Invalid API key local**: el overlay `.env.supabase.produccion` (placeholder `TODO_*`) pisaba la key real; `ProductionConfig` ahora carga primero el overlay y luego `.env.produccion` con override.
+- **500 en `/observability` y `/apps`**: causa = Flask con `SUPABASE_KEY` inválida (proceso arrancado antes del fix de override) + tabla `user_activity_logs` ausente en Supabase.
+  - DDL aplicado: `user_activity_logs` en proyecto `hkthitfwqyfqfhcirvnz`.
+  - Validación de arranque rechaza placeholders `TODO_*` en `SUPABASE_KEY`; health/`ping` consulta PostgREST de verdad; mensajes API más claros (key inválida vs tabla faltante).
+  - **Acción local:** reiniciar Flask con `.\venv\Scripts\python.exe .\run.py production`.
+
+### Herramientas / Agent Skills
+- **Skill Cursor `finanzas-observabilidad`**: Guía de proyecto en `.cursor/skills/finanzas-observabilidad/SKILL.md` — telemetría personas/horarios **solo admin**; el Centro `/apps` es operativa (inventario/usuarios) para admin + `app_assistant`. El borrador `.cursor/extract-requirements-db-design/skill_observabilidad.md` queda como puntero.
+
 ## [Unreleased] - 2026-06-25
 
 ### Herramientas / DevOps

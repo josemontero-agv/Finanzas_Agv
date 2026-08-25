@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { healthApi } from "@/lib/api"
+import { authApi, healthApi } from "@/lib/api"
 import { isLettersModuleEnabled } from "@/lib/feature-flags"
 import { 
   Activity, 
@@ -37,6 +37,17 @@ export default function DashboardPage() {
     refetchInterval: 30000, // Cada 30 segundos
     retry: false,
   })
+
+  const { data: authData } = useQuery({
+    queryKey: ["auth", "user-info"],
+    queryFn: async () => {
+      const res = await authApi.getUserInfo()
+      return res.data
+    },
+    staleTime: 60_000,
+  })
+
+  const isAdmin = (authData?.roles || []).includes("admin")
 
   return (
     <div className="space-y-6">
@@ -141,17 +152,33 @@ export default function DashboardPage() {
           </Link>
         )}
 
-        <div className="bg-gradient-to-br from-slate-300 to-slate-400 p-6 rounded-lg shadow-lg opacity-60 text-white">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-white/20 p-3 rounded-lg">
-              <TrendingUp className="h-6 w-6" />
+        {isAdmin ? (
+          <Link href="/observability">
+            <div className="bg-gradient-to-br from-[#714B67] to-[#875A7B] p-6 rounded-lg shadow-lg hover:shadow-xl transition-all cursor-pointer text-white hover:scale-105">
+              <div className="flex items-center justify-between mb-4">
+                <div className="bg-white/20 p-3 rounded-lg">
+                  <TrendingUp className="h-6 w-6" />
+                </div>
+              </div>
+              <h3 className="font-bold text-lg">Observabilidad</h3>
+              <p className="text-sm text-purple-100 mt-1">
+                Uso, logins y módulos
+              </p>
             </div>
+          </Link>
+        ) : (
+          <div className="bg-gradient-to-br from-slate-300 to-slate-400 p-6 rounded-lg shadow-lg opacity-60 text-white">
+            <div className="flex items-center justify-between mb-4">
+              <div className="bg-white/20 p-3 rounded-lg">
+                <Activity className="h-6 w-6" />
+              </div>
+            </div>
+            <h3 className="font-bold text-lg">Observabilidad</h3>
+            <p className="text-sm text-slate-100 mt-1">
+              Solo administradores
+            </p>
           </div>
-          <h3 className="font-bold text-lg">Analytics</h3>
-          <p className="text-sm text-slate-100 mt-1">
-            Próximamente...
-          </p>
-        </div>
+        )}
       </div>
 
       {/* Info del Sistema */}

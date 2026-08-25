@@ -2,10 +2,11 @@
 
 import { usePathname, useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { Sidebar } from "@/components/sidebar"
 import { AuthLoadingScreen } from "@/components/auth-loading-screen"
 import { authApi } from "@/lib/api"
+import { trackPageView } from "@/lib/analytics"
 import { ReactNode } from "react"
 
 type AppShellProps = {
@@ -16,6 +17,7 @@ export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname()
   const router = useRouter()
   const isLoginRoute = pathname === "/login"
+  const lastPathRef = useRef<string | null>(null)
 
   const {
     data: authData,
@@ -38,6 +40,13 @@ export function AppShell({ children }: AppShellProps) {
       router.replace("/login")
     }
   }, [isLoginRoute, isAuthError, authError, router])
+
+  useEffect(() => {
+    if (isLoginRoute || !authData?.success || !pathname) return
+    if (lastPathRef.current === pathname) return
+    lastPathRef.current = pathname
+    trackPageView(pathname)
+  }, [pathname, authData?.success, isLoginRoute])
 
   if (isLoginRoute) {
     return (
@@ -70,9 +79,13 @@ export function AppShell({ children }: AppShellProps) {
     return <AuthLoadingScreen message="Validando sesión..." />
   }
 
+  const roles = authData.roles || []
+  const isAdmin = roles.includes("admin")
+  const canManageApps = isAdmin || roles.includes("app_assistant")
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar />
+      <Sidebar isAdmin={isAdmin} canManageApps={canManageApps} />
       <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-gradient-to-br from-slate-50 via-purple-50/30 to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 transition-all duration-300">
         {children}
       </main>

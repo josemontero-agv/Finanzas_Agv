@@ -109,6 +109,25 @@ Compara totales Odoo vs Supabase (`test_collections_parity.py` en la raíz del r
 
 Criterio go-live: **3/3 escenarios MATCH** (sin filtros, rango de fechas, con fecha de corte).
 
+### `check_odoo.ps1`
+
+Confirma que las credenciales `ODOO_*` del `.env` activo autentican contra Odoo y que una consulta de solo lectura (`search_read`) funciona. Útil antes del ETL o si `/api/health` marca Odoo en `disconnected`/`error`.
+
+```powershell
+.\scripts\etl\check_odoo.ps1
+.\scripts\etl\check_odoo.ps1 -Env produccion
+.\scripts\etl\check_odoo.ps1 -Env desarrollo -Model account.move -Limit 3
+```
+
+Equivalente manual:
+
+```powershell
+$env:APP_ENV = "development"   # o production
+.\venv\Scripts\python.exe scripts\etl\check_odoo.py --env desarrollo
+```
+
+Solo lectura; no escribe en Odoo. La contraseña/API Key se muestra enmascarada.
+
 ## Modos de trabajo local
 
 | Modo | `COLLECTIONS_SOURCE` | Backend | Fuente Cobranzas | Cuándo usarlo |
@@ -141,6 +160,7 @@ Compara conteo y sumas entre `CollectionsService` (Odoo) y `CollectionsSupabaseP
 - `supabase_schema_etl_state.sql` — tabla `etl_sync_state`
 - `supabase_schema_collections.sql` — tablas del piloto Cobranzas
 - `etl_sync_threading.py` — implementación del sync
+- `check_odoo.py` — diagnóstico de credenciales y consulta de lectura a Odoo
 - `app/collections/supabase_provider.py` — lectura en backend cuando `COLLECTIONS_SOURCE=supabase`
 
 ## Troubleshooting
@@ -149,6 +169,8 @@ Compara conteo y sumas entre `CollectionsService` (Odoo) y `CollectionsSupabaseP
 |---------|----------------|
 | Paridad DIFF en conteos | Watermark parcial; reset + re-ETL |
 | Paridad DIFF en residual con cutoff | Revisar `fact_partial_reconciles`; cuenta 123 (letras) tiene limitaciones conocidas |
-| ETL falla auth Odoo | Revisar `ODOO_*` en el `.env` del `APP_ENV` activo |
+| ETL falla auth Odoo | Revisar `ODOO_*` en el `.env` del `APP_ENV` activo; correr `check_odoo.ps1` |
+| `check_odoo` FALLO en authenticate | Usuario/API Key o `ODOO_DB` incorrectos; 2FA requiere API Key en `ODOO_PASSWORD` |
+| `check_odoo` no contacta el servidor | `ODOO_URL` mal formado, red/VPN o timeout |
 | Paridad no conecta Supabase | `SUPABASE_DB_URI` debe ser connection string pooler (`:6543`), no URL REST |
 | Backend vacío con `supabase` | ETL no corrido o tablas vacías; verificar `/diagnostics` en frontend |

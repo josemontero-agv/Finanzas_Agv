@@ -72,7 +72,7 @@ def create_app(config_name='development'):
     CORS(app, resources={
         r"/api/*": {
             "origins": cors_origins,
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "methods": ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True
         }
@@ -140,6 +140,8 @@ def create_app(config_name='development'):
     from app.emails import emails_bp
     from app.letters import letters_bp
     from app.detractions import detractions_bp
+    from app.analytics import analytics_bp
+    from app.apps import apps_bp
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(collections_bp)
@@ -148,6 +150,8 @@ def create_app(config_name='development'):
     app.register_blueprint(emails_bp)
     app.register_blueprint(letters_bp)
     app.register_blueprint(detractions_bp)
+    app.register_blueprint(analytics_bp)
+    app.register_blueprint(apps_bp)
     
     # Registrar blueprint Web (Frontend)
     from app.web import web_bp
@@ -263,6 +267,8 @@ def create_app(config_name='development'):
             '/api/v1/auth/user-info',
             '/api/v1/auth/google',
             '/api/v1/auth/refresh',
+            '/api/v1/analytics',
+            '/api/v1/apps',
         )
         if app.config.get('LETTERS_MODULE_ENABLED', False):
             allowed_prefixes = (
@@ -290,6 +296,7 @@ def create_app(config_name='development'):
             endpoints = {
                 'auth': '/api/v1/auth',
                 'collections': '/api/v1/collections',
+                'analytics': '/api/v1/analytics',
             }
             if letters_enabled:
                 endpoints['letters'] = '/api/v1/letters'
@@ -301,6 +308,7 @@ def create_app(config_name='development'):
                 'exports': '/api/v1/exports',
                 'emails': '/api/v1/emails',
                 'detractions': '/api/v1/detractions',
+                'analytics': '/api/v1/analytics',
             }
             if letters_enabled:
                 endpoints['letters'] = '/api/v1/letters'
@@ -335,7 +343,7 @@ def create_app(config_name='development'):
         }), 500
     
     print(f"[OK] Aplicación creada con configuración: {config_name}")
-    print(f"[OK] Blueprints API registrados: auth, collections, treasury, exports, emails, letters, detractions")
+    print(f"[OK] Blueprints API registrados: auth, collections, treasury, exports, emails, letters, detractions, analytics, apps")
     print(f"[OK] Restricción temporal de módulos activa: {app.config.get('RESTRICT_TO_LETTERS_ONLY', False)}")
     print(f"[OK] Módulo Letras habilitado: {app.config.get('LETTERS_MODULE_ENABLED', False)}")
     print(f"[OK] Blueprint Web (Frontend) registrado")
