@@ -56,4 +56,4 @@ pytest-flask==1.3.0
 
 # Documentación (MkDocs)
 mkdocs==1.6.1
-mkdocs-material==9.7.0
+mkdocs-material==9.7.7
